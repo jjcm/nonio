@@ -1,0 +1,36 @@
+{
+  "name": "socio",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node ./bin/www"
+  },
+  "dependencies": {
+    "bcrypt": "^2.0.0",
+    "body-parser": "^1.18.3",
+    "cookie-parser": "~1.4.3",
+    "cookie-session": "^2.0.0-beta.3",
+    "cors": "^2.8.4",
+    "debug": "~2.6.3",
+    "express": "^4.16.3",
+    "express-session": "^1.15.4",
+    "fortune": "^5.4.1",
+    "fortune-postgres": "^1.6.3",
+    "moment": "^2.22.1",
+    "morgan": "^1.9.0",
+    "node-gyp": "^3.7.0",
+    "passport": "^0.3.2",
+    "passport-facebook": "^2.1.1",
+    "passport-google": "^0.3.0",
+    "passport-google-oauth": "^1.0.0",
+    "passport-local": "^1.0.0",
+    "passport-twitter": "^1.0.4",
+    "pg": "^7.4.1",
+    "pug": "~2.0.0-beta11",
+    "random-word": "^2.0.0",
+    "serve-favicon": "~2.4.2",
+    "stylus": "0.54.5",
+    "touch": "^3.1.0",
+    "underscore": "^1.9.0"
+  }
+}

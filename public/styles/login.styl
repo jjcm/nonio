@@ -1,0 +1,338 @@
+$green = #36B018
+$blue = #1581b3
+$red = #f73314
+$border-color = #ddd
+$text-gray = #95989A
+$ak-ease = cubic-bezier(0.2,0,0,1)
+@require '../lib/atlassian.styl'
+
+
+
+body
+  margin: 0
+  font-family: 'Helvetica Neue', Helvetica, Sans-serif
+  background-color: #ddd
+  &.no-select
+    user-select: none
+
+::-webkit-input-placeholder
+  color: #ddd
+
+#content
+  display: flex
+  justify-content: center
+  height: 100%
+  align-items: center
+
+#login
+  width: 600px
+  height: 300px
+  border-radius: 8px
+  background-color: #fff
+  box-shadow: 0 0 32px 0px rgba(0,0,0,0.5)
+  position: relative
+  //background: linear-gradient(to right, $green 0%, ($green - #111) 100%)
+  overflow: hidden
+  .field-container
+    width: 200px
+    display: inline-block
+    position: relative
+    margin: 0
+    margin-right: 24px
+    transition: margin 0.15s $swoop
+    input
+      transition: all 0.15s $swoop 0.05s
+      position: relative
+      z-index: 10
+    &.error
+      input
+        border-color: $green
+        transition: all 0.15s $swoop
+      label
+        font-weight: bold
+      .error
+        display: none
+        top: -11px
+        left: 0
+        width: 200px
+        padding-left: 12px
+        transition: all 0.1s $swoop 0.05s
+    .error
+      background-color: $red
+      position: absolute
+      transition: all 0.1s $swoop
+      top: 0
+      z-index: 5
+      width: 172px
+      left: 14px
+      padding-left: 0px
+      color: #fff
+      font-size: 10px
+      text-transform: uppercase
+      line-height: 12px
+  .buttons
+    display: flex
+    position: absolute
+    padding-bottom: 24px
+    width: 520px
+    justify-content: space-between
+    bottom: 0
+  #header
+    display: flex
+    height: 40px
+    justify-content: space-between
+    > div
+      text-align: center
+      line-height: 40px
+      user-select: none
+    #logo
+      color: #fff
+      left: 0
+      width: 140px
+      letter-spacing: 10px
+      font-weight: 300
+      top:0
+      background: linear-gradient(to right, $green 0%, ($green - #111) 100%)
+      border-bottom: 1px solid ($green - #111)
+      border-right: 1px solid ($green - #222)
+  #h-register
+    cursor: pointer
+    padding: 0 20px
+    color: $green
+    opacity: 0.8
+    font-weight: 300
+    letter-spacing: 0.5px
+  #forms
+    position: relative
+    width: 1800px
+    transition: left 0.3s $ak-ease
+    display: flex
+    left: 0
+  &.register
+    #forms
+      left: -600px
+    #h-register
+      display: none
+  &.step2
+    #register-form form
+      left: -600px
+    #steps
+      &:after
+        width: 160px
+  &.step3
+    #register-form form
+      left: -1200px
+    #steps 
+      &:after
+        width: 310px
+
+#step2
+  input
+    display: none
+  #contribution-amount-container
+    display: flex
+    padding-top: 18px
+    position: relative
+  #server-amount, #contribution-amount, #total-amount
+    padding-left: 2px
+    min-width: 10%
+    .amount 
+      color: $blue
+      font-size: 22px
+      font-weight: bold
+    .subtitle
+      font-size: 11px
+      color: #666
+      line-height: 14px
+      font-weight: 400
+      letter-spacing: 0.5px
+  #contribution-amount
+    padding-left: 8px
+    min-width: 20%
+    .amount
+      color: $green
+  #total-amount
+    position: absolute
+    right: 0
+    color: #666
+    font-size: 22px
+    font-weight: 300
+    letter-spacing: 0.5px
+    .amount
+      color: #555
+      display: inline-block
+      margin-right: 6px
+    .subtitle
+      text-align: right
+  #contribute-slider
+    position: relative
+    margin-top: 20px
+    width: 100%
+    height: 4px
+    background: alpha($green, 0.5)
+    &:before, &:after
+      width: 10%
+      height: 4px
+      background: alpha($blue, 0.5)
+      border-right: 2px solid #fff
+      content: ''
+      position: absolute
+      top: 0
+      left: 0
+    &:before
+      background: #fff
+    #contribute-slider-handle
+      width: 16px
+      cursor: pointer
+      height: 16px
+      background-color: $green
+      position: absolute
+      left: calc(30% - 8px)
+      top: -6px
+      border-radius: 100%
+
+#register-form
+  width: 600px
+  position: relative
+  h2
+    padding: 20px 42px 0
+    font-weight: 300
+    letter-spacing: 0.5px
+  form
+    margin-top: 0
+    position: relative
+    height: 212px
+    left: 0
+    transition: left 0.3s $ak-ease
+    display: flex
+  #step1, #step2, #step3
+    padding: 20px 40px
+    min-width: 600px
+    p
+      margin-bottom: 12px
+      margin-left: 2px
+      span
+        color: $blue
+
+  input[type='submit'], .next, .prev
+    margin: 0
+  .prev
+    background: $border-color
+    color: #444
+
+#steps
+  display: flex
+  position: absolute
+  left: 140px
+  top: -38px
+  &:after
+    width: 10px
+    height: 10px
+    border-radius: 5px
+    content: ''
+    border: 1px solid alpha($green, 0.2)
+    transition: all 0.4s $ak-ease
+    background-color: alpha($green, 0.5)
+    display: block
+    position: absolute
+    top: 24px
+    left: 70px
+  .step
+    font-size: 10px
+    text-transform: uppercase
+    min-width: 150px
+    text-align: center
+    color: $green
+    position: relative
+    &.active
+      &:before
+        background-color: $green
+    &:before
+      width: 10px
+      height: 10px
+      border-radius: 5px
+      content: ''
+      border: 1px solid $green
+      transition: all 0.4s $ak-ease
+      display: block
+      position: absolute
+      top: 24px
+      left: 70px
+
+
+
+#login-form
+  width: 600px
+  padding-top: 38px
+  form
+    margin: 0 auto
+    width: 200px
+  h2
+    font-size: 14px
+    font-weight: 300
+    letter-spacing: 0.5px
+    text-align: center
+
+label
+  font-size: 11px
+  line-height: 20px
+  font-weight: 400
+  letter-spacing: 0.5px
+  color: $green
+  letter-spacing: 0.8px
+input, .next, .prev
+  width: 200px
+  margin-bottom: 12px
+  height: 28px
+  padding-left: 8px
+  border-radius: 2px
+  border: 1px solid $border-color
+  outline: 0
+
+#g-login, #fb-login
+  width: 28px
+  min-width: 28px
+  height: 28px
+  display: block
+  border-radius: 2px
+  margin-right: 12px
+  cursor: pointer
+  position: relative
+
+.login-buttons
+  display: flex
+
+#g-login
+  box-shadow: 0 0 0 0.5px rgba(0,0,0,0.2)
+  background-image: url(/images/svg/google-g.svg)
+  background-repeat: no-repeat
+  background-size: 20px
+  background-position: center
+
+#fb-login
+  background: linear-gradient(to right, $blue 0%, ($blue - #111) 100%)
+  &:after
+    content: ''
+    background-image: url(/images/svg/fb.svg)
+    background-repeat: no-repeat
+    background-size: 60px
+    background-position: center
+    position: absolute
+    display: block
+    top: 2px
+    left: -1px
+    width: 28px
+    height: 28px
+
+input[type='submit'], .next, .prev
+  width: 100px
+  background: linear-gradient(to right, $green 0%, ($green - #111) 100%)
+  margin-left: 20px
+  border: 0
+  line-height: 26px
+  padding: 0
+  text-align: center
+  color: #fff
+  cursor: pointer
+  &:hover
+    background: linear-gradient(to right, $green 0%, ($green - #222) 100%)

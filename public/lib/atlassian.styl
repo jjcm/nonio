@@ -1,0 +1,64 @@
+image(path)
+  size = image-size('../images/' + path)
+  background-size: operate('/', size[0], 2)
+  background-image: url('../images/' + path)
+  width: operate('/', size[0], 2)
+  height: operate('/', size[1], 2)
+  background-repeat: no-repeat
+
+$swoop = cubic-bezier(.15,1,.3,1)
+
+@require 'atlaskit-reset.styl'
+@require 'akcolor.styl'
+@require 'akshadow.styl'
+@require 'aktype.styl'
+@require 'atlaskit-reduced-ui.styl'
+
+
+html
+  box-sizing: border-box
+
+*, *:before, *:after
+  box-sizing: inherit
+
+// override box-sizing for the atlaskit toggle
+.ak-field-toggle
+  box-sizing: initial
+
+body
+  margin: 0
+  font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen,Ubuntu,"Fira Sans","Droid Sans","Helvetica Neue",sans-serif
+  font-weight: 400
+  font-style: normal
+  font-size: 14px
+  line-height: 24px
+  color: $ak-color-N900
+  background: #fff
+
+hr
+  border: 1px solid #000
+  margin: -1px 0
+  margin-top: 24px
+
+h1.title
+  font-size: 36px
+  line-height: 40px
+
+p, ul, ol, pre, table, blockquote
+  margin-top: 0
+  margin-bottom: 24px
+
+ul ul, ol ol, ul ol, ol ul
+  margin-top: 0
+  margin-bottom: 0
+
+b, strong, em, small, code
+  line-height: 1
+
+a
+  color: #2C5ED0
+  text-decoration: none
+
+blockquote
+  margin-left: 40px
+  margin-right: 40px

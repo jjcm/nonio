@@ -1,0 +1,49 @@
+mixin post
+  .post
+    .preview.fake-image
+    .title-container
+      .title I hiked alone all day, ran away from two moose, and took a picture of the most amazing view from the summit. Alta, Utah, USA, [4000x6000]
+      .date oct 3
+    .tags
+      .tag.main
+        .name #photography
+        .count 233
+      .tag
+        .name #utah
+        .count 43
+    .details
+      .vote-count 412
+      .user
+        .user-avatar
+        .user-name pwnies
+  
+#posts-list
+  #posts-header
+    ul#posts-filter
+      li.filter.active All
+      li.filter Images
+      li.filter Video
+      li.filter Audio
+      li.filter Blogs
+    input#search(placeholder='Search')
+    #search-icon
+  #posts-list-container
+    .post(v-for='post in updatedTimes')
+      img.preview(v-bind:src='post.thumbnail')
+      .title-container
+        .big-title {{post.title}}
+        .title {{post.title}}
+      .bottom-container
+        .vote-count {{post.score}}
+        .tags
+          .tag(v-for='tag in post.tags' v-bind:class='{main: tag.top}')
+            .name {{tag.tag}}
+            .count {{tag.upvotes - tag.downvotes}}
+      .details
+        .info
+          img.user-avatar(v-bind:src="post.user.avatar")
+          .user-name {{post.user.username}}
+          .date {{post.date}}
+
+  script(src='posts.js')
+

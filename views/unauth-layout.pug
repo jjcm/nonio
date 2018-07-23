@@ -1,0 +1,12 @@
+html
+  head
+    link(href='/styles/style.css' rel='stylesheet')
+    block styles
+
+  body
+    //include lib/icons-sprite.svg
+    #content
+      block content
+
+    block scripts
+    script(type='text/javascript' src='utils.js')

@@ -1,0 +1,16 @@
+html
+  head
+    link(href='/styles/style.css' rel='stylesheet')
+    block styles
+
+  body
+    //include lib/icons-sprite.svg
+    #content
+      include sidebar.pug
+      block content
+
+    block scripts
+    script(type='text/javascript' src='utils.js')
+    script(type='text/javascript' src='prototype.js')
+    script(src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js")
+

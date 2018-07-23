@@ -1,0 +1,122 @@
+#post
+  min-width: 700px
+  flex: 1
+  flex-grow: 1
+  #post-content-container
+    height: calc(100% - 403px)
+    background: radial-gradient(ellipse at center, rgba(36,11,6,1) 0%, rgba(61,47,61,1) 100%)
+    position: relative
+    text-align: center
+    #post-content
+      margin: 24px
+      width: auto
+      height: auto
+      max-width: calc(100% - 48px)
+      max-height: calc(100% - 48px)
+      box-shadow: 0 0 32px 0px rgba(0,0,0,0.5)
+  #post-metadata
+    height: 40px
+    border-bottom: 1px solid $border-color
+    font-size: 12px
+    color: $text-gray
+    display: flex
+    line-height: 40px
+    #post-points
+      font-size: 16px
+      min-width: 80px
+      border-right: 1px solid $border-color
+      text-align: center
+      &:before
+        content: '\1F525'
+    #post-title
+      font-weight: 500
+      color: #000
+      padding-left: 12px
+      overflow: hidden
+      text-overflow: ellipsis
+      white-space: nowrap
+    #post-icon
+      border-radius: 100%
+      height: 16px
+      width: 16px
+      min-width: 16px
+      margin: 12px 0 12px 6px
+      background: radial-gradient(ellipse at center, rgba(36,11,6,1) 0%, rgba(61,47,61,1) 100%)
+      cursor: pointer
+    #post-user
+      padding-right: 12px
+      padding-left: 6px
+      cursor: pointer
+
+    ul#post-comment-filters
+      height: 40px
+      border-left: 1px solid $border-color
+      min-width: 200px
+      padding-left: 36px
+      position: relative
+      &:before
+        content: ''
+        background-image: url(../images/svg/comment-square.svg)
+        background-size: 18px
+        background-repeat: no-repeat
+        width: 18px
+        height: 18px
+        display: block
+        position: absolute
+        top: 12px
+        left: 12px
+        opacity: 0.6
+      li.filter.active
+        color: #000
+        border-bottom: 4px solid $green
+        height: 40px
+        &:hover
+          border-bottom: 4px solid ($green + #111)
+          line-height: 32px
+          padding-top: 4px
+          color: #000
+      li.filter
+        margin: 0 8px
+        float: left
+        text-transform: uppercase
+        cursor: pointer
+        &:hover
+          color: $text-gray - #444
+  #post-comments
+    #post-comments-input
+      height: 27px
+      margin: 12px
+      border: 1px solid ($border-color - #222)
+      border-radius: 13px
+      position: relative
+      cursor: text
+      input#post-add-comment
+        border: 0
+        outline: 0
+        height: 100%
+        width: calc(100% - 60px)
+        padding-left: 8px
+        font-size: 12px
+        background-color: transparent
+      #post-add-image, #post-add-smiley
+        position: absolute
+        top: 0px
+        right: 34px
+        width: 25px
+        height: 25px
+        cursor: pointer
+        &:after
+          content: ''
+          background-image: url(../images/svg/camera-slr.svg)
+          background-size: 14px
+          background-repeat: no-repeat
+          width: 25px
+          height: 25px
+          display: block
+          background-position: center 5px
+          position: absolute
+          opacity: 0.6
+      #post-add-smiley
+        right: 8px
+        &:after
+          background-image: url(../images/svg/briefcase.svg)

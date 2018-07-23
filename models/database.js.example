@@ -1,0 +1,101 @@
+const fortune = require('fortune')
+const pgAdapter = require('fortune-postgres')
+const dbConnection = 'postgres://YOUR_DB_CONNECTION_STRING'
+
+const store = fortune(
+  { 
+    post: {
+      title: String,
+      OC: Boolean,
+      url: String,
+      user: 'user',
+      thumbnail: String,
+      score: Number,
+      grade: Number,
+      date: Date,
+      content: String,
+      type: String,
+      tags: Array('postTag')
+    },
+    user: {
+      username: String,
+      balance: Number,
+      contribution: Number,
+      subscription: Date,
+      email: String,
+      accountConfirmed: Boolean,
+      password: String,
+      password_change_request_hash: String
+    },
+    postTag: {
+      tag: 'tag',
+      post: 'post',
+      upvotes: Number,
+      downvotes: Number,
+      date: Date
+    },
+    tag: {
+      name: String,
+      createdBy: 'user',
+      createdDate: Date
+    },
+    userVote: {
+      post: 'post',
+      tag: 'tag',
+      user: 'user',
+      date: Date,
+      positive: Boolean
+    },
+    comment: {
+      post: 'post',
+      type: String,
+      content: String,
+      text: String,
+      user: 'user',
+      upvotes: Number,
+      downvotes: Number,
+      parent: 'comment'
+    },
+    commentVote: {
+      comment: 'comment',
+      post: 'post',
+      user: 'user',
+      date: Date,
+      positive: Boolean
+    },
+    postReport: {
+      post: 'post',
+      fromUser: 'user',
+      reportedUser: 'user',
+      post: 'post',
+      comment: 'comment',
+      reasonNotOC: Boolean,
+      reasonIllegal: Boolean,
+      reason: String
+    }
+  }, 
+  {
+    adapter: [
+      pgAdapter, {
+        url: dbConnection
+      }
+    ]
+  }
+)
+
+module.exports = store
+/*
+store.request(
+  {
+    method: fortune.methods.create,
+    type: 'post',
+    payload: [{title: 'hello, world', OC: false}]
+  }).then(result => {
+  console.log(result)
+})
+*/
+/*
+store.find('post', null, {match: {OC: false}}).then(results => {
+  console.log(results.payload)
+})
+*/
