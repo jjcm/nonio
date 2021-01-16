@@ -1,0 +1,15 @@
+[submodule "soci-frontend"]
+	path = soci-frontend
+	url = git@github.com:jjcm/soci-frontend.git
+[submodule "soci-backend"]
+	path = soci-backend
+	url = git@github.com:jjcm/soci-backend.git
+[submodule "soci-avatar-cdn"]
+	path = soci-avatar-cdn
+	url = git@github.com:jjcm/soci-avatar-cdn.git
+[submodule "soci-image-cdn"]
+	path = soci-image-cdn
+	url = git@github.com:jjcm/soci-image-cdn.git
+[submodule "soci-video-cdn"]
+	path = soci-video-cdn
+	url = git@github.com:jjcm/soci-video-cdn.git
