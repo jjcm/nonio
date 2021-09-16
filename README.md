@@ -2,7 +2,7 @@
 
 First, clone this repo. This is the master repo that holds all of the microservices. To do this issue this command:
 
-```git clone --recursive https://github.com/jjcm/soci```
+```git clone --recursive git@github.com:jjcm/soci.git```
 
 Next you'll want to update the repos:
 
