@@ -18,4 +18,3 @@ This will open a GNU Screen session with each microservice running in a differen
 
 ```ctrl+a -> n```
 
-test
