@@ -90,14 +90,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				serviceKey := m.services.GetServiceKeyByIndex(m.cursor)
 				if serviceKey != "" {
 					go m.services.RebuildAndRestartService(serviceKey)
-					return m, tea.Batch(tick(), checkHealth())
+					return m, tea.Batch(tea.ClearScreen, tick(), checkHealth())
 				}
 			}
 
 		case "R":
 			// Rebuild and restart all services
 			go m.services.RebuildAndRestartAllServices()
-			return m, tea.Batch(tick(), checkHealth())
+			return m, tea.Batch(tea.ClearScreen, tick(), checkHealth())
 		}
 
 	case tickMsg:
