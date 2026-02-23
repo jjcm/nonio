@@ -70,7 +70,7 @@ func NewServiceManager() *ServiceManager {
 
 	sm := &ServiceManager{
 		services:     make(map[string]*Service),
-		serviceOrder: []string{"frontend", "backend", "image-cdn", "video-cdn", "avatar-cdn"},
+		serviceOrder: []string{"frontend", "backend", "livekit", "image-cdn", "video-cdn", "avatar-cdn"},
 	}
 
 	// Frontend service (first in order)
@@ -103,7 +103,20 @@ func NewServiceManager() *ServiceManager {
 	}
 	sm.services["backend"] = backendService
 
-	// Image CDN (third in order)
+	// LiveKit voice service (third in order)
+	liveKitService := &Service{
+		Name:       "livekit",
+		Port:       "7880",
+		Status:     StatusStopped,
+		WorkingDir: baseDir,
+		RunCmd:     []string{"livekit-server", "--dev"},
+		HealthCheck: func() bool {
+			return checkPort("7880")
+		},
+	}
+	sm.services["livekit"] = liveKitService
+
+	// Image CDN (fourth in order)
 	imageCdnService := &Service{
 		Name:       "soci-image-cdn",
 		Port:       "4203",
@@ -117,7 +130,7 @@ func NewServiceManager() *ServiceManager {
 	}
 	sm.services["image-cdn"] = imageCdnService
 
-	// Video CDN (fourth in order)
+	// Video CDN (fifth in order)
 	videoCdnService := &Service{
 		Name:       "soci-video-cdn",
 		Port:       "4204",
@@ -131,7 +144,7 @@ func NewServiceManager() *ServiceManager {
 	}
 	sm.services["video-cdn"] = videoCdnService
 
-	// Avatar CDN (fifth in order)
+	// Avatar CDN (sixth in order)
 	avatarCdnService := &Service{
 		Name:       "soci-avatar-cdn",
 		Port:       "4202",
@@ -169,6 +182,9 @@ func getBackendEnv() []string {
 		"WEBHOOK_ENDPOINT_SECRET=",
 		"STRIPE_SECRET_KEY=sk_test_dummy",
 		"STRIPE_PUBLISHABLE_KEY=pk_test_dummy",
+		"LIVEKIT_URL=http://localhost:7880",
+		"LIVEKIT_API_KEY=devkey",
+		"LIVEKIT_API_SECRET=secret",
 	}
 
 	// Merge with existing env
@@ -602,11 +618,11 @@ func (sm *ServiceManager) RebuildAndRestartService(name string) error {
 		sm.mu.Unlock()
 		return fmt.Errorf("service %s not found", name)
 	}
-	
+
 	// Check if service is running and stop it
 	wasRunning := (service.Status == StatusRunning || service.Status == StatusStarting)
 	sm.mu.Unlock()
-	
+
 	if wasRunning {
 		// Stop the service first
 		if err := sm.StopService(name); err != nil {
@@ -615,43 +631,43 @@ func (sm *ServiceManager) RebuildAndRestartService(name string) error {
 		// Wait a bit for the service to fully stop
 		time.Sleep(500 * time.Millisecond)
 	}
-	
+
 	sm.mu.Lock()
 	service = sm.services[name] // Re-fetch after unlock
 	sm.mu.Unlock()
-	
+
 	// Add log entry
 	service.LogsMutex.Lock()
 	service.Logs = append(service.Logs, "[REBUILD] Rebuilding service...")
 	service.LogsMutex.Unlock()
-	
+
 	// Run build command if it exists
 	if len(service.BuildCmd) > 0 {
 		buildCtx, buildCancel := context.WithTimeout(context.Background(), 2*time.Minute)
 		buildCmd := exec.CommandContext(buildCtx, service.BuildCmd[0], service.BuildCmd[1:]...)
 		buildCmd.Dir = service.WorkingDir
 		buildCmd.Env = service.Env
-		
+
 		// Capture build output
 		buildOutput, err := buildCmd.CombinedOutput()
 		buildCancel()
-		
+
 		service.LogsMutex.Lock()
 		service.Logs = append(service.Logs, fmt.Sprintf("[REBUILD] Build output:\n%s", string(buildOutput)))
 		service.LogsMutex.Unlock()
-		
+
 		if err != nil {
 			service.LogsMutex.Lock()
 			service.Logs = append(service.Logs, fmt.Sprintf("[REBUILD] Build failed: %v", err))
 			service.LogsMutex.Unlock()
 			return fmt.Errorf("build failed: %v", err)
 		}
-		
+
 		service.LogsMutex.Lock()
 		service.Logs = append(service.Logs, "[REBUILD] Build completed successfully")
 		service.LogsMutex.Unlock()
 	}
-	
+
 	// Start the service
 	return sm.StartService(name)
 }

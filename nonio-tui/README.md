@@ -16,9 +16,10 @@ A Terminal User Interface (TUI) built with [Bubble Tea](https://github.com/charm
 1. **MariaDB** (Port 3306) - Database connection monitoring
 2. **soci-backend** (Port 4201) - Primary backend API
 3. **soci-frontend** (Port 4200) - Frontend web server
-4. **soci-avatar-cdn** (Port 4202) - Avatar CDN and encoding
-5. **soci-image-cdn** (Port 4203) - Image CDN and encoding
-6. **soci-video-cdn** (Port 4204) - Video CDN and encoding
+4. **LiveKit** (Port 7880) - Local voice signaling/media server
+5. **soci-avatar-cdn** (Port 4202) - Avatar CDN and encoding
+6. **soci-image-cdn** (Port 4203) - Image CDN and encoding
+7. **soci-video-cdn** (Port 4204) - Video CDN and encoding
 
 ## Building
 
@@ -67,6 +68,7 @@ For the backend service, it uses the same environment variables as defined in `s
 - MariaDB/MySQL running (for database monitoring)
 - `goose` migration tool (for backend migrations)
 - `npm` (for frontend service)
+- `livekit-server` (for local voice service)
 - All service dependencies installed
 
 ## Notes

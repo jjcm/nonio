@@ -124,13 +124,13 @@ func (m model) View() string {
 	// Calculate available space - fixed heights
 	// Count actual lines:
 	// Header: 3 lines (top border, title, bottom border)
-	// Services table: 9 lines (top border, header, separator, 5 rows, bottom border)
+	// Services table: top border + header + separator + N rows + bottom border
 	// Error line: 1 line
 	// Controls: 1 line
 	// Padding/newlines: 2 lines
 	// Additional adjustment: -2 to prevent header cutoff
 	headerHeight := 2
-	servicesHeight := 8    // lipgloss table: border + header + separator + 5 rows + border
+	servicesHeight := len(m.services.GetAllServices()) + 4
 	serviceInfoHeight := 1 // Error line only (uptime moved to table)
 	controlsHeight := 1
 	padding := 0

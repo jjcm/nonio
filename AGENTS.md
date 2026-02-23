@@ -64,5 +64,14 @@ When writing CSS (including component `css()` strings and `soci-frontend/soci.cs
 }
 ```
 
+## DOM manipulation rules
+render() like functions should ONLY be used for initial page loads or full page reloads. NEVER trigger a render() function just to add an element. All dom manipulations should be surgical in nature. .append, .prepend, and .delete functions should be the default first approach. Exceptions to this are clearing all children, in which case a .innerHTML = '' should be used instead of traversing every dom and triggering a delete. 
+
+## Realtime update rules
+Avoid polling patterns for continuously changing UI state. Prefer websocket-based subscriptions whenever possible for live/continuous updates.
+
+## soci-backend docs
+When adding or removing backend routes in `soci-backend/httpd/routes.go`, update `soci-backend/docs/` accordingly. Update both the pug docs (and sidebar in `sidebar.pug`) and `LLM.md` so they stay in sync. Run the docs server from `soci-backend/docs/` with `npm i && npm start` (port 8889).
+
 ## CURRENT_STATE.md
 This file should always be updated with the latest focus. We may have multiple ongoing focuses, so date any update you make. Consider this a handy changelog. Never delete things from this file, but feel free to consolidate. Make sure this has a persistent changelog. It will be cleared manually by the user when changelogs are posted or features are finished. 
