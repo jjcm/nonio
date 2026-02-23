@@ -1,4 +1,11 @@
-## 2026-02-22 — Align backend localRun with TUI LiveKit dev env
+## 2026-02-23 — Community admin settings refactor
+
+- **Frontend (soci-frontend)**
+  - Added dedicated "Community settings" link to sidebar under "Submit post", visible to community admins.
+  - Replaced inline admin links in the sidebar description block.
+  - Added unified admin navigation header across `community-settings`, `community-users`, `community-financials`, and `community-emojis` pages.
+  - Added a new `settings` icon in `soci-icon.js`.
+  - Updated JS controllers for admin pages to properly rewrite header `soci-link` paths based on the active community URL.
 
 - **Backend (soci-backend)**
   - Updated `localRun.sh` to include the same local LiveKit dev env defaults used by `nonio-tui`:
