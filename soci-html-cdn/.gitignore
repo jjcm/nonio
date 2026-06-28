@@ -1,4 +1,5 @@
 soci-html-cdn
+html-cdn
 config.json
 files/*
 !files/temp/
