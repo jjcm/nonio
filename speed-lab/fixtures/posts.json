@@ -1,0 +1,170 @@
+[
+  {
+    "id": 1001,
+    "slug": "sl-img-01",
+    "type": "image",
+    "title": "Speed lab image 01 \u2014 crimson field",
+    "width": 800,
+    "height": 450
+  },
+  {
+    "id": 1002,
+    "slug": "sl-img-02",
+    "type": "image",
+    "title": "Speed lab image 02 \u2014 amber field",
+    "width": 800,
+    "height": 450
+  },
+  {
+    "id": 1003,
+    "slug": "sl-img-03",
+    "type": "image",
+    "title": "Speed lab image 03 \u2014 gold field",
+    "width": 800,
+    "height": 450
+  },
+  {
+    "id": 1004,
+    "slug": "sl-img-04",
+    "type": "image",
+    "title": "Speed lab image 04 \u2014 lime field",
+    "width": 800,
+    "height": 450
+  },
+  {
+    "id": 1005,
+    "slug": "sl-img-05",
+    "type": "image",
+    "title": "Speed lab image 05 \u2014 verdant field",
+    "width": 800,
+    "height": 450
+  },
+  {
+    "id": 1006,
+    "slug": "sl-img-06",
+    "type": "image",
+    "title": "Speed lab image 06 \u2014 teal field",
+    "width": 800,
+    "height": 450
+  },
+  {
+    "id": 1007,
+    "slug": "sl-img-07",
+    "type": "image",
+    "title": "Speed lab image 07 \u2014 cobalt field",
+    "width": 800,
+    "height": 450
+  },
+  {
+    "id": 1008,
+    "slug": "sl-img-08",
+    "type": "image",
+    "title": "Speed lab image 08 \u2014 indigo field",
+    "width": 800,
+    "height": 450
+  },
+  {
+    "id": 1009,
+    "slug": "sl-img-09",
+    "type": "image",
+    "title": "Speed lab image 09 \u2014 violet field",
+    "width": 800,
+    "height": 450
+  },
+  {
+    "id": 1010,
+    "slug": "sl-img-10",
+    "type": "image",
+    "title": "Speed lab image 10 \u2014 magenta field",
+    "width": 800,
+    "height": 450
+  },
+  {
+    "id": 1011,
+    "slug": "sl-txt-01",
+    "type": "text",
+    "title": "Speed lab text post 01: cold-start feed paint",
+    "width": 0,
+    "height": 0
+  },
+  {
+    "id": 1012,
+    "slug": "sl-txt-02",
+    "type": "text",
+    "title": "Speed lab text post 02: warm-cache list reuse",
+    "width": 0,
+    "height": 0
+  },
+  {
+    "id": 1013,
+    "slug": "sl-txt-03",
+    "type": "text",
+    "title": "Speed lab text post 03: image-to-text swap",
+    "width": 0,
+    "height": 0
+  },
+  {
+    "id": 1014,
+    "slug": "sl-txt-04",
+    "type": "text",
+    "title": "Speed lab text post 04: comment-empty baseline",
+    "width": 0,
+    "height": 0
+  },
+  {
+    "id": 1015,
+    "slug": "sl-txt-05",
+    "type": "text",
+    "title": "Speed lab text post 05: long-title wrap",
+    "width": 0,
+    "height": 0
+  },
+  {
+    "id": 1016,
+    "slug": "sl-txt-06",
+    "type": "text",
+    "title": "Speed lab text post 06: markdown emphasis",
+    "width": 0,
+    "height": 0
+  },
+  {
+    "id": 1017,
+    "slug": "sl-txt-07",
+    "type": "text",
+    "title": "Speed lab text post 07: link-less body",
+    "width": 0,
+    "height": 0
+  },
+  {
+    "id": 1018,
+    "slug": "sl-txt-08",
+    "type": "text",
+    "title": "Speed lab text post 08: community default scope",
+    "width": 0,
+    "height": 0
+  },
+  {
+    "id": 1019,
+    "slug": "sl-txt-09",
+    "type": "text",
+    "title": "Speed lab text post 09: score-order sentinel",
+    "width": 0,
+    "height": 0
+  },
+  {
+    "id": 1020,
+    "slug": "sl-txt-10",
+    "type": "text",
+    "title": "Speed lab text post 10: last text before video",
+    "width": 0,
+    "height": 0
+  },
+  {
+    "id": 1021,
+    "slug": "sl-vid-01",
+    "type": "video",
+    "title": "Speed lab video 01 \u2014 steel field",
+    "width": 1280,
+    "height": 720
+  }
+]
