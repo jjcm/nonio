@@ -423,6 +423,39 @@
         "coldFcp": 409.2, "coldLcp": 594.1,
         "warmFcp": 223.7, "warmLcp": 304.8
       }
+    },
+    {
+      "iter": 18,
+      "change": "defer inactive routes' page scripts past load",
+      "verdict": "skipped",
+      "tradeoff": "profiling showed page scripts already start at/after the load event, past LCP; no pre-LCP contention to remove, reverted without a measurement cycle",
+      "commit": "reverted, not on branch"
+    },
+    {
+      "iter": 19,
+      "change": "prefer brotli over gzip (q11 cached statics: bundle 37.5KB -> 31.5KB; q5 dynamic docs)",
+      "verdict": "kept",
+      "tradeoff": "br requires secure context in production; gzip fallback retained",
+      "commit": "soci-frontend@943d931",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 65.4, "warmLoad": 24.4,
+        "coldFcp": 52, "coldLcp": 76,
+        "warmFcp": 28, "warmLcp": 48,
+        "coldFeedPaint": 63.2, "warmFeedPaint": 36.5
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 1166.1, "warmLoad": 211.7,
+        "coldFcp": 744, "coldLcp": 796,
+        "warmFcp": 236, "warmLcp": 236,
+        "coldFeedPaint": 776.5, "warmFeedPaint": 224.5
+      },
+      "lighthouse": {
+        "n": 5,
+        "coldFcp": 371.2, "coldLcp": 563.1,
+        "warmFcp": 183.8, "warmLcp": 265.8
+      }
     }
   ]
 }

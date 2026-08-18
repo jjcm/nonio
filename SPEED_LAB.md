@@ -50,6 +50,8 @@ Slow 4G = CDP throttle, 150ms RTT / 1.6Mbps down / 750kbps up.
 | 15 | dedupe boot GETs (/tags ×3, /communities ×2 → 1+1) | 64 | 25 | 72 | 72 | 62 | 36 | 7 | kept | identical GETs within 2s share one response object |
 | 16 | gzip output cache keyed by path+ETag | 64 | 23 | 72 | 76 | 60 | 36 | 7 | kept (first-principles wash) | memory holds gzipped copies of served statics |
 | 17 | inline minified soci.css into the shell | 61 | 25 | 72 | 72 | 57 | 38 | 7 | rejected | — (reverted) |
+| 18 | defer inactive routes' page scripts past load | — | — | — | — | — | — | — | skipped | profiling showed page scripts already start at/after load, past LCP — no pre-LCP contention to remove |
+| 19 | brotli (q11 statics / q5 dynamic) over gzip | 65 | 24 | 52 | 76 | 63 | 37 | 7 | kept | br needs secure context (localhost/https) |
 
 ### Slow 4G
 
@@ -73,6 +75,7 @@ Slow 4G = CDP throttle, 150ms RTT / 1.6Mbps down / 750kbps up.
 | 15 | dedupe boot GETs (/tags ×3, /communities ×2 → 1+1) | 1203 | 211 | 780 | 824 | 815 | 226 | 5 | kept | identical GETs within 2s share one response object |
 | 16 | gzip output cache keyed by path+ETag | 1202 | 207 | 784 | 824 | 814 | 223 | 5 | kept (first-principles wash) | memory holds gzipped copies of served statics |
 | 17 | inline minified soci.css into the shell | 1152 | 583 | 736 | 776 | 765 | 260 | 5 | rejected | — (reverted) |
+| 19 | brotli (q11 statics / q5 dynamic) over gzip | 1166 | 212 | 744 | 796 | 777 | 225 | 5 | kept | br needs secure context (localhost/https) |
 
 ### Lighthouse desktop (comparable to the local Qwen track)
 
@@ -91,6 +94,7 @@ checking out the pre-change frontend (`soci-frontend@75e4cab`).
 | 15 | 338 | 587 | 184 | 310* | 5 |
 | 16 | 365* | 586 | 184 | 265* | 5 |
 | 17 | 409 | 594 | 224 | 305 | 5 | (rejected) |
+| 19 | 371* | 563 | 184 | 266 | 5 |
 
 \* Lighthouse warm LCP is bimodal (~265 vs ~311 modes) in every iteration
 13–15; medians flip on mode draws. Cold LCP distributions for iter 15
@@ -414,3 +418,27 @@ outside its bimodal band, because Lighthouse refetches the document every
 load). Cold-only win paid for by every repeat visit → **reject, reverted**.
 The right version of this would need a content-hashed document or critical-
 subset extraction, both out of scope tonight.
+
+### Iteration 18 — defer inactive routes' page scripts (SKIPPED)
+
+Hypothesis: the 13 route page scripts load at DCL on every route, competing
+pre-LCP. Profiling on Slow 4G invalidated it before full measurement: with
+the current critical path they all start at ~930ms — at/after the load event
+and **after** LCP (824ms) — so there is no pre-LCP contention to remove.
+Change reverted without a measurement cycle; logged as skipped.
+
+### Iteration 19 — brotli over gzip (KEPT)
+
+Hypothesis: brotli trims 10–20% off pre-FCP critical bytes vs gzip
+(Chromium accepts `br` on localhost as a trustworthy origin).
+
+Change: `soci-frontend@943d931` — `send()` prefers brotli when accepted;
+cached statics compress at q11 (bundle 37.5KB → **31.5KB**, css 9.0 → 7.7KB),
+dynamic documents at q5 to protect TTFB; cache keyed by encoding+path+ETag.
+
+Result (vs iter 16): Slow 4G cold FCP 784 → **744ms**, cold LCP 824 →
+**796ms**, feedPaint 814 → 777, cold load 1202 → 1166 — distributions fully
+separated (FCP 784–788 vs 744–756). Lighthouse cold LCP 586 → **563ms**.
+Warm flat everywhere (documents dominate warm and shrink only ~7%). Smoke
+green. **Keep.** Tradeoff: `br` requires a secure context in production
+(https), gzip fallback retained.
