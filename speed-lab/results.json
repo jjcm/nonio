@@ -71,6 +71,27 @@
         "warmFcp": 336, "warmLcp": 336,
         "coldFeedPaint": 2848.6, "warmFeedPaint": 512.9
       }
+    },
+    {
+      "iter": 3,
+      "change": "defer markdown-wasm loader script (was parser-blocking + eager 56KB wasm fetch)",
+      "verdict": "kept",
+      "tradeoff": "markdown bodies render a tick later on slow pipes",
+      "commit": "soci-frontend@d6979f8",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 93.5, "warmLoad": 65.6,
+        "coldFcp": 116, "coldLcp": 124,
+        "warmFcp": 92, "warmLcp": 92,
+        "coldFeedPaint": 116.3, "warmFeedPaint": 82.1
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 2868.7, "warmLoad": 312.8,
+        "coldFcp": 2184, "coldLcp": 2668,
+        "warmFcp": 328, "warmLcp": 328,
+        "coldFeedPaint": 2674.9, "warmFeedPaint": 508.2
+      }
     }
   ]
 }

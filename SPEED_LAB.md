@@ -35,6 +35,7 @@ Slow 4G = CDP throttle, 150ms RTT / 1.6Mbps down / 750kbps up.
 | 0 | baseline | 118 | 104 | 124 | 140 | 138 | 114 | 7 | baseline | — |
 | 1 | static-file ETag/304 + max-age=300 | 127 | 72 | 132 | 152 | 149 | 88 | 7 | kept | assets may be ≤5min stale for devs |
 | 2 | defer non-feed components until after load | 106 | 70 | 112 | 112 | 133 | 86 | 7 | kept | later routes' components define shortly after load |
+| 3 | defer markdown-wasm loader script | 94 | 66 | 116 | 124 | 116 | 82 | 7 | kept | markdown bodies render a tick later on slow pipes |
 
 ### Slow 4G
 
@@ -43,6 +44,7 @@ Slow 4G = CDP throttle, 150ms RTT / 1.6Mbps down / 750kbps up.
 | 0 | baseline | 4606 | 4435 | 3968 | 4448 | 4448 | 4269 | 5 | baseline | — |
 | 1 | static-file ETag/304 + max-age=300 | 4663 | 315 | 3996 | 4468 | 4460 | 506 | 5 | kept | assets may be ≤5min stale for devs |
 | 2 | defer non-feed components until after load | 3041 | 313 | 2392 | 2856 | 2849 | 513 | 5 | kept | later routes' components define shortly after load |
+| 3 | defer markdown-wasm loader script | 2869 | 313 | 2184 | 2668 | 2675 | 508 | 5 | kept | markdown bodies render a tick later on slow pipes |
 
 ## Iteration log
 
@@ -91,3 +93,19 @@ posts; image post detail renders; video post plays (readyState 4, correct
 mp4 URL); login modal opens. Pre-existing anonymous 401s unchanged. **Keep.**
 Tradeoff: non-feed routes' components define a beat after load on slow pipes
 (brief upgrade delay on deep links).
+
+### Iteration 3 — defer markdown-wasm loader (KEPT)
+
+Hypothesis: `markdown.js` is parser-blocking in `<head>` and starts the 56KB
+`markdown.wasm` fetch mid-parse, contending with CSS/JS before first paint;
+`defer` moves both off the pre-FCP path. Safe because `soci-markdown-view`
+awaits `window.markdown.ready` at render time (render happens after the posts
+API response, long after defer scripts execute).
+
+Change: `soci-frontend@d6979f8` — one attribute in `index.pug`.
+
+Result (vs iter 2): Slow 4G cold FCP 2392 → **2184ms** (−208ms), cold load
+3041 → 2869, cold LCP 2856 → 2668, feedPaint 2849 → 2675. Warm flat.
+Unthrottled cold 106 → 94ms. Smoke: text post renders markdown
+(bold/italic/code verified), no page errors. **Keep.** Tradeoff: markdown
+bodies can render a tick later on slow pipes.
