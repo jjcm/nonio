@@ -42,6 +42,8 @@ Slow 4G = CDP throttle, 150ms RTT / 1.6Mbps down / 750kbps up.
 | 7 | de-block 8 parser-blocking page scripts (lazyload pattern) | 114 | 61 | 120 | 128 | 113 | 78 | 7 | kept | page scripts init at DCL instead of during parse |
 | 8 | markdown-wasm on demand (+post.js race fix) | 112 | 65 | 124 | 128 | 114 | 82 | 7 | kept | first markdown render waits for loader+wasm |
 | 9 | esbuild-bundle critical module graphs at boot | 100 | 58 | 108 | 108 | 98 | 71 | 7 | kept | bundles rebuilt only on server restart; esbuild devDependency |
+| 10 | minify boot-time bundles | 107 | 65 | 124 | 124 | 108 | 80 | 7 | kept | minified stack traces in dev |
+| 11 | modulepreload the 2 shared bundle chunks | 102 | 61 | 108 | 116 | 101 | 74 | 7 | kept | dist wiped each boot; preloads injected server-side |
 
 ### Slow 4G
 
@@ -57,6 +59,8 @@ Slow 4G = CDP throttle, 150ms RTT / 1.6Mbps down / 750kbps up.
 | 7 | de-block 8 parser-blocking page scripts (lazyload pattern) | 1882 | 208 | 1444 | 1664 | 1658 | 223 | 5 | kept | page scripts init at DCL instead of during parse |
 | 8 | markdown-wasm on demand (+post.js race fix) | 1802 | 214 | 1376 | 1584 | 1578 | 227 | 5 | kept | first markdown render waits for loader+wasm |
 | 9 | esbuild-bundle critical module graphs at boot | 1396 | 211 | 968 | 1188 | 1180 | 223 | 5 | kept | bundles rebuilt only on server restart; esbuild devDependency |
+| 10 | minify boot-time bundles | 1367 | 213 | 936 | 1144 | 1141 | 221 | 5 | kept | minified stack traces in dev |
+| 11 | modulepreload the 2 shared bundle chunks | 1210 | 213 | 776 | 1000 | 982 | 230 | 5 | kept | dist wiped each boot; preloads injected server-side |
 
 ## Iteration log
 
@@ -239,3 +243,32 @@ Unthrottled improved across the board (warm load 65 → 58). Full smoke green:
 feed 21 posts, image post detail, video (readyState 4), login modal, markdown.
 **Keep.** Tradeoffs: bundles rebuild only on server restart (stale during live
 component edits); esbuild added as devDependency.
+
+### Iteration 10 — minify the boot-time bundles (KEPT)
+
+Hypothesis: minifying the bundles trims pre-FCP transfer (43KB → 37.5KB gz).
+
+Change: `soci-frontend@c31f9dd` — `minify: true` on the same esbuild build.
+
+Result (vs iter 9): Slow 4G cold FCP 968 → **936ms**, cold LCP 1188 →
+**1144ms**, cold load 1396 → 1367. Small but the run distributions are fully
+separated (FCP 956–968 vs 928–940), so it's real, not noise. Warm and
+unthrottled within noise. Smoke green. **Keep.** Tradeoff: minified stack
+traces during dev.
+
+### Iteration 11 — preload the shared bundle chunks (KEPT)
+
+Hypothesis: profiling showed the shared esbuild chunks loading in a serial
+wave after the entry bundles (586→749ms) because they're only discoverable at
+parse; server-injected `modulepreload` for just those 2 chunk files removes
+one RTT wave. (Contrast with rejected iteration 4: that preloaded 29 files
+that were all *already* discoverable; this targets a genuinely serial tail.)
+
+Change: `soci-frontend@f1dd1b3` — shell HTML gets `<link rel=modulepreload>`
+for `chunk-*.js` (deferred route chunk excluded); dist dir wiped before each
+rebuild after the first measurement accidentally preloaded 2 stale chunks
+from the previous build (re-measured clean).
+
+Result (vs iter 10): Slow 4G cold FCP 936 → **776ms** (−17%), cold LCP
+1144 → **1000ms**, feedPaint 1141 → 982, cold load 1367 → 1210. Warm flat.
+Smoke: feed, post detail, markdown all green. **Keep.**

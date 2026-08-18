@@ -218,6 +218,48 @@
         "warmFcp": 236, "warmLcp": 236,
         "coldFeedPaint": 1180.0, "warmFeedPaint": 222.6
       }
+    },
+    {
+      "iter": 10,
+      "change": "minify boot-time bundles (43KB -> 37.5KB gz)",
+      "verdict": "kept",
+      "tradeoff": "minified stack traces in dev",
+      "commit": "soci-frontend@c31f9dd",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 106.7, "warmLoad": 64.6,
+        "coldFcp": 124, "coldLcp": 124,
+        "warmFcp": 84, "warmLcp": 92,
+        "coldFeedPaint": 108.3, "warmFeedPaint": 80.2
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 1366.7, "warmLoad": 212.5,
+        "coldFcp": 936, "coldLcp": 1144,
+        "warmFcp": 236, "warmLcp": 236,
+        "coldFeedPaint": 1140.8, "warmFeedPaint": 221.4
+      }
+    },
+    {
+      "iter": 11,
+      "change": "server-injected modulepreload for the 2 shared bundle chunks; wipe dist before rebuild",
+      "verdict": "kept",
+      "tradeoff": "preloads injected server-side; dist rebuilt each boot",
+      "commit": "soci-frontend@f1dd1b3",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 102.0, "warmLoad": 60.5,
+        "coldFcp": 108, "coldLcp": 116,
+        "warmFcp": 64, "warmLcp": 88,
+        "coldFeedPaint": 101.2, "warmFeedPaint": 73.6
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 1209.5, "warmLoad": 212.8,
+        "coldFcp": 776, "coldLcp": 1000,
+        "warmFcp": 240, "warmLcp": 240,
+        "coldFeedPaint": 982.3, "warmFeedPaint": 229.5
+      }
     }
   ]
 }
