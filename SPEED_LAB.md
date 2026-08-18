@@ -49,6 +49,7 @@ Slow 4G = CDP throttle, 150ms RTT / 1.6Mbps down / 750kbps up.
 | 14 | compile shell template once at boot | 66 | 26 | 88 | 88 | 64 | 40 | 7 | kept | template edits need a server restart |
 | 15 | dedupe boot GETs (/tags ×3, /communities ×2 → 1+1) | 64 | 25 | 72 | 72 | 62 | 36 | 7 | kept | identical GETs within 2s share one response object |
 | 16 | gzip output cache keyed by path+ETag | 64 | 23 | 72 | 76 | 60 | 36 | 7 | kept (first-principles wash) | memory holds gzipped copies of served statics |
+| 17 | inline minified soci.css into the shell | 61 | 25 | 72 | 72 | 57 | 38 | 7 | rejected | — (reverted) |
 
 ### Slow 4G
 
@@ -71,6 +72,7 @@ Slow 4G = CDP throttle, 150ms RTT / 1.6Mbps down / 750kbps up.
 | 14 | compile shell template once at boot | 1203 | 211 | 784 | 824 | 816 | 224 | 5 | kept | template edits need a server restart |
 | 15 | dedupe boot GETs (/tags ×3, /communities ×2 → 1+1) | 1203 | 211 | 780 | 824 | 815 | 226 | 5 | kept | identical GETs within 2s share one response object |
 | 16 | gzip output cache keyed by path+ETag | 1202 | 207 | 784 | 824 | 814 | 223 | 5 | kept (first-principles wash) | memory holds gzipped copies of served statics |
+| 17 | inline minified soci.css into the shell | 1152 | 583 | 736 | 776 | 765 | 260 | 5 | rejected | — (reverted) |
 
 ### Lighthouse desktop (comparable to the local Qwen track)
 
@@ -88,6 +90,7 @@ checking out the pre-change frontend (`soci-frontend@75e4cab`).
 | 14 | 374 | 607 | 185 | 267 | 5 |
 | 15 | 338 | 587 | 184 | 310* | 5 |
 | 16 | 365* | 586 | 184 | 265* | 5 |
+| 17 | 409 | 594 | 224 | 305 | 5 | (rejected) |
 
 \* Lighthouse warm LCP is bimodal (~265 vs ~311 modes) in every iteration
 13–15; medians flip on mode draws. Cold LCP distributions for iter 15
@@ -396,3 +399,18 @@ Lighthouse cold FCP / warm LCP again drew their known bimodal modes).
 **Kept as a labeled first-principles wash** per the lab rules: strictly less
 CPU per request, scales with concurrency, zero staleness risk. Tradeoff:
 memory holds gzipped copies of served statics (~100KB here).
+
+### Iteration 17 — inline minified soci.css into the shell (REJECTED)
+
+Hypothesis: inlining the stylesheet (9.3KB gz) removes one render-blocking
+request from the pre-FCP critical path, cutting cold FCP on throttled
+profiles at the risk of growing every document fetch.
+
+Result (vs iter 16): Slow 4G cold did improve (FCP 784 → 736, LCP 824 → 776)
+— but warm load exploded 207 → **583ms** (the no-cache document doubled to
+17.4KB gz and the stylesheet lost its separate max-age cache entry), and
+Lighthouse regressed consistently (cold FCP 365 → 409, warm FCP 184 → 224 —
+outside its bimodal band, because Lighthouse refetches the document every
+load). Cold-only win paid for by every repeat visit → **reject, reverted**.
+The right version of this would need a content-hashed document or critical-
+subset extraction, both out of scope tonight.

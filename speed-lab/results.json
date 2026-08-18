@@ -397,6 +397,32 @@
         "coldFcp": 365.5, "coldLcp": 585.6,
         "warmFcp": 183.7, "warmLcp": 265.2
       }
+    },
+    {
+      "iter": 17,
+      "change": "inline minified soci.css into the shell (removes render-blocking request, doubles document size)",
+      "verdict": "rejected",
+      "tradeoff": "reverted; Slow 4G warm load 207 -> 583ms and Lighthouse regressed consistently (doc refetched every load), cold-only win",
+      "commit": "reverted, not on branch",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 60.5, "warmLoad": 25.3,
+        "coldFcp": 72, "coldLcp": 72,
+        "warmFcp": 28, "warmLcp": 48,
+        "coldFeedPaint": 57.4, "warmFeedPaint": 37.9
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 1151.7, "warmLoad": 583.2,
+        "coldFcp": 736, "coldLcp": 776,
+        "warmFcp": 272, "warmLcp": 272,
+        "coldFeedPaint": 764.8, "warmFeedPaint": 260.0
+      },
+      "lighthouse": {
+        "n": 5,
+        "coldFcp": 409.2, "coldLcp": 594.1,
+        "warmFcp": 223.7, "warmLcp": 304.8
+      }
     }
   ]
 }
