@@ -38,6 +38,7 @@ Slow 4G = CDP throttle, 150ms RTT / 1.6Mbps down / 750kbps up.
 | 3 | defer markdown-wasm loader script | 94 | 66 | 116 | 124 | 116 | 82 | 7 | kept | markdown bodies render a tick later on slow pipes |
 | 4 | modulepreload eager module subtree (29 links) | 96 | 70 | 100 | 116 | 122 | 92 | 7 | rejected | — (reverted) |
 | 5 | gzip compressible dev-server responses | 106 | 67 | 120 | 120 | 136 | 87 | 7 | kept | ~10ms sync gzip CPU per cold load on localhost |
+| 6 | embed /posts payload in feed shell HTML | 126 | 71 | 140 | 140 | 124 | 83 | 7 | kept | loadEventEnd later (thumbs join load window); +TTFB for server-side API fetch |
 
 ### Slow 4G
 
@@ -49,6 +50,7 @@ Slow 4G = CDP throttle, 150ms RTT / 1.6Mbps down / 750kbps up.
 | 3 | defer markdown-wasm loader script | 2869 | 313 | 2184 | 2668 | 2675 | 508 | 5 | kept | markdown bodies render a tick later on slow pipes |
 | 4 | modulepreload eager module subtree (29 links) | 2919 | 321 | 2188 | 2720 | 2710 | 519 | 5 | rejected | — (reverted) |
 | 5 | gzip compressible dev-server responses | 1767 | 206 | 1560 | 1980 | 1973 | 407 | 5 | kept | ~10ms sync gzip CPU per cold load on localhost |
+| 6 | embed /posts payload in feed shell HTML | 1982 | 214 | 1564 | 1788 | 1783 | 230 | 5 | kept | loadEventEnd later (thumbs join load window); +TTFB for server-side API fetch |
 
 ## Iteration log
 
@@ -144,3 +146,26 @@ cold FCP 2184 → **1560ms** (−29%), cold LCP 2668 → 1980, feedPaint 2675 �
 warm load 313 → **206ms** (document now gzipped too). Unthrottled cold load
 94 → 106ms (+12ms — synchronous gzip CPU; a keyed gzip cache is the natural
 follow-up). Smoke: 21 posts, no page errors. **Keep.**
+
+### Iteration 6 — embed the feed's /posts payload in the shell HTML (KEPT)
+
+Hypothesis: the feed's data fetch starts only after the JS graph boots;
+embedding the anonymous `/posts` payload path-keyed in the shell removes an
+API roundtrip from the critical path, cutting feedPaint/LCP cold and warm.
+
+Change: `soci-frontend@53f7181` — dev server inlines
+`window.__sociPreload={"/posts":…}` for the `/` route only (fetch failure →
+no embed); `soci-post-list._loadPosts` consumes the payload once, only when
+anonymous and only when the path key matches exactly — anything else is a
+live fetch (speedupskill: "path-key drift → live fetch, not a wrong payload").
+
+Result (vs iter 5, Slow 4G, tight distributions): cold LCP 1980 → **1788ms**
+(−192), cold feedPaint 1973 → 1783, warm feedPaint 407 → **230ms** (−43%),
+FCP flat. Cold `loadEventEnd` 1767 → 1982 (+215): first-principles, content
+now renders *before* the load event, so the 10 thumbnails become load-gating
+subresources — the page shows the feed ~190ms earlier while the load event
+lands later; user-felt metrics (LCP/feedPaint) are the ones that matter for
+this route. Smoke: 21 posts render, one fewer /posts call, tag route
+(`#speedlab`) correctly live-fetches (`/posts?tag=speedlab`; empty result is
+fixture behavior — the shared seed has no tag rows). **Keep.** Tradeoffs:
+document TTFB includes a local server→API fetch; loadEventEnd optics.

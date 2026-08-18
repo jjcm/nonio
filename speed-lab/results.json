@@ -134,6 +134,27 @@
         "warmFcp": 220, "warmLcp": 220,
         "coldFeedPaint": 1972.8, "warmFeedPaint": 407.2
       }
+    },
+    {
+      "iter": 6,
+      "change": "embed anonymous /posts payload path-keyed in feed shell HTML; client consumes once, live-fetch on any mismatch",
+      "verdict": "kept",
+      "tradeoff": "cold loadEventEnd +215ms (thumbnails join the load window because content renders earlier); doc TTFB includes local server->API fetch",
+      "commit": "soci-frontend@53f7181",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 126.0, "warmLoad": 71.0,
+        "coldFcp": 140, "coldLcp": 140,
+        "warmFcp": 96, "warmLcp": 96,
+        "coldFeedPaint": 124.4, "warmFeedPaint": 82.5
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 1981.9, "warmLoad": 214.2,
+        "coldFcp": 1564, "coldLcp": 1788,
+        "warmFcp": 252, "warmLcp": 252,
+        "coldFeedPaint": 1783.3, "warmFeedPaint": 230.0
+      }
     }
   ]
 }
