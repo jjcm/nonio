@@ -39,6 +39,7 @@ Slow 4G = CDP throttle, 150ms RTT / 1.6Mbps down / 750kbps up.
 | 4 | modulepreload eager module subtree (29 links) | 96 | 70 | 100 | 116 | 122 | 92 | 7 | rejected | — (reverted) |
 | 5 | gzip compressible dev-server responses | 106 | 67 | 120 | 120 | 136 | 87 | 7 | kept | ~10ms sync gzip CPU per cold load on localhost |
 | 6 | embed /posts payload in feed shell HTML | 126 | 71 | 140 | 140 | 124 | 83 | 7 | kept | loadEventEnd later (thumbs join load window); +TTFB for server-side API fetch |
+| 7 | de-block 8 parser-blocking page scripts (lazyload pattern) | 114 | 61 | 120 | 128 | 113 | 78 | 7 | kept | page scripts init at DCL instead of during parse |
 
 ### Slow 4G
 
@@ -51,6 +52,7 @@ Slow 4G = CDP throttle, 150ms RTT / 1.6Mbps down / 750kbps up.
 | 4 | modulepreload eager module subtree (29 links) | 2919 | 321 | 2188 | 2720 | 2710 | 519 | 5 | rejected | — (reverted) |
 | 5 | gzip compressible dev-server responses | 1767 | 206 | 1560 | 1980 | 1973 | 407 | 5 | kept | ~10ms sync gzip CPU per cold load on localhost |
 | 6 | embed /posts payload in feed shell HTML | 1982 | 214 | 1564 | 1788 | 1783 | 230 | 5 | kept | loadEventEnd later (thumbs join load window); +TTFB for server-side API fetch |
+| 7 | de-block 8 parser-blocking page scripts (lazyload pattern) | 1882 | 208 | 1444 | 1664 | 1658 | 223 | 5 | kept | page scripts init at DCL instead of during parse |
 
 ## Iteration log
 
@@ -169,3 +171,22 @@ this route. Smoke: 21 posts render, one fewer /posts call, tag route
 (`#speedlab`) correctly live-fetches (`/posts?tag=speedlab`; empty result is
 fixture behavior — the shared seed has no tag rows). **Keep.** Tradeoffs:
 document TTFB includes a local server→API fetch; loadEventEnd optics.
+
+### Iteration 7 — de-block the 8 parser-blocking page scripts (KEPT)
+
+Hypothesis: eight classic page scripts (home, user, notifications, post,
+why-webcomics, admin settings/financials/subscribe) embedded mid-body stall
+HTML parsing on every route; converting them to the codebase's existing
+`lazyload()` pattern removes them from the parse path.
+
+Change: `soci-frontend@64a1213` — pug script tags → `lazyload(...)`, and each
+script's trailing `DOMContentLoaded` listener → direct `init()` call
+(lazyload injects after DCL, matching the tags.js/submit.js convention;
+`soci.registerPage` already handles late registration via `page.dom.active`).
+
+Result (vs iter 6): Slow 4G cold FCP 1564 → **1444ms**, cold LCP 1788 →
+**1664ms**, feedPaint 1783 → 1658, cold load 1982 → 1882; warm all slightly
+better. Unthrottled improved across the board. Smoke: feed 21 posts; post
+deep-link renders with correct title; user page identical to pre-change
+(title "All posts" and one `activateTag` console error verified pre-existing
+by re-testing the stashed baseline). **Keep.**

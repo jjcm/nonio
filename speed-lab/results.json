@@ -155,6 +155,27 @@
         "warmFcp": 252, "warmLcp": 252,
         "coldFeedPaint": 1783.3, "warmFeedPaint": 230.0
       }
+    },
+    {
+      "iter": 7,
+      "change": "convert 8 parser-blocking page scripts to lazyload pattern (init at DOMContentLoaded)",
+      "verdict": "kept",
+      "tradeoff": "page scripts init at DCL instead of during parse",
+      "commit": "soci-frontend@64a1213",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 114.0, "warmLoad": 61.0,
+        "coldFcp": 120, "coldLcp": 128,
+        "warmFcp": 92, "warmLcp": 92,
+        "coldFeedPaint": 113.4, "warmFeedPaint": 78.3
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 1882.0, "warmLoad": 207.8,
+        "coldFcp": 1444, "coldLcp": 1664,
+        "warmFcp": 236, "warmLcp": 236,
+        "coldFeedPaint": 1658.4, "warmFeedPaint": 223.0
+      }
     }
   ]
 }
