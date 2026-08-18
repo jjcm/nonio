@@ -52,6 +52,7 @@ Slow 4G = CDP throttle, 150ms RTT / 1.6Mbps down / 750kbps up.
 | 17 | inline minified soci.css into the shell | 61 | 25 | 72 | 72 | 57 | 38 | 7 | rejected | — (reverted) |
 | 18 | defer inactive routes' page scripts past load | — | — | — | — | — | — | — | skipped | profiling showed page scripts already start at/after load, past LCP — no pre-LCP contention to remove |
 | 19 | brotli (q11 statics / q5 dynamic) over gzip | 65 | 24 | 52 | 76 | 63 | 37 | 7 | kept | br needs secure context (localhost/https) |
+| 20 | content-hash ETag + 304 for shell documents | 63 | 23 | 76 | 76 | 61 | 35 | 7 | kept | warm loadEventEnd optics (avatars join load window) |
 
 ### Slow 4G
 
@@ -76,6 +77,7 @@ Slow 4G = CDP throttle, 150ms RTT / 1.6Mbps down / 750kbps up.
 | 16 | gzip output cache keyed by path+ETag | 1202 | 207 | 784 | 824 | 814 | 223 | 5 | kept (first-principles wash) | memory holds gzipped copies of served statics |
 | 17 | inline minified soci.css into the shell | 1152 | 583 | 736 | 776 | 765 | 260 | 5 | rejected | — (reverted) |
 | 19 | brotli (q11 statics / q5 dynamic) over gzip | 1166 | 212 | 744 | 796 | 777 | 225 | 5 | kept | br needs secure context (localhost/https) |
+| 20 | content-hash ETag + 304 for shell documents | 1166 | 517* | 748 | 788 | 780 | 191 | 5 | kept | warm loadEventEnd bimodal ~175/~520 (avatars join load window when render is earlier); warm FCP 236→180, warm LCP 236→204 |
 
 ### Lighthouse desktop (comparable to the local Qwen track)
 
@@ -95,6 +97,7 @@ checking out the pre-change frontend (`soci-frontend@75e4cab`).
 | 16 | 365* | 586 | 184 | 265* | 5 |
 | 17 | 409 | 594 | 224 | 305 | 5 | (rejected) |
 | 19 | 371* | 563 | 184 | 266 | 5 |
+| 20 | 366* | 564 | 184 | 265 | 5 |
 
 \* Lighthouse warm LCP is bimodal (~265 vs ~311 modes) in every iteration
 13–15; medians flip on mode draws. Cold LCP distributions for iter 15
@@ -442,3 +445,20 @@ separated (FCP 784–788 vs 744–756). Lighthouse cold LCP 586 → **563ms**.
 Warm flat everywhere (documents dominate warm and shrink only ~7%). Smoke
 green. **Keep.** Tradeoff: `br` requires a secure context in production
 (https), gzip fallback retained.
+
+### Iteration 20 — content-hash ETag + 304 for shell documents (KEPT)
+
+Hypothesis: warm loads re-transfer the full (dynamic, no-cache) document
+every time; a content-derived ETag turns unchanged shells into 304s.
+
+Change: `soci-frontend@cc90eb9` — md5 ETag over the rendered shell (template
++ embedded payload), `If-None-Match` → 304; any post change alters the
+payload and thus the ETag, so freshness semantics are preserved.
+
+Result (vs iter 19): Slow 4G warm FCP 236 → **180ms**, warm LCP 236 →
+**204ms**, warm feedPaint 224 → 191 (all distributions separated). Warm
+`loadEventEnd` median flipped to its ~520ms bimodal mode: rendering earlier
+pulls the zero-byte avatar-CDN fetches into the load window (iter 19 already
+showed a 558ms draw of the same mode; a profiled run with avatars post-load
+shows 175ms). Same optics as iteration 6 — the user-felt warm metrics all
+improved. Cold and Lighthouse flat. Smoke green. **Keep.**

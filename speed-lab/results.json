@@ -456,6 +456,32 @@
         "coldFcp": 371.2, "coldLcp": 563.1,
         "warmFcp": 183.8, "warmLcp": 265.8
       }
+    },
+    {
+      "iter": 20,
+      "change": "content-hash ETag + 304 for dynamic shell documents",
+      "verdict": "kept",
+      "tradeoff": "warm loadEventEnd bimodal ~175/~520ms (earlier render pulls zero-byte avatar fetches into the load window); user-felt warm metrics all improved",
+      "commit": "soci-frontend@cc90eb9",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 63.3, "warmLoad": 23.1,
+        "coldFcp": 76, "coldLcp": 76,
+        "warmFcp": 24, "warmLcp": 48,
+        "coldFeedPaint": 61.1, "warmFeedPaint": 35.1
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 1165.8, "warmLoad": 517.0,
+        "coldFcp": 748, "coldLcp": 788,
+        "warmFcp": 180, "warmLcp": 204,
+        "coldFeedPaint": 779.7, "warmFeedPaint": 191.0
+      },
+      "lighthouse": {
+        "n": 5,
+        "coldFcp": 366.1, "coldLcp": 563.9,
+        "warmFcp": 183.9, "warmLcp": 265.4
+      }
     }
   ]
 }
