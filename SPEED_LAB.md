@@ -46,6 +46,7 @@ Slow 4G = CDP throttle, 150ms RTT / 1.6Mbps down / 750kbps up.
 | 11 | modulepreload the 2 shared bundle chunks | 102 | 61 | 108 | 116 | 101 | 74 | 7 | kept | dist wiped each boot; preloads injected server-side |
 | 12 | preload the LCP thumbnail (one image) | 104 | 62 | 108 | 112 | 100 | 74 | 7 | kept | one extra early request on the pipe |
 | 13 | skip redundant boot-time /posts merge fetch | 101 | 60 | 112 | 112 | 98 | 72 | 7 | kept | returning to filter=all reuses loaded data instead of re-merging |
+| 14 | compile shell template once at boot | 66 | 26 | 88 | 88 | 64 | 40 | 7 | kept | template edits need a server restart |
 
 ### Slow 4G
 
@@ -65,6 +66,7 @@ Slow 4G = CDP throttle, 150ms RTT / 1.6Mbps down / 750kbps up.
 | 11 | modulepreload the 2 shared bundle chunks | 1210 | 213 | 776 | 1000 | 982 | 230 | 5 | kept | dist wiped each boot; preloads injected server-side |
 | 12 | preload the LCP thumbnail (one image) | 1224 | 213 | 784 | 828 | 816 | 226 | 5 | kept | one extra early request on the pipe |
 | 13 | skip redundant boot-time /posts merge fetch | 1210 | 207 | 780 | 824 | 808 | 224 | 5 | kept | returning to filter=all reuses loaded data instead of re-merging |
+| 14 | compile shell template once at boot | 1203 | 211 | 784 | 824 | 816 | 224 | 5 | kept | template edits need a server restart |
 
 ### Lighthouse desktop (comparable to the local Qwen track)
 
@@ -79,6 +81,7 @@ checking out the pre-change frontend (`soci-frontend@75e4cab`).
 | 0 (local Qwen, reference) | 788 | 1334 | 790 | 1258 | 5 |
 | 12 | 374 | 614 | 185 | 325 | 5 |
 | 13 | 341 | 607 | 186 | 267 | 5 |
+| 14 | 374 | 607 | 185 | 267 | 5 |
 
 The two tracks' iter0 numbers agree within ~10%, confirming both measure the
 same fixture. This track's current state: cold FCP −57%, cold LCP −52%,
@@ -331,3 +334,19 @@ Result (vs iter 12): Lighthouse warm LCP 325 → **267ms** (−18%, distribution
 separated), cold FCP 374 → 341. Playwright deltas all positive but small
 (Slow 4G cold load 1224 → 1210, warm 213 → 207). **Keep.** Tradeoff:
 returning to filter=all reuses already-loaded data instead of re-merging.
+
+### Iteration 14 — compile the shell template once at boot (KEPT)
+
+Hypothesis: `pug.renderFile` re-parses `index.pug` and all includes on every
+shell request — measured 33–50ms of document TTFB; `pug.compileFile` at boot
+cuts TTFB to ~2–3ms and shifts every first-paint metric left where server CPU
+isn't hidden by simulated RTT.
+
+Change: `soci-frontend@5c58b06`.
+
+Result (vs iter 13): unthrottled cold load 101 → **66ms**, warm 60 → **26ms**,
+warm FCP 60 → 28, feedPaint 98 → 64 (cold) / 72 → 40 (warm) — the full TTFB
+saving. Slow 4G flat (RTT-dominated). Lighthouse LCP/warm identical; its cold
+FCP is bimodal across runs (≈340 vs ≈374 modes in both iter 13 and 14), not a
+regression. **Keep.** Tradeoff: template edits need a server restart (same
+class as the bundle rebuild tradeoff).

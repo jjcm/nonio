@@ -319,6 +319,32 @@
         "coldFcp": 341.4, "coldLcp": 606.7,
         "warmFcp": 185.7, "warmLcp": 267.2
       }
+    },
+    {
+      "iter": 14,
+      "change": "compile shell template once at boot (pug.compileFile; TTFB 40ms -> 2-3ms)",
+      "verdict": "kept",
+      "tradeoff": "template edits need a server restart",
+      "commit": "soci-frontend@5c58b06",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 66.2, "warmLoad": 26.1,
+        "coldFcp": 88, "coldLcp": 88,
+        "warmFcp": 28, "warmLcp": 52,
+        "coldFeedPaint": 63.7, "warmFeedPaint": 39.7
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 1202.7, "warmLoad": 211.1,
+        "coldFcp": 784, "coldLcp": 824,
+        "warmFcp": 236, "warmLcp": 236,
+        "coldFeedPaint": 815.7, "warmFeedPaint": 224.4
+      },
+      "lighthouse": {
+        "n": 5,
+        "coldFcp": 373.5, "coldLcp": 607.1,
+        "warmFcp": 185.0, "warmLcp": 266.7
+      }
     }
   ]
 }
