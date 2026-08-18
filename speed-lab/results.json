@@ -1,0 +1,34 @@
+{
+  "meta": {
+    "branch": "cursor/speed-lab-nonio-feed",
+    "seedCommit": "4dc103a4306564ed7bb6cddb48a9f14f078f6b16",
+    "route": "http://localhost:4200/ (main feed, tags route, 21 fixture posts)",
+    "environment": "Linux cloud VM (Ubuntu), Playwright Chromium headless-shell 151, MariaDB, Go API/CDNs, Node frontend dev server (node index.js)",
+    "harness": "speed-lab/harness/measure.mjs — per run: fresh browser (cold nav) then reload (warm); medians; settle 2500ms",
+    "metrics": "coldLoad/warmLoad = loadEventEnd; FCP/LCP via paint + largest-contentful-paint observers; feedPaint = first post card revealed with decoded thumbnail (cards animate from opacity:0 so LCP attributes to text, not thumbnails)",
+    "throttle_slow4g": "CDP: 150ms RTT, 1.6Mbps down, 750kbps up"
+  },
+  "iterations": [
+    {
+      "iter": 0,
+      "change": "baseline (no product change)",
+      "verdict": "baseline",
+      "tradeoff": "",
+      "commit": "",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 118.1, "warmLoad": 104.1,
+        "coldFcp": 124, "coldLcp": 140,
+        "warmFcp": 124, "warmLcp": 124,
+        "coldFeedPaint": 138.3, "warmFeedPaint": 114.3
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 4605.9, "warmLoad": 4434.8,
+        "coldFcp": 3968, "coldLcp": 4448,
+        "warmFcp": 3968, "warmLcp": 3996,
+        "coldFeedPaint": 4447.6, "warmFeedPaint": 4269.1
+      }
+    }
+  ]
+}
