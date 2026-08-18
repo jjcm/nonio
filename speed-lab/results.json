@@ -293,6 +293,32 @@
         "coldFcp": 374.4, "coldLcp": 613.5,
         "warmFcp": 184.8, "warmLcp": 324.7
       }
+    },
+    {
+      "iter": 13,
+      "change": "skip redundant boot-time /posts merge fetch (fetchAndMerge only when URL differs from loaded data)",
+      "verdict": "kept",
+      "tradeoff": "returning to filter=all reuses loaded data instead of re-merging",
+      "commit": "soci-frontend@e301163",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 100.8, "warmLoad": 60.1,
+        "coldFcp": 112, "coldLcp": 112,
+        "warmFcp": 60, "warmLcp": 84,
+        "coldFeedPaint": 98.4, "warmFeedPaint": 72.0
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 1209.5, "warmLoad": 206.7,
+        "coldFcp": 780, "coldLcp": 824,
+        "warmFcp": 236, "warmLcp": 236,
+        "coldFeedPaint": 807.7, "warmFeedPaint": 223.5
+      },
+      "lighthouse": {
+        "n": 5,
+        "coldFcp": 341.4, "coldLcp": 606.7,
+        "warmFcp": 185.7, "warmLcp": 267.2
+      }
     }
   ]
 }

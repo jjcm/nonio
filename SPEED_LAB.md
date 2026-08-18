@@ -45,6 +45,7 @@ Slow 4G = CDP throttle, 150ms RTT / 1.6Mbps down / 750kbps up.
 | 10 | minify boot-time bundles | 107 | 65 | 124 | 124 | 108 | 80 | 7 | kept | minified stack traces in dev |
 | 11 | modulepreload the 2 shared bundle chunks | 102 | 61 | 108 | 116 | 101 | 74 | 7 | kept | dist wiped each boot; preloads injected server-side |
 | 12 | preload the LCP thumbnail (one image) | 104 | 62 | 108 | 112 | 100 | 74 | 7 | kept | one extra early request on the pipe |
+| 13 | skip redundant boot-time /posts merge fetch | 101 | 60 | 112 | 112 | 98 | 72 | 7 | kept | returning to filter=all reuses loaded data instead of re-merging |
 
 ### Slow 4G
 
@@ -63,6 +64,7 @@ Slow 4G = CDP throttle, 150ms RTT / 1.6Mbps down / 750kbps up.
 | 10 | minify boot-time bundles | 1367 | 213 | 936 | 1144 | 1141 | 221 | 5 | kept | minified stack traces in dev |
 | 11 | modulepreload the 2 shared bundle chunks | 1210 | 213 | 776 | 1000 | 982 | 230 | 5 | kept | dist wiped each boot; preloads injected server-side |
 | 12 | preload the LCP thumbnail (one image) | 1224 | 213 | 784 | 828 | 816 | 226 | 5 | kept | one extra early request on the pipe |
+| 13 | skip redundant boot-time /posts merge fetch | 1210 | 207 | 780 | 824 | 808 | 224 | 5 | kept | returning to filter=all reuses loaded data instead of re-merging |
 
 ### Lighthouse desktop (comparable to the local Qwen track)
 
@@ -75,7 +77,8 @@ checking out the pre-change frontend (`soci-frontend@75e4cab`).
 |------|--------|--------|--------|--------|---|
 | 0 (this track, backfilled) | 866 | 1290 | 868 | 1295 | 5 |
 | 0 (local Qwen, reference) | 788 | 1334 | 790 | 1258 | 5 |
-| 12 (current) | 374 | 614 | 185 | 325 | 5 |
+| 12 | 374 | 614 | 185 | 325 | 5 |
+| 13 | 341 | 607 | 186 | 267 | 5 |
 
 The two tracks' iter0 numbers agree within ~10%, confirming both measure the
 same fixture. This track's current state: cold FCP −57%, cold LCP −52%,
@@ -309,3 +312,22 @@ Result (vs iter 11): Slow 4G cold LCP 1000 → **828ms** (−17%), feedPaint
 982 → 816, FCP and cold load flat (within noise). Unthrottled LCP 116 → 112.
 Smoke green. **Keep.** Tradeoff: one extra early request competing on the
 pipe (measured: no FCP cost).
+
+### Iteration 13 — skip the redundant boot-time /posts merge (KEPT)
+
+Hypothesis: despite the embedded payload, every load still made one network
+`/posts` request — a CDP initiator trace showed boot-time filter attribute
+initialization triggering `fetchAndMerge` for the exact URL the initial load
+had just consumed. Skipping the merge when the built URL equals what's loaded
+removes a redundant 13KB request that competes pre-LCP.
+
+Change: `soci-frontend@e301163` — `_refreshFilterFetch` returns early when
+no data exists or the URL is unchanged; real filter changes (different type
+query) still fetch. Verified: boot makes **zero** `/posts` requests; filter
+to images fetches `/posts?type=image` and renders 10 items; back to all
+renders 21.
+
+Result (vs iter 12): Lighthouse warm LCP 325 → **267ms** (−18%, distributions
+separated), cold FCP 374 → 341. Playwright deltas all positive but small
+(Slow 4G cold load 1224 → 1210, warm 213 → 207). **Keep.** Tradeoff:
+returning to filter=all reuses already-loaded data instead of re-merging.
