@@ -1,0 +1,487 @@
+{
+  "meta": {
+    "branch": "cursor/speed-lab-nonio-feed",
+    "seedCommit": "4dc103a4306564ed7bb6cddb48a9f14f078f6b16",
+    "route": "http://localhost:4200/ (main feed, tags route, 21 fixture posts)",
+    "environment": "Linux cloud VM (Ubuntu), Playwright Chromium headless-shell 151, MariaDB, Go API/CDNs, Node frontend dev server (node index.js)",
+    "harness": "speed-lab/harness/measure.mjs — per run: fresh browser (cold nav) then reload (warm); medians; settle 2500ms",
+    "metrics": "coldLoad/warmLoad = loadEventEnd; FCP/LCP via paint + largest-contentful-paint observers; feedPaint = first post card revealed with decoded thumbnail (cards animate from opacity:0 so LCP attributes to text, not thumbnails)",
+    "throttle_slow4g": "CDP: 150ms RTT, 1.6Mbps down, 750kbps up",
+    "lighthouse": "speed-lab/harness/lighthouse.mjs — desktop preset (simulated 40ms RTT / 10Mbps / 1x CPU); cold = fresh profile + storage reset, warm = second run with disableStorageReset; medians of n=5. Comparable to local Qwen track's Lighthouse desktop numbers.",
+    "localQwenIter0Lighthouse": { "coldFcp": 787.8, "coldLcp": 1333.5, "warmFcp": 790.3, "warmLcp": 1257.8 }
+  },
+  "iterations": [
+    {
+      "iter": 0,
+      "change": "baseline (no product change)",
+      "verdict": "baseline",
+      "tradeoff": "",
+      "commit": "",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 118.1, "warmLoad": 104.1,
+        "coldFcp": 124, "coldLcp": 140,
+        "warmFcp": 124, "warmLcp": 124,
+        "coldFeedPaint": 138.3, "warmFeedPaint": 114.3
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 4605.9, "warmLoad": 4434.8,
+        "coldFcp": 3968, "coldLcp": 4448,
+        "warmFcp": 3968, "warmLcp": 3996,
+        "coldFeedPaint": 4447.6, "warmFeedPaint": 4269.1
+      },
+      "lighthouse": {
+        "n": 5, "note": "backfilled on pre-change frontend (soci-frontend@75e4cab)",
+        "coldFcp": 865.9, "coldLcp": 1289.9,
+        "warmFcp": 867.5, "warmLcp": 1294.7
+      }
+    },
+    {
+      "iter": 1,
+      "change": "static-file ETag/Last-Modified + 304 + Cache-Control max-age=300 in soci-frontend dev server",
+      "verdict": "kept",
+      "tradeoff": "dev assets up to 5min stale after edit; not immutable since filenames aren't content-hashed",
+      "commit": "soci-frontend@1e9572f",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 127.0, "warmLoad": 72.1,
+        "coldFcp": 132, "coldLcp": 152,
+        "warmFcp": 96, "warmLcp": 96,
+        "coldFeedPaint": 149.3, "warmFeedPaint": 88.1
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 4662.6, "warmLoad": 314.7,
+        "coldFcp": 3996, "coldLcp": 4468,
+        "warmFcp": 328, "warmLcp": 328,
+        "coldFeedPaint": 4460.1, "warmFeedPaint": 506.4
+      }
+    },
+    {
+      "iter": 2,
+      "change": "defer non-feed components (post detail, comments, uploaders, channels, ledger, modals) to dynamic import after window load",
+      "verdict": "kept",
+      "tradeoff": "deep links to non-feed routes upgrade their elements a beat after load on slow pipes",
+      "commit": "soci-frontend@649074b",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 105.7, "warmLoad": 69.5,
+        "coldFcp": 112, "coldLcp": 112,
+        "warmFcp": 92, "warmLcp": 92,
+        "coldFeedPaint": 133.2, "warmFeedPaint": 85.6
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 3040.9, "warmLoad": 313.4,
+        "coldFcp": 2392, "coldLcp": 2856,
+        "warmFcp": 336, "warmLcp": 336,
+        "coldFeedPaint": 2848.6, "warmFeedPaint": 512.9
+      }
+    },
+    {
+      "iter": 3,
+      "change": "defer markdown-wasm loader script (was parser-blocking + eager 56KB wasm fetch)",
+      "verdict": "kept",
+      "tradeoff": "markdown bodies render a tick later on slow pipes",
+      "commit": "soci-frontend@d6979f8",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 93.5, "warmLoad": 65.6,
+        "coldFcp": 116, "coldLcp": 124,
+        "warmFcp": 92, "warmLcp": 92,
+        "coldFeedPaint": 116.3, "warmFeedPaint": 82.1
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 2868.7, "warmLoad": 312.8,
+        "coldFcp": 2184, "coldLcp": 2668,
+        "warmFcp": 328, "warmLcp": 328,
+        "coldFeedPaint": 2674.9, "warmFeedPaint": 508.2
+      }
+    },
+    {
+      "iter": 4,
+      "change": "modulepreload the eager module subtree (29 shell hints)",
+      "verdict": "rejected",
+      "tradeoff": "reverted; wash-to-regression on Slow 4G (bandwidth-bound HTTP/1.1, preload burst competes with CSS)",
+      "commit": "reverted, not on branch",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 96.2, "warmLoad": 69.6,
+        "coldFcp": 100, "coldLcp": 116,
+        "warmFcp": 84, "warmLcp": 84,
+        "coldFeedPaint": 122.1, "warmFeedPaint": 91.5
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 2918.8, "warmLoad": 320.5,
+        "coldFcp": 2188, "coldLcp": 2720,
+        "warmFcp": 336, "warmLcp": 336,
+        "coldFeedPaint": 2709.5, "warmFeedPaint": 519.1
+      }
+    },
+    {
+      "iter": 5,
+      "change": "gzip compressible dev-server responses (JS/CSS/HTML/JSON/SVG/wasm incl. document)",
+      "verdict": "kept",
+      "tradeoff": "~10ms sync gzip CPU per cold load on localhost; keyed gzip cache is a follow-up",
+      "commit": "soci-frontend@e9e4e89",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 105.7, "warmLoad": 67.3,
+        "coldFcp": 120, "coldLcp": 120,
+        "warmFcp": 96, "warmLcp": 96,
+        "coldFeedPaint": 135.7, "warmFeedPaint": 86.5
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 1767.2, "warmLoad": 206.4,
+        "coldFcp": 1560, "coldLcp": 1980,
+        "warmFcp": 220, "warmLcp": 220,
+        "coldFeedPaint": 1972.8, "warmFeedPaint": 407.2
+      }
+    },
+    {
+      "iter": 6,
+      "change": "embed anonymous /posts payload path-keyed in feed shell HTML; client consumes once, live-fetch on any mismatch",
+      "verdict": "kept",
+      "tradeoff": "cold loadEventEnd +215ms (thumbnails join the load window because content renders earlier); doc TTFB includes local server->API fetch",
+      "commit": "soci-frontend@53f7181",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 126.0, "warmLoad": 71.0,
+        "coldFcp": 140, "coldLcp": 140,
+        "warmFcp": 96, "warmLcp": 96,
+        "coldFeedPaint": 124.4, "warmFeedPaint": 82.5
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 1981.9, "warmLoad": 214.2,
+        "coldFcp": 1564, "coldLcp": 1788,
+        "warmFcp": 252, "warmLcp": 252,
+        "coldFeedPaint": 1783.3, "warmFeedPaint": 230.0
+      }
+    },
+    {
+      "iter": 7,
+      "change": "convert 8 parser-blocking page scripts to lazyload pattern (init at DOMContentLoaded)",
+      "verdict": "kept",
+      "tradeoff": "page scripts init at DCL instead of during parse",
+      "commit": "soci-frontend@64a1213",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 114.0, "warmLoad": 61.0,
+        "coldFcp": 120, "coldLcp": 128,
+        "warmFcp": 92, "warmLcp": 92,
+        "coldFeedPaint": 113.4, "warmFeedPaint": 78.3
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 1882.0, "warmLoad": 207.8,
+        "coldFcp": 1444, "coldLcp": 1664,
+        "warmFcp": 236, "warmLcp": 236,
+        "coldFeedPaint": 1658.4, "warmFeedPaint": 223.0
+      }
+    },
+    {
+      "iter": 8,
+      "change": "load markdown-wasm on demand from soci-markdown-view (removes shell script + 56KB wasm from feed); fix post.js deep-link activation race",
+      "verdict": "kept",
+      "tradeoff": "first markdown render on a route waits for loader+wasm fetch",
+      "commit": "soci-frontend@947499b",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 111.9, "warmLoad": 64.7,
+        "coldFcp": 124, "coldLcp": 128,
+        "warmFcp": 92, "warmLcp": 92,
+        "coldFeedPaint": 113.7, "warmFeedPaint": 81.5
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 1802.2, "warmLoad": 213.9,
+        "coldFcp": 1376, "coldLcp": 1584,
+        "warmFcp": 244, "warmLcp": 244,
+        "coldFeedPaint": 1578.3, "warmFeedPaint": 226.7
+      }
+    },
+    {
+      "iter": 9,
+      "change": "esbuild-bundle soci.js + soci-components.js at server boot (ESM splitting, no minify); serve bundled artifacts",
+      "verdict": "kept",
+      "tradeoff": "bundles rebuilt only on server restart; esbuild devDependency",
+      "commit": "soci-frontend@d24b215",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 100.3, "warmLoad": 58.4,
+        "coldFcp": 108, "coldLcp": 108,
+        "warmFcp": 72, "warmLcp": 84,
+        "coldFeedPaint": 97.9, "warmFeedPaint": 71.1
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 1395.7, "warmLoad": 211.1,
+        "coldFcp": 968, "coldLcp": 1188,
+        "warmFcp": 236, "warmLcp": 236,
+        "coldFeedPaint": 1180.0, "warmFeedPaint": 222.6
+      }
+    },
+    {
+      "iter": 10,
+      "change": "minify boot-time bundles (43KB -> 37.5KB gz)",
+      "verdict": "kept",
+      "tradeoff": "minified stack traces in dev",
+      "commit": "soci-frontend@c31f9dd",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 106.7, "warmLoad": 64.6,
+        "coldFcp": 124, "coldLcp": 124,
+        "warmFcp": 84, "warmLcp": 92,
+        "coldFeedPaint": 108.3, "warmFeedPaint": 80.2
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 1366.7, "warmLoad": 212.5,
+        "coldFcp": 936, "coldLcp": 1144,
+        "warmFcp": 236, "warmLcp": 236,
+        "coldFeedPaint": 1140.8, "warmFeedPaint": 221.4
+      }
+    },
+    {
+      "iter": 11,
+      "change": "server-injected modulepreload for the 2 shared bundle chunks; wipe dist before rebuild",
+      "verdict": "kept",
+      "tradeoff": "preloads injected server-side; dist rebuilt each boot",
+      "commit": "soci-frontend@f1dd1b3",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 102.0, "warmLoad": 60.5,
+        "coldFcp": 108, "coldLcp": 116,
+        "warmFcp": 64, "warmLcp": 88,
+        "coldFeedPaint": 101.2, "warmFeedPaint": 73.6
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 1209.5, "warmLoad": 212.8,
+        "coldFcp": 776, "coldLcp": 1000,
+        "warmFcp": 240, "warmLcp": 240,
+        "coldFeedPaint": 982.3, "warmFeedPaint": 229.5
+      }
+    },
+    {
+      "iter": 12,
+      "change": "shell preload for the single LCP thumbnail (first image-type post in the embedded payload)",
+      "verdict": "kept",
+      "tradeoff": "one extra early request on the pipe; measured no FCP cost",
+      "commit": "soci-frontend@e28bc66",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 103.6, "warmLoad": 61.8,
+        "coldFcp": 108, "coldLcp": 112,
+        "warmFcp": 64, "warmLcp": 88,
+        "coldFeedPaint": 99.6, "warmFeedPaint": 74.4
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 1223.6, "warmLoad": 212.5,
+        "coldFcp": 784, "coldLcp": 828,
+        "warmFcp": 240, "warmLcp": 240,
+        "coldFeedPaint": 815.5, "warmFeedPaint": 225.9
+      },
+      "lighthouse": {
+        "n": 5,
+        "coldFcp": 374.4, "coldLcp": 613.5,
+        "warmFcp": 184.8, "warmLcp": 324.7
+      }
+    },
+    {
+      "iter": 13,
+      "change": "skip redundant boot-time /posts merge fetch (fetchAndMerge only when URL differs from loaded data)",
+      "verdict": "kept",
+      "tradeoff": "returning to filter=all reuses loaded data instead of re-merging",
+      "commit": "soci-frontend@e301163",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 100.8, "warmLoad": 60.1,
+        "coldFcp": 112, "coldLcp": 112,
+        "warmFcp": 60, "warmLcp": 84,
+        "coldFeedPaint": 98.4, "warmFeedPaint": 72.0
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 1209.5, "warmLoad": 206.7,
+        "coldFcp": 780, "coldLcp": 824,
+        "warmFcp": 236, "warmLcp": 236,
+        "coldFeedPaint": 807.7, "warmFeedPaint": 223.5
+      },
+      "lighthouse": {
+        "n": 5,
+        "coldFcp": 341.4, "coldLcp": 606.7,
+        "warmFcp": 185.7, "warmLcp": 267.2
+      }
+    },
+    {
+      "iter": 14,
+      "change": "compile shell template once at boot (pug.compileFile; TTFB 40ms -> 2-3ms)",
+      "verdict": "kept",
+      "tradeoff": "template edits need a server restart",
+      "commit": "soci-frontend@5c58b06",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 66.2, "warmLoad": 26.1,
+        "coldFcp": 88, "coldLcp": 88,
+        "warmFcp": 28, "warmLcp": 52,
+        "coldFeedPaint": 63.7, "warmFeedPaint": 39.7
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 1202.7, "warmLoad": 211.1,
+        "coldFcp": 784, "coldLcp": 824,
+        "warmFcp": 236, "warmLcp": 236,
+        "coldFeedPaint": 815.7, "warmFeedPaint": 224.4
+      },
+      "lighthouse": {
+        "n": 5,
+        "coldFcp": 373.5, "coldLcp": 607.1,
+        "warmFcp": 185.0, "warmLcp": 266.7
+      }
+    },
+    {
+      "iter": 15,
+      "change": "dedupe identical boot GETs across both data helpers (2s shared promise cache; /tags x3 + /communities x2 -> 1+1)",
+      "verdict": "kept",
+      "tradeoff": "identical GETs within 2s share one response object",
+      "commit": "soci-frontend@f201d79",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 64.1, "warmLoad": 24.8,
+        "coldFcp": 72, "coldLcp": 72,
+        "warmFcp": 28, "warmLcp": 48,
+        "coldFeedPaint": 61.5, "warmFeedPaint": 36.3
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 1202.7, "warmLoad": 211.2,
+        "coldFcp": 780, "coldLcp": 824,
+        "warmFcp": 240, "warmLcp": 240,
+        "coldFeedPaint": 815.4, "warmFeedPaint": 226.2
+      },
+      "lighthouse": {
+        "n": 5, "note": "warm LCP bimodal ~265/~311 across iters 13-15; cold LCP distributions separated (568-590 vs 589-615)",
+        "coldFcp": 337.6, "coldLcp": 587.0,
+        "warmFcp": 183.9, "warmLcp": 309.8
+      }
+    },
+    {
+      "iter": 16,
+      "change": "gzip output cache keyed by path+ETag (largest-file TTFB 6.9ms -> 0.9ms)",
+      "verdict": "kept (first-principles wash)",
+      "tradeoff": "browser medians within 1-2ms on single-client harness; kept because per-request CPU removal scales with concurrency, ETag-invalidated",
+      "commit": "soci-frontend@33f8f63",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 63.8, "warmLoad": 23.3,
+        "coldFcp": 72, "coldLcp": 76,
+        "warmFcp": 32, "warmLcp": 48,
+        "coldFeedPaint": 59.9, "warmFeedPaint": 35.5
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 1202.2, "warmLoad": 206.5,
+        "coldFcp": 784, "coldLcp": 824,
+        "warmFcp": 236, "warmLcp": 236,
+        "coldFeedPaint": 814.2, "warmFeedPaint": 223.4
+      },
+      "lighthouse": {
+        "n": 5,
+        "coldFcp": 365.5, "coldLcp": 585.6,
+        "warmFcp": 183.7, "warmLcp": 265.2
+      }
+    },
+    {
+      "iter": 17,
+      "change": "inline minified soci.css into the shell (removes render-blocking request, doubles document size)",
+      "verdict": "rejected",
+      "tradeoff": "reverted; Slow 4G warm load 207 -> 583ms and Lighthouse regressed consistently (doc refetched every load), cold-only win",
+      "commit": "reverted, not on branch",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 60.5, "warmLoad": 25.3,
+        "coldFcp": 72, "coldLcp": 72,
+        "warmFcp": 28, "warmLcp": 48,
+        "coldFeedPaint": 57.4, "warmFeedPaint": 37.9
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 1151.7, "warmLoad": 583.2,
+        "coldFcp": 736, "coldLcp": 776,
+        "warmFcp": 272, "warmLcp": 272,
+        "coldFeedPaint": 764.8, "warmFeedPaint": 260.0
+      },
+      "lighthouse": {
+        "n": 5,
+        "coldFcp": 409.2, "coldLcp": 594.1,
+        "warmFcp": 223.7, "warmLcp": 304.8
+      }
+    },
+    {
+      "iter": 18,
+      "change": "defer inactive routes' page scripts past load",
+      "verdict": "skipped",
+      "tradeoff": "profiling showed page scripts already start at/after the load event, past LCP; no pre-LCP contention to remove, reverted without a measurement cycle",
+      "commit": "reverted, not on branch"
+    },
+    {
+      "iter": 19,
+      "change": "prefer brotli over gzip (q11 cached statics: bundle 37.5KB -> 31.5KB; q5 dynamic docs)",
+      "verdict": "kept",
+      "tradeoff": "br requires secure context in production; gzip fallback retained",
+      "commit": "soci-frontend@943d931",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 65.4, "warmLoad": 24.4,
+        "coldFcp": 52, "coldLcp": 76,
+        "warmFcp": 28, "warmLcp": 48,
+        "coldFeedPaint": 63.2, "warmFeedPaint": 36.5
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 1166.1, "warmLoad": 211.7,
+        "coldFcp": 744, "coldLcp": 796,
+        "warmFcp": 236, "warmLcp": 236,
+        "coldFeedPaint": 776.5, "warmFeedPaint": 224.5
+      },
+      "lighthouse": {
+        "n": 5,
+        "coldFcp": 371.2, "coldLcp": 563.1,
+        "warmFcp": 183.8, "warmLcp": 265.8
+      }
+    },
+    {
+      "iter": 20,
+      "change": "content-hash ETag + 304 for dynamic shell documents",
+      "verdict": "kept",
+      "tradeoff": "warm loadEventEnd bimodal ~175/~520ms (earlier render pulls zero-byte avatar fetches into the load window); user-felt warm metrics all improved",
+      "commit": "soci-frontend@cc90eb9",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 63.3, "warmLoad": 23.1,
+        "coldFcp": 76, "coldLcp": 76,
+        "warmFcp": 24, "warmLcp": 48,
+        "coldFeedPaint": 61.1, "warmFeedPaint": 35.1
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 1165.8, "warmLoad": 517.0,
+        "coldFcp": 748, "coldLcp": 788,
+        "warmFcp": 180, "warmLcp": 204,
+        "coldFeedPaint": 779.7, "warmFeedPaint": 191.0
+      },
+      "lighthouse": {
+        "n": 5,
+        "coldFcp": 366.1, "coldLcp": 563.9,
+        "warmFcp": 183.9, "warmLcp": 265.4
+      }
+    }
+  ]
+}
