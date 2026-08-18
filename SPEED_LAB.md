@@ -36,6 +36,7 @@ Slow 4G = CDP throttle, 150ms RTT / 1.6Mbps down / 750kbps up.
 | 1 | static-file ETag/304 + max-age=300 | 127 | 72 | 132 | 152 | 149 | 88 | 7 | kept | assets may be ≤5min stale for devs |
 | 2 | defer non-feed components until after load | 106 | 70 | 112 | 112 | 133 | 86 | 7 | kept | later routes' components define shortly after load |
 | 3 | defer markdown-wasm loader script | 94 | 66 | 116 | 124 | 116 | 82 | 7 | kept | markdown bodies render a tick later on slow pipes |
+| 4 | modulepreload eager module subtree (29 links) | 96 | 70 | 100 | 116 | 122 | 92 | 7 | rejected | — (reverted) |
 
 ### Slow 4G
 
@@ -45,6 +46,7 @@ Slow 4G = CDP throttle, 150ms RTT / 1.6Mbps down / 750kbps up.
 | 1 | static-file ETag/304 + max-age=300 | 4663 | 315 | 3996 | 4468 | 4460 | 506 | 5 | kept | assets may be ≤5min stale for devs |
 | 2 | defer non-feed components until after load | 3041 | 313 | 2392 | 2856 | 2849 | 513 | 5 | kept | later routes' components define shortly after load |
 | 3 | defer markdown-wasm loader script | 2869 | 313 | 2184 | 2668 | 2675 | 508 | 5 | kept | markdown bodies render a tick later on slow pipes |
+| 4 | modulepreload eager module subtree (29 links) | 2919 | 321 | 2188 | 2720 | 2710 | 519 | 5 | rejected | — (reverted) |
 
 ## Iteration log
 
@@ -109,3 +111,18 @@ Result (vs iter 2): Slow 4G cold FCP 2392 → **2184ms** (−208ms), cold load
 Unthrottled cold 106 → 94ms. Smoke: text post renders markdown
 (bold/italic/code verified), no page errors. **Keep.** Tradeoff: markdown
 bodies can render a tick later on slow pipes.
+
+### Iteration 4 — modulepreload the eager module subtree (REJECTED)
+
+Hypothesis: eager module discovery is serial across 3 import levels (~2 extra
+RTT waves on Slow 4G); 29 `<link rel=modulepreload>` hints in the shell will
+flatten the waterfall and cut cold load/FCP.
+
+Result (vs iter 3): Slow 4G cold load 2869 → 2919 (+50), cold LCP 2668 → 2720
+(+52), feedPaint 2675 → 2710 (+35), FCP flat (2184 → 2188). Unthrottled FCP
+improved (116 → 100) but load/feedPaint flat-to-worse. Verified all 29 hints
+were emitted, so the test was valid. On a bandwidth-saturated 1.6Mbps HTTP/1.1
+pipe (6 connections) discovery latency isn't the constraint, and the preload
+burst competes with CSS/document. Wash-to-regression on the discriminating
+environment → **reject, reverted** (matches speedupskill "high-entanglement
+JS splits below the noise floor" / no unmeasured fetchpriority-style hints).

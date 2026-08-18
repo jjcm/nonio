@@ -92,6 +92,27 @@
         "warmFcp": 328, "warmLcp": 328,
         "coldFeedPaint": 2674.9, "warmFeedPaint": 508.2
       }
+    },
+    {
+      "iter": 4,
+      "change": "modulepreload the eager module subtree (29 shell hints)",
+      "verdict": "rejected",
+      "tradeoff": "reverted; wash-to-regression on Slow 4G (bandwidth-bound HTTP/1.1, preload burst competes with CSS)",
+      "commit": "reverted, not on branch",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 96.2, "warmLoad": 69.6,
+        "coldFcp": 100, "coldLcp": 116,
+        "warmFcp": 84, "warmLcp": 84,
+        "coldFeedPaint": 122.1, "warmFeedPaint": 91.5
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 2918.8, "warmLoad": 320.5,
+        "coldFcp": 2188, "coldLcp": 2720,
+        "warmFcp": 336, "warmLcp": 336,
+        "coldFeedPaint": 2709.5, "warmFeedPaint": 519.1
+      }
     }
   ]
 }
