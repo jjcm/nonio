@@ -345,6 +345,32 @@
         "coldFcp": 373.5, "coldLcp": 607.1,
         "warmFcp": 185.0, "warmLcp": 266.7
       }
+    },
+    {
+      "iter": 15,
+      "change": "dedupe identical boot GETs across both data helpers (2s shared promise cache; /tags x3 + /communities x2 -> 1+1)",
+      "verdict": "kept",
+      "tradeoff": "identical GETs within 2s share one response object",
+      "commit": "soci-frontend@f201d79",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 64.1, "warmLoad": 24.8,
+        "coldFcp": 72, "coldLcp": 72,
+        "warmFcp": 28, "warmLcp": 48,
+        "coldFeedPaint": 61.5, "warmFeedPaint": 36.3
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 1202.7, "warmLoad": 211.2,
+        "coldFcp": 780, "coldLcp": 824,
+        "warmFcp": 240, "warmLcp": 240,
+        "coldFeedPaint": 815.4, "warmFeedPaint": 226.2
+      },
+      "lighthouse": {
+        "n": 5, "note": "warm LCP bimodal ~265/~311 across iters 13-15; cold LCP distributions separated (568-590 vs 589-615)",
+        "coldFcp": 337.6, "coldLcp": 587.0,
+        "warmFcp": 183.9, "warmLcp": 309.8
+      }
     }
   ]
 }

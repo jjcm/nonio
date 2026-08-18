@@ -47,6 +47,7 @@ Slow 4G = CDP throttle, 150ms RTT / 1.6Mbps down / 750kbps up.
 | 12 | preload the LCP thumbnail (one image) | 104 | 62 | 108 | 112 | 100 | 74 | 7 | kept | one extra early request on the pipe |
 | 13 | skip redundant boot-time /posts merge fetch | 101 | 60 | 112 | 112 | 98 | 72 | 7 | kept | returning to filter=all reuses loaded data instead of re-merging |
 | 14 | compile shell template once at boot | 66 | 26 | 88 | 88 | 64 | 40 | 7 | kept | template edits need a server restart |
+| 15 | dedupe boot GETs (/tags ×3, /communities ×2 → 1+1) | 64 | 25 | 72 | 72 | 62 | 36 | 7 | kept | identical GETs within 2s share one response object |
 
 ### Slow 4G
 
@@ -67,6 +68,7 @@ Slow 4G = CDP throttle, 150ms RTT / 1.6Mbps down / 750kbps up.
 | 12 | preload the LCP thumbnail (one image) | 1224 | 213 | 784 | 828 | 816 | 226 | 5 | kept | one extra early request on the pipe |
 | 13 | skip redundant boot-time /posts merge fetch | 1210 | 207 | 780 | 824 | 808 | 224 | 5 | kept | returning to filter=all reuses loaded data instead of re-merging |
 | 14 | compile shell template once at boot | 1203 | 211 | 784 | 824 | 816 | 224 | 5 | kept | template edits need a server restart |
+| 15 | dedupe boot GETs (/tags ×3, /communities ×2 → 1+1) | 1203 | 211 | 780 | 824 | 815 | 226 | 5 | kept | identical GETs within 2s share one response object |
 
 ### Lighthouse desktop (comparable to the local Qwen track)
 
@@ -82,6 +84,11 @@ checking out the pre-change frontend (`soci-frontend@75e4cab`).
 | 12 | 374 | 614 | 185 | 325 | 5 |
 | 13 | 341 | 607 | 186 | 267 | 5 |
 | 14 | 374 | 607 | 185 | 267 | 5 |
+| 15 | 338 | 587 | 184 | 310* | 5 |
+
+\* Lighthouse warm LCP is bimodal (~265 vs ~311 modes) in every iteration
+13–15; medians flip on mode draws. Cold LCP distributions for iter 15
+(568–590) sit uniformly below iter 14 (589–615).
 
 The two tracks' iter0 numbers agree within ~10%, confirming both measure the
 same fixture. This track's current state: cold FCP −57%, cold LCP −52%,
@@ -350,3 +357,22 @@ saving. Slow 4G flat (RTT-dominated). Lighthouse LCP/warm identical; its cold
 FCP is bimodal across runs (≈340 vs ≈374 modes in both iter 13 and 14), not a
 regression. **Keep.** Tradeoff: template edits need a server restart (same
 class as the bundle rebuild tradeoff).
+
+### Iteration 15 — dedupe boot-time API GETs (KEPT)
+
+Hypothesis: boot fires 5 API requests for 2 distinct resources (`/tags`×3
+from the sidebar's connected/activated/community-change paths, `/communities`
+×2 across two different data helpers, plus a CORS preflight); a short-window
+promise cache collapses them.
+
+Change: `soci-frontend@f201d79` — `SociComponent.getData` and `api.getData`
+share a window-scoped 2s promise cache keyed by path+auth. Verified boot
+traffic is exactly one `/tags` + one `/communities`; feed renders 21 posts,
+no page errors.
+
+Result (vs iter 14): unthrottled cold FCP 88 → **72ms**; Lighthouse cold LCP
+607 → **587ms** (distributions 568–590 vs 589–615, separated) and cold FCP
+374 → 338. Slow 4G flat (these fetches sit post-FCP there). Lighthouse warm
+LCP median moved 267 → 310 but that metric is bimodal (~265/~311 modes) in
+every iteration 13–15 — mode draw, not regression. **Keep.** Tradeoff:
+identical GETs within 2s share one response object.
