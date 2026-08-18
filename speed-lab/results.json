@@ -50,6 +50,27 @@
         "warmFcp": 328, "warmLcp": 328,
         "coldFeedPaint": 4460.1, "warmFeedPaint": 506.4
       }
+    },
+    {
+      "iter": 2,
+      "change": "defer non-feed components (post detail, comments, uploaders, channels, ledger, modals) to dynamic import after window load",
+      "verdict": "kept",
+      "tradeoff": "deep links to non-feed routes upgrade their elements a beat after load on slow pipes",
+      "commit": "soci-frontend@649074b",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 105.7, "warmLoad": 69.5,
+        "coldFcp": 112, "coldLcp": 112,
+        "warmFcp": 92, "warmLcp": 92,
+        "coldFeedPaint": 133.2, "warmFeedPaint": 85.6
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 3040.9, "warmLoad": 313.4,
+        "coldFcp": 2392, "coldLcp": 2856,
+        "warmFcp": 336, "warmLcp": 336,
+        "coldFeedPaint": 2848.6, "warmFeedPaint": 512.9
+      }
     }
   ]
 }

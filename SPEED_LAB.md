@@ -34,6 +34,7 @@ Slow 4G = CDP throttle, 150ms RTT / 1.6Mbps down / 750kbps up.
 |------|--------|------|------|--------|--------|---------|---------|---|---------|----------|
 | 0 | baseline | 118 | 104 | 124 | 140 | 138 | 114 | 7 | baseline | — |
 | 1 | static-file ETag/304 + max-age=300 | 127 | 72 | 132 | 152 | 149 | 88 | 7 | kept | assets may be ≤5min stale for devs |
+| 2 | defer non-feed components until after load | 106 | 70 | 112 | 112 | 133 | 86 | 7 | kept | later routes' components define shortly after load |
 
 ### Slow 4G
 
@@ -41,6 +42,7 @@ Slow 4G = CDP throttle, 150ms RTT / 1.6Mbps down / 750kbps up.
 |------|--------|------|------|--------|--------|---------|---------|---|---------|----------|
 | 0 | baseline | 4606 | 4435 | 3968 | 4448 | 4448 | 4269 | 5 | baseline | — |
 | 1 | static-file ETag/304 + max-age=300 | 4663 | 315 | 3996 | 4468 | 4460 | 506 | 5 | kept | assets may be ≤5min stale for devs |
+| 2 | defer non-feed components until after load | 3041 | 313 | 2392 | 2856 | 2849 | 513 | 5 | kept | later routes' components define shortly after load |
 
 ## Iteration log
 
@@ -68,3 +70,24 @@ feedPaint 4269 → 506. Unthrottled warm 104 → 72ms. Cold within noise both wa
 (+1%). Smoke: 21 posts render cold+warm, screenshot identical. **Keep.**
 Tradeoff: dev-server assets can be up to 5 minutes stale after an edit
 (shift-reload bypasses).
+
+### Iteration 2 — route-split the component registry (KEPT)
+
+Hypothesis: cold Slow 4G is transfer-bound (~680KB / 87 requests) and
+`soci-components.js` eagerly imports ~35 components the feed route never
+renders (52KB threaded channel view, uploaders, comments, ledger, post detail,
+video, modals — verified by enumerating custom elements in the feed DOM).
+Deferring them until after `load` cuts cold load/FCP.
+
+Change: `soci-frontend@649074b` — eager registry keeps only the feed/shell set;
+the rest moved to `soci-components-deferred.js`, dynamically imported on
+`window load`. Custom elements upgrade in place, so deep links to post/submit/
+channel routes still work (definitions land right after load).
+
+Result (vs iter 1): Slow 4G cold load 4663 → **3041ms** (−35%), cold FCP
+3996 → **2392ms** (−40%), cold LCP 4468 → 2856, cold feedPaint 4460 → 2849.
+Warm unchanged (313 vs 315). Unthrottled cold 127 → 106ms. Smoke: feed 21
+posts; image post detail renders; video post plays (readyState 4, correct
+mp4 URL); login modal opens. Pre-existing anonymous 401s unchanged. **Keep.**
+Tradeoff: non-feed routes' components define a beat after load on slow pipes
+(brief upgrade delay on deep links).
