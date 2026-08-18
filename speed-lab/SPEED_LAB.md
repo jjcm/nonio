@@ -4,7 +4,7 @@ Shared Nonio feed fixture for overnight Fable vs local Qwen comparison.
 
 **Never merge this branch.** Experimental seed only. It lives in the superrepo (`speed-lab/`) so both tracks can pin one SHA without touching submodule gitlinks.
 
-SEED_COMMIT=PENDING
+SEED_COMMIT=4dc103a4306564ed7bb6cddb48a9f14f078f6b16
 
 SEED_COMMIT is this branch's seed commit; run `git log -- SPEED_LAB.md` if you need to recover it. The canonical shared SHA is the **first fixture commit** on this branch (the follow-up commit only fills this line).
 
