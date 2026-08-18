@@ -40,6 +40,7 @@ Slow 4G = CDP throttle, 150ms RTT / 1.6Mbps down / 750kbps up.
 | 5 | gzip compressible dev-server responses | 106 | 67 | 120 | 120 | 136 | 87 | 7 | kept | ~10ms sync gzip CPU per cold load on localhost |
 | 6 | embed /posts payload in feed shell HTML | 126 | 71 | 140 | 140 | 124 | 83 | 7 | kept | loadEventEnd later (thumbs join load window); +TTFB for server-side API fetch |
 | 7 | de-block 8 parser-blocking page scripts (lazyload pattern) | 114 | 61 | 120 | 128 | 113 | 78 | 7 | kept | page scripts init at DCL instead of during parse |
+| 8 | markdown-wasm on demand (+post.js race fix) | 112 | 65 | 124 | 128 | 114 | 82 | 7 | kept | first markdown render waits for loader+wasm |
 
 ### Slow 4G
 
@@ -53,6 +54,7 @@ Slow 4G = CDP throttle, 150ms RTT / 1.6Mbps down / 750kbps up.
 | 5 | gzip compressible dev-server responses | 1767 | 206 | 1560 | 1980 | 1973 | 407 | 5 | kept | ~10ms sync gzip CPU per cold load on localhost |
 | 6 | embed /posts payload in feed shell HTML | 1982 | 214 | 1564 | 1788 | 1783 | 230 | 5 | kept | loadEventEnd later (thumbs join load window); +TTFB for server-side API fetch |
 | 7 | de-block 8 parser-blocking page scripts (lazyload pattern) | 1882 | 208 | 1444 | 1664 | 1658 | 223 | 5 | kept | page scripts init at DCL instead of during parse |
+| 8 | markdown-wasm on demand (+post.js race fix) | 1802 | 214 | 1376 | 1584 | 1578 | 227 | 5 | kept | first markdown render waits for loader+wasm |
 
 ## Iteration log
 
@@ -190,3 +192,25 @@ better. Unthrottled improved across the board. Smoke: feed 21 posts; post
 deep-link renders with correct title; user page identical to pre-change
 (title "All posts" and one `activateTag` console error verified pre-existing
 by re-testing the stashed baseline). **Keep.**
+
+### Iteration 8 — load markdown-wasm on demand (KEPT, includes a race fix)
+
+Hypothesis: the feed's list view renders no markdown, yet every load fetches
+`markdown.js` + 56KB wasm and the defer script gates DOMContentLoaded; loading
+it on demand from `soci-markdown-view` removes ~66KB from the feed transfer
+and the script from the DCL path.
+
+Change: `soci-frontend@947499b` — shell script tag removed;
+`soci-markdown-view._getMarkdown` injects the loader on first render behind a
+shared promise. Only that component touched `window.markdown` (grep-verified).
+
+Correctness find: the first smoke caught text posts rendering empty — not the
+markdown change itself, but a latent race from iteration 7: `post.js` adds its
+`routeactivate` listener manually (doesn't use `registerPage`), and lazyload
+now loads it after the router has already activated the route on deep links.
+Fixed by activating on init when `postRoute.active`. Re-smoked 3× green, plus
+image post, video post (readyState 4), login modal, feed 21 posts.
+
+Result (vs iter 7): Slow 4G cold FCP 1444 → **1376ms**, cold LCP 1664 →
+**1584ms**, feedPaint 1658 → 1578, cold load 1882 → 1802. Warm flat. **Keep.**
+Tradeoff: first markdown render on a route waits for loader+wasm fetch.
