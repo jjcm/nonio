@@ -260,6 +260,27 @@
         "warmFcp": 240, "warmLcp": 240,
         "coldFeedPaint": 982.3, "warmFeedPaint": 229.5
       }
+    },
+    {
+      "iter": 12,
+      "change": "shell preload for the single LCP thumbnail (first image-type post in the embedded payload)",
+      "verdict": "kept",
+      "tradeoff": "one extra early request on the pipe; measured no FCP cost",
+      "commit": "soci-frontend@e28bc66",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 103.6, "warmLoad": 61.8,
+        "coldFcp": 108, "coldLcp": 112,
+        "warmFcp": 64, "warmLcp": 88,
+        "coldFeedPaint": 99.6, "warmFeedPaint": 74.4
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 1223.6, "warmLoad": 212.5,
+        "coldFcp": 784, "coldLcp": 828,
+        "warmFcp": 240, "warmLcp": 240,
+        "coldFeedPaint": 815.5, "warmFeedPaint": 225.9
+      }
     }
   ]
 }

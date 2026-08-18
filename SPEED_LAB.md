@@ -44,6 +44,7 @@ Slow 4G = CDP throttle, 150ms RTT / 1.6Mbps down / 750kbps up.
 | 9 | esbuild-bundle critical module graphs at boot | 100 | 58 | 108 | 108 | 98 | 71 | 7 | kept | bundles rebuilt only on server restart; esbuild devDependency |
 | 10 | minify boot-time bundles | 107 | 65 | 124 | 124 | 108 | 80 | 7 | kept | minified stack traces in dev |
 | 11 | modulepreload the 2 shared bundle chunks | 102 | 61 | 108 | 116 | 101 | 74 | 7 | kept | dist wiped each boot; preloads injected server-side |
+| 12 | preload the LCP thumbnail (one image) | 104 | 62 | 108 | 112 | 100 | 74 | 7 | kept | one extra early request on the pipe |
 
 ### Slow 4G
 
@@ -61,6 +62,7 @@ Slow 4G = CDP throttle, 150ms RTT / 1.6Mbps down / 750kbps up.
 | 9 | esbuild-bundle critical module graphs at boot | 1396 | 211 | 968 | 1188 | 1180 | 223 | 5 | kept | bundles rebuilt only on server restart; esbuild devDependency |
 | 10 | minify boot-time bundles | 1367 | 213 | 936 | 1144 | 1141 | 221 | 5 | kept | minified stack traces in dev |
 | 11 | modulepreload the 2 shared bundle chunks | 1210 | 213 | 776 | 1000 | 982 | 230 | 5 | kept | dist wiped each boot; preloads injected server-side |
+| 12 | preload the LCP thumbnail (one image) | 1224 | 213 | 784 | 828 | 816 | 226 | 5 | kept | one extra early request on the pipe |
 
 ## Iteration log
 
@@ -272,3 +274,20 @@ from the previous build (re-measured clean).
 Result (vs iter 10): Slow 4G cold FCP 936 → **776ms** (−17%), cold LCP
 1144 → **1000ms**, feedPaint 1141 → 982, cold load 1367 → 1210. Warm flat.
 Smoke: feed, post detail, markdown all green. **Keep.**
+
+### Iteration 12 — preload the LCP thumbnail, one image only (KEPT)
+
+Hypothesis: the LCP element (first post's thumbnail) only starts fetching
+after JS boot + render (~800ms on Slow 4G); a shell `<link rel=preload
+as=image>` for that single image starts it at document parse. The server
+already fetches the payload for embedding, so it emits the preload for the
+first image-type post. Deliberately one image, not the grid (speedupskill:
+grid thumb preload measured slower on a constrained pipe), and gated on a
+measured LCP win per the fetchpriority/preload rule.
+
+Change: `soci-frontend@e28bc66`.
+
+Result (vs iter 11): Slow 4G cold LCP 1000 → **828ms** (−17%), feedPaint
+982 → 816, FCP and cold load flat (within noise). Unthrottled LCP 116 → 112.
+Smoke green. **Keep.** Tradeoff: one extra early request competing on the
+pipe (measured: no FCP cost).
