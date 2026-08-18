@@ -41,6 +41,7 @@ Slow 4G = CDP throttle, 150ms RTT / 1.6Mbps down / 750kbps up.
 | 6 | embed /posts payload in feed shell HTML | 126 | 71 | 140 | 140 | 124 | 83 | 7 | kept | loadEventEnd later (thumbs join load window); +TTFB for server-side API fetch |
 | 7 | de-block 8 parser-blocking page scripts (lazyload pattern) | 114 | 61 | 120 | 128 | 113 | 78 | 7 | kept | page scripts init at DCL instead of during parse |
 | 8 | markdown-wasm on demand (+post.js race fix) | 112 | 65 | 124 | 128 | 114 | 82 | 7 | kept | first markdown render waits for loader+wasm |
+| 9 | esbuild-bundle critical module graphs at boot | 100 | 58 | 108 | 108 | 98 | 71 | 7 | kept | bundles rebuilt only on server restart; esbuild devDependency |
 
 ### Slow 4G
 
@@ -55,6 +56,7 @@ Slow 4G = CDP throttle, 150ms RTT / 1.6Mbps down / 750kbps up.
 | 6 | embed /posts payload in feed shell HTML | 1982 | 214 | 1564 | 1788 | 1783 | 230 | 5 | kept | loadEventEnd later (thumbs join load window); +TTFB for server-side API fetch |
 | 7 | de-block 8 parser-blocking page scripts (lazyload pattern) | 1882 | 208 | 1444 | 1664 | 1658 | 223 | 5 | kept | page scripts init at DCL instead of during parse |
 | 8 | markdown-wasm on demand (+post.js race fix) | 1802 | 214 | 1376 | 1584 | 1578 | 227 | 5 | kept | first markdown render waits for loader+wasm |
+| 9 | esbuild-bundle critical module graphs at boot | 1396 | 211 | 968 | 1188 | 1180 | 223 | 5 | kept | bundles rebuilt only on server restart; esbuild devDependency |
 
 ## Iteration log
 
@@ -214,3 +216,26 @@ image post, video post (readyState 4), login modal, feed 21 posts.
 Result (vs iter 7): Slow 4G cold FCP 1444 → **1376ms**, cold LCP 1664 →
 **1584ms**, feedPaint 1658 → 1578, cold load 1882 → 1802. Warm flat. **Keep.**
 Tradeoff: first markdown render on a route waits for loader+wasm fetch.
+
+### Iteration 9 — esbuild-bundle the critical module graphs (KEPT)
+
+Hypothesis: a Slow 4G resource profile showed the eager module graph occupying
+the network from 171→1200ms (30 requests, only ~80KB gz; third discovery level
+config/api/lib landing 1115–1200ms) with modules executing only after the whole
+graph arrives — request-wave latency, not bytes, gates FCP. Bundling the two
+entries collapses ~30 pre-FCP requests to ~3.
+
+Change: `soci-frontend@d24b215` — `esbuild.buildSync` at server boot bundles
+`soci.js` + `components/soci-components.js` (ESM, `splitting: true` keeps the
+deferred subtree as separate chunks, no minify — isolating the wave effect);
+dev server serves `.speed-lab-dist` artifacts when present, falls back to raw
+modules if the build fails. (Context: iteration 4 showed modulepreload alone
+regressing — parallel *discovery* didn't help a saturated HTTP/1.1 pipe;
+collapsing the *request count* is what works.)
+
+Result (vs iter 8): Slow 4G cold FCP 1376 → **968ms** (−30%), cold LCP
+1584 → **1188ms**, feedPaint 1578 → 1180, cold load 1802 → 1396 (−23%).
+Unthrottled improved across the board (warm load 65 → 58). Full smoke green:
+feed 21 posts, image post detail, video (readyState 4), login modal, markdown.
+**Keep.** Tradeoffs: bundles rebuild only on server restart (stale during live
+component edits); esbuild added as devDependency.

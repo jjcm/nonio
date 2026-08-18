@@ -197,6 +197,27 @@
         "warmFcp": 244, "warmLcp": 244,
         "coldFeedPaint": 1578.3, "warmFeedPaint": 226.7
       }
+    },
+    {
+      "iter": 9,
+      "change": "esbuild-bundle soci.js + soci-components.js at server boot (ESM splitting, no minify); serve bundled artifacts",
+      "verdict": "kept",
+      "tradeoff": "bundles rebuilt only on server restart; esbuild devDependency",
+      "commit": "soci-frontend@d24b215",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 100.3, "warmLoad": 58.4,
+        "coldFcp": 108, "coldLcp": 108,
+        "warmFcp": 72, "warmLcp": 84,
+        "coldFeedPaint": 97.9, "warmFeedPaint": 71.1
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 1395.7, "warmLoad": 211.1,
+        "coldFcp": 968, "coldLcp": 1188,
+        "warmFcp": 236, "warmLcp": 236,
+        "coldFeedPaint": 1180.0, "warmFeedPaint": 222.6
+      }
     }
   ]
 }
