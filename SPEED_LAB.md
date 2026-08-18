@@ -33,12 +33,14 @@ Slow 4G = CDP throttle, 150ms RTT / 1.6Mbps down / 750kbps up.
 | iter | change | cold | warm | FCP(c) | LCP(c) | feed(c) | feed(w) | n | verdict | tradeoff |
 |------|--------|------|------|--------|--------|---------|---------|---|---------|----------|
 | 0 | baseline | 118 | 104 | 124 | 140 | 138 | 114 | 7 | baseline | — |
+| 1 | static-file ETag/304 + max-age=300 | 127 | 72 | 132 | 152 | 149 | 88 | 7 | kept | assets may be ≤5min stale for devs |
 
 ### Slow 4G
 
 | iter | change | cold | warm | FCP(c) | LCP(c) | feed(c) | feed(w) | n | verdict | tradeoff |
 |------|--------|------|------|--------|--------|---------|---------|---|---------|----------|
 | 0 | baseline | 4606 | 4435 | 3968 | 4448 | 4448 | 4269 | 5 | baseline | — |
+| 1 | static-file ETag/304 + max-age=300 | 4663 | 315 | 3996 | 4468 | 4460 | 506 | 5 | kept | assets may be ≤5min stale for devs |
 
 ## Iteration log
 
@@ -48,3 +50,21 @@ Feed renders correctly (21 posts, thumbnails, screenshot-verified). Notable in
 the numbers: on Slow 4G **warm ≈ cold** (4435 vs 4606) and the document
 `transferSize` is identical cold vs warm — the dev server sends no caching
 headers, so every warm load re-downloads every byte. That is the first lead.
+
+### Iteration 1 — static asset caching headers (KEPT)
+
+Hypothesis: warm loads re-download all 87 static assets (~680KB of JS/CSS/wasm)
+because `soci-frontend/index.js` serves files with only Content-Type; adding
+ETag/Last-Modified + 304 handling + bounded `Cache-Control: max-age=300` will
+collapse warm load without touching cold.
+
+Change: `soci-frontend` branch `speed-lab`, commit `1e9572f` (file handler
+only; pug/document responses untouched, mp4 range path untouched). Not
+`immutable` — filenames aren't content-hashed (speedupskill "immutable on
+retunable derivatives" is a do-not).
+
+Result: Slow 4G warm load 4435 → **315ms** (−93%), warm FCP 3968 → 328, warm
+feedPaint 4269 → 506. Unthrottled warm 104 → 72ms. Cold within noise both ways
+(+1%). Smoke: 21 posts render cold+warm, screenshot identical. **Keep.**
+Tradeoff: dev-server assets can be up to 5 minutes stale after an edit
+(shift-reload bypasses).

@@ -29,6 +29,27 @@
         "warmFcp": 3968, "warmLcp": 3996,
         "coldFeedPaint": 4447.6, "warmFeedPaint": 4269.1
       }
+    },
+    {
+      "iter": 1,
+      "change": "static-file ETag/Last-Modified + 304 + Cache-Control max-age=300 in soci-frontend dev server",
+      "verdict": "kept",
+      "tradeoff": "dev assets up to 5min stale after edit; not immutable since filenames aren't content-hashed",
+      "commit": "soci-frontend@1e9572f",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 127.0, "warmLoad": 72.1,
+        "coldFcp": 132, "coldLcp": 152,
+        "warmFcp": 96, "warmLcp": 96,
+        "coldFeedPaint": 149.3, "warmFeedPaint": 88.1
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 4662.6, "warmLoad": 314.7,
+        "coldFcp": 3996, "coldLcp": 4468,
+        "warmFcp": 328, "warmLcp": 328,
+        "coldFeedPaint": 4460.1, "warmFeedPaint": 506.4
+      }
     }
   ]
 }
