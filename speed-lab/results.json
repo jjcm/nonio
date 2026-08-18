@@ -6,7 +6,9 @@
     "environment": "Linux cloud VM (Ubuntu), Playwright Chromium headless-shell 151, MariaDB, Go API/CDNs, Node frontend dev server (node index.js)",
     "harness": "speed-lab/harness/measure.mjs — per run: fresh browser (cold nav) then reload (warm); medians; settle 2500ms",
     "metrics": "coldLoad/warmLoad = loadEventEnd; FCP/LCP via paint + largest-contentful-paint observers; feedPaint = first post card revealed with decoded thumbnail (cards animate from opacity:0 so LCP attributes to text, not thumbnails)",
-    "throttle_slow4g": "CDP: 150ms RTT, 1.6Mbps down, 750kbps up"
+    "throttle_slow4g": "CDP: 150ms RTT, 1.6Mbps down, 750kbps up",
+    "lighthouse": "speed-lab/harness/lighthouse.mjs — desktop preset (simulated 40ms RTT / 10Mbps / 1x CPU); cold = fresh profile + storage reset, warm = second run with disableStorageReset; medians of n=5. Comparable to local Qwen track's Lighthouse desktop numbers.",
+    "localQwenIter0Lighthouse": { "coldFcp": 787.8, "coldLcp": 1333.5, "warmFcp": 790.3, "warmLcp": 1257.8 }
   },
   "iterations": [
     {
@@ -28,6 +30,11 @@
         "coldFcp": 3968, "coldLcp": 4448,
         "warmFcp": 3968, "warmLcp": 3996,
         "coldFeedPaint": 4447.6, "warmFeedPaint": 4269.1
+      },
+      "lighthouse": {
+        "n": 5, "note": "backfilled on pre-change frontend (soci-frontend@75e4cab)",
+        "coldFcp": 865.9, "coldLcp": 1289.9,
+        "warmFcp": 867.5, "warmLcp": 1294.7
       }
     },
     {
@@ -280,6 +287,11 @@
         "coldFcp": 784, "coldLcp": 828,
         "warmFcp": 240, "warmLcp": 240,
         "coldFeedPaint": 815.5, "warmFeedPaint": 225.9
+      },
+      "lighthouse": {
+        "n": 5,
+        "coldFcp": 374.4, "coldLcp": 613.5,
+        "warmFcp": 184.8, "warmLcp": 324.7
       }
     }
   ]

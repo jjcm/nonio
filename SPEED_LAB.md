@@ -64,6 +64,24 @@ Slow 4G = CDP throttle, 150ms RTT / 1.6Mbps down / 750kbps up.
 | 11 | modulepreload the 2 shared bundle chunks | 1210 | 213 | 776 | 1000 | 982 | 230 | 5 | kept | dist wiped each boot; preloads injected server-side |
 | 12 | preload the LCP thumbnail (one image) | 1224 | 213 | 784 | 828 | 816 | 226 | 5 | kept | one extra early request on the pipe |
 
+### Lighthouse desktop (comparable to the local Qwen track)
+
+`speed-lab/harness/lighthouse.mjs` — Lighthouse desktop preset (simulated
+40ms RTT / 10Mbps / 1× CPU), cold = fresh profile with storage reset, warm =
+second run with `disableStorageReset`, medians of n=5. Iter 0 backfilled by
+checking out the pre-change frontend (`soci-frontend@75e4cab`).
+
+| iter | FCP(c) | LCP(c) | FCP(w) | LCP(w) | n |
+|------|--------|--------|--------|--------|---|
+| 0 (this track, backfilled) | 866 | 1290 | 868 | 1295 | 5 |
+| 0 (local Qwen, reference) | 788 | 1334 | 790 | 1258 | 5 |
+| 12 (current) | 374 | 614 | 185 | 325 | 5 |
+
+The two tracks' iter0 numbers agree within ~10%, confirming both measure the
+same fixture. This track's current state: cold FCP −57%, cold LCP −52%,
+warm FCP −79%, warm LCP −75% vs its own Lighthouse baseline. A Lighthouse
+column is recorded per iteration from here on.
+
 ## Iteration log
 
 ### Iteration 0 — baseline
