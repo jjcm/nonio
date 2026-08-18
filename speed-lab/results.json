@@ -371,6 +371,32 @@
         "coldFcp": 337.6, "coldLcp": 587.0,
         "warmFcp": 183.9, "warmLcp": 309.8
       }
+    },
+    {
+      "iter": 16,
+      "change": "gzip output cache keyed by path+ETag (largest-file TTFB 6.9ms -> 0.9ms)",
+      "verdict": "kept (first-principles wash)",
+      "tradeoff": "browser medians within 1-2ms on single-client harness; kept because per-request CPU removal scales with concurrency, ETag-invalidated",
+      "commit": "soci-frontend@33f8f63",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 63.8, "warmLoad": 23.3,
+        "coldFcp": 72, "coldLcp": 76,
+        "warmFcp": 32, "warmLcp": 48,
+        "coldFeedPaint": 59.9, "warmFeedPaint": 35.5
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 1202.2, "warmLoad": 206.5,
+        "coldFcp": 784, "coldLcp": 824,
+        "warmFcp": 236, "warmLcp": 236,
+        "coldFeedPaint": 814.2, "warmFeedPaint": 223.4
+      },
+      "lighthouse": {
+        "n": 5,
+        "coldFcp": 365.5, "coldLcp": 585.6,
+        "warmFcp": 183.7, "warmLcp": 265.2
+      }
     }
   ]
 }

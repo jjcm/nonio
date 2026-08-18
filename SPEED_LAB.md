@@ -48,6 +48,7 @@ Slow 4G = CDP throttle, 150ms RTT / 1.6Mbps down / 750kbps up.
 | 13 | skip redundant boot-time /posts merge fetch | 101 | 60 | 112 | 112 | 98 | 72 | 7 | kept | returning to filter=all reuses loaded data instead of re-merging |
 | 14 | compile shell template once at boot | 66 | 26 | 88 | 88 | 64 | 40 | 7 | kept | template edits need a server restart |
 | 15 | dedupe boot GETs (/tags ×3, /communities ×2 → 1+1) | 64 | 25 | 72 | 72 | 62 | 36 | 7 | kept | identical GETs within 2s share one response object |
+| 16 | gzip output cache keyed by path+ETag | 64 | 23 | 72 | 76 | 60 | 36 | 7 | kept (first-principles wash) | memory holds gzipped copies of served statics |
 
 ### Slow 4G
 
@@ -69,6 +70,7 @@ Slow 4G = CDP throttle, 150ms RTT / 1.6Mbps down / 750kbps up.
 | 13 | skip redundant boot-time /posts merge fetch | 1210 | 207 | 780 | 824 | 808 | 224 | 5 | kept | returning to filter=all reuses loaded data instead of re-merging |
 | 14 | compile shell template once at boot | 1203 | 211 | 784 | 824 | 816 | 224 | 5 | kept | template edits need a server restart |
 | 15 | dedupe boot GETs (/tags ×3, /communities ×2 → 1+1) | 1203 | 211 | 780 | 824 | 815 | 226 | 5 | kept | identical GETs within 2s share one response object |
+| 16 | gzip output cache keyed by path+ETag | 1202 | 207 | 784 | 824 | 814 | 223 | 5 | kept (first-principles wash) | memory holds gzipped copies of served statics |
 
 ### Lighthouse desktop (comparable to the local Qwen track)
 
@@ -85,6 +87,7 @@ checking out the pre-change frontend (`soci-frontend@75e4cab`).
 | 13 | 341 | 607 | 186 | 267 | 5 |
 | 14 | 374 | 607 | 185 | 267 | 5 |
 | 15 | 338 | 587 | 184 | 310* | 5 |
+| 16 | 365* | 586 | 184 | 265* | 5 |
 
 \* Lighthouse warm LCP is bimodal (~265 vs ~311 modes) in every iteration
 13–15; medians flip on mode draws. Cold LCP distributions for iter 15
@@ -376,3 +379,20 @@ Result (vs iter 14): unthrottled cold FCP 88 → **72ms**; Lighthouse cold LCP
 LCP median moved 267 → 310 but that metric is bimodal (~265/~311 modes) in
 every iteration 13–15 — mode draw, not regression. **Keep.** Tradeoff:
 identical GETs within 2s share one response object.
+
+### Iteration 16 — gzip output cache keyed by path+ETag (KEPT, first-principles wash)
+
+Hypothesis: static responses re-gzip synchronously per request (~3–8ms CPU on
+the critical path); caching gzipped bytes keyed by path+ETag removes it.
+
+Change: `soci-frontend@33f8f63` — `send()` takes an optional cache key
+(static file path+ETag; the dynamic document stays uncached), invalidation is
+automatic because the ETag changes with the file.
+
+Result (vs iter 15): direct server measurement is unambiguous — largest-file
+TTFB 6.9ms → **0.9ms** cached — but every headline browser median is within
+1–2ms (a wash; the single-client harness hides per-request CPU, and
+Lighthouse cold FCP / warm LCP again drew their known bimodal modes).
+**Kept as a labeled first-principles wash** per the lab rules: strictly less
+CPU per request, scales with concurrency, zero staleness risk. Tradeoff:
+memory holds gzipped copies of served statics (~100KB here).
