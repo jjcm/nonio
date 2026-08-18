@@ -113,6 +113,27 @@
         "warmFcp": 336, "warmLcp": 336,
         "coldFeedPaint": 2709.5, "warmFeedPaint": 519.1
       }
+    },
+    {
+      "iter": 5,
+      "change": "gzip compressible dev-server responses (JS/CSS/HTML/JSON/SVG/wasm incl. document)",
+      "verdict": "kept",
+      "tradeoff": "~10ms sync gzip CPU per cold load on localhost; keyed gzip cache is a follow-up",
+      "commit": "soci-frontend@e9e4e89",
+      "unthrottled": {
+        "n": 7,
+        "coldLoad": 105.7, "warmLoad": 67.3,
+        "coldFcp": 120, "coldLcp": 120,
+        "warmFcp": 96, "warmLcp": 96,
+        "coldFeedPaint": 135.7, "warmFeedPaint": 86.5
+      },
+      "slow4g": {
+        "n": 5,
+        "coldLoad": 1767.2, "warmLoad": 206.4,
+        "coldFcp": 1560, "coldLcp": 1980,
+        "warmFcp": 220, "warmLcp": 220,
+        "coldFeedPaint": 1972.8, "warmFeedPaint": 407.2
+      }
     }
   ]
 }

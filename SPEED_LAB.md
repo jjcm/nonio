@@ -37,6 +37,7 @@ Slow 4G = CDP throttle, 150ms RTT / 1.6Mbps down / 750kbps up.
 | 2 | defer non-feed components until after load | 106 | 70 | 112 | 112 | 133 | 86 | 7 | kept | later routes' components define shortly after load |
 | 3 | defer markdown-wasm loader script | 94 | 66 | 116 | 124 | 116 | 82 | 7 | kept | markdown bodies render a tick later on slow pipes |
 | 4 | modulepreload eager module subtree (29 links) | 96 | 70 | 100 | 116 | 122 | 92 | 7 | rejected | — (reverted) |
+| 5 | gzip compressible dev-server responses | 106 | 67 | 120 | 120 | 136 | 87 | 7 | kept | ~10ms sync gzip CPU per cold load on localhost |
 
 ### Slow 4G
 
@@ -47,6 +48,7 @@ Slow 4G = CDP throttle, 150ms RTT / 1.6Mbps down / 750kbps up.
 | 2 | defer non-feed components until after load | 3041 | 313 | 2392 | 2856 | 2849 | 513 | 5 | kept | later routes' components define shortly after load |
 | 3 | defer markdown-wasm loader script | 2869 | 313 | 2184 | 2668 | 2675 | 508 | 5 | kept | markdown bodies render a tick later on slow pipes |
 | 4 | modulepreload eager module subtree (29 links) | 2919 | 321 | 2188 | 2720 | 2710 | 519 | 5 | rejected | — (reverted) |
+| 5 | gzip compressible dev-server responses | 1767 | 206 | 1560 | 1980 | 1973 | 407 | 5 | kept | ~10ms sync gzip CPU per cold load on localhost |
 
 ## Iteration log
 
@@ -126,3 +128,19 @@ pipe (6 connections) discovery latency isn't the constraint, and the preload
 burst competes with CSS/document. Wash-to-regression on the discriminating
 environment → **reject, reverted** (matches speedupskill "high-entanglement
 JS splits below the noise floor" / no unmeasured fetchpriority-style hints).
+
+### Iteration 5 — gzip dev-server responses (KEPT)
+
+Hypothesis: Slow 4G cold is transfer-bound on ~680KB of uncompressed text
+assets; gzip for compressible types (JS/CSS/HTML/JSON/SVG/wasm, document
+included) cuts cold load/FCP.
+
+Change: `soci-frontend@e9e4e89` — `send()` helper gzips when the client sends
+`Accept-Encoding: gzip`; `Vary: Accept-Encoding`; ETag/304 path unchanged.
+soci.css goes 49KB → 9KB on the wire.
+
+Result (vs iter 3, the kept base): Slow 4G cold load 2869 → **1767ms** (−38%),
+cold FCP 2184 → **1560ms** (−29%), cold LCP 2668 → 1980, feedPaint 2675 → 1973,
+warm load 313 → **206ms** (document now gzipped too). Unthrottled cold load
+94 → 106ms (+12ms — synchronous gzip CPU; a keyed gzip cache is the natural
+follow-up). Smoke: 21 posts, no page errors. **Keep.**
