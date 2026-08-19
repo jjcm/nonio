@@ -218,3 +218,28 @@ Tradeoff: an authenticated voice participant pays a one-time 19.8 KB dynamic imp
 Next hypotheses: (a) same treatment for `soci-post-list.js` (28.5 KB), the largest remaining eager home module; (b) verify from the trace whether a later, larger node replaces the placeholder as the final LCP candidate (iter5's (a)); (c) reduce staggered `createPosts` re-layout.
 
 Raw: `speed-lab/metrics/baseline.json` (copied to `baseline-iter6.json`).
+
+### iter7: lazy-load the grid-lanes polyfill from soci-post-list.js (2026-08-18 PT)
+
+Hypothesis (iter6 next-hypothesis a): trim the next-largest remaining eager home module, `soci-post-list.js` (28,374 B). Its masonry-lanes subsystem is dead weight on the default list view: the static `import { polyfill, unpolyfill, relayout, SUPPORTS_GRID_LANES } from '../lib/grid-lanes-polyfill.js'` (7,940 B) and the `view="lanes"` branches never run for the anonymous benchmark path. Move the whole subsystem behind a dynamic import that only lanes-view code loads.
+
+Change (1 file, reverted):
+- `soci-post-list.js`: static import removed; module-level `_loadLanes()` caches one `import('../lib/grid-lanes-polyfill.js')`, holding the resolved module in `_lanes`. Async contexts (`createPosts` lanes branch, `fetchAndMerge`) `await _loadLanes()`; sync contexts (`_onCardLoaded`, `disconnectedCallback`, `_updateView`) guard on the already-resolved `_lanes` (no-op when lanes never loaded — `unpolyfill`/`relayout` are instance no-ops otherwise). `_renderPostCardsSequential` destructures from `_lanes` (guaranteed loaded after the awaited `createPosts` branch). Added a `_renderGeneration` re-check after the new `await` in the lanes branch to close a view-switch race the static import didn't have.
+
+REVERT — not faster; LCP regressed on both cold and warm.
+
+| | FCP ms | LCP ms | TTI ms | TBT | score |
+|---|---:|---:|---:|---:|---:|
+| cold median | 598.2 (+10.8) | 1091.2 (+38.4) | 1100.5 (+47.6) | 0 | 0.98 |
+| warm median | 585.6 (+1.2) | 1061.5 (+66.0) | 1065.6 (+64.1) | 0 | 0.98 |
+
+Cold runs: FCP 598.2 / 617.7 / 584.7; LCP 1161.9 / 1081.9 / 1091.2
+Warm runs: FCP 587.6 / 585.6 / 585.0; LCP 1061.5 / 1017.4 / 1069.1
+
+Correctness (pre-revert): `node --check` passes; all 7 Lighthouse runs rendered the 21-post feed (TBT 0, score 0.98); no console exceptions observed in metrics runs.
+
+Verdict: every cold LCP run (1081.9–1161.9) is above iter6's worst cold (1054.2); warm median +66.0 ms. No win to keep. Caveat: this run's spread is wider than the usual ±30 ms noise band (cold LCP 1081.9–1161.9 ≈ 80 ms), so the regression magnitude may be partially noise — but even the best cold (1081.9) and best warm (1017.4) don't credibly beat iter6 by enough to hold, and the predicted 15–40 ms saving was already inside the noise. Reading: shaving ~8 KB of *sibling-module* parse off a 28 KB module that LCP still needs to execute is not a meaningful lever here — unlike iter1/iter6, which cut whole components the home paint never needed. `soci-post-list.js` is on the LCP critical path; only work that defers its *own* parse/eval (not just its imports) could move it.
+
+Next hypotheses: (b) verify from the trace whether a later, larger node replaces the placeholder as the final LCP candidate (iter5/iter6 b); (c) reduce staggered `createPosts` re-layout (iter6 c); (d) if (b) shows the card grid is the true LCP, reconsider the forbidden static-markup idea *with* measured LCP impact.
+
+Raw: `speed-lab/metrics/baseline.json` (copied to `baseline-iter7.json`).
