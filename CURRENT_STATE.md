@@ -406,3 +406,36 @@
 - **Frontend (soci-frontend)**
   - Updated `soci-message-row` reply chips to render a stacked avatar strip before the reply count text.
   - Wired threaded channel rendering to pass `replyUsers` through to rows and refresh row avatar stacks when thread data loads or new replies are sent.
+
+## 2026-08-18 — Speed lab Qwen track: iteration 2 (REVERT)
+
+- **Speed lab** (`speed-lab/`, branch `cursor/speed-lab-qwen-nonio`, never merge)
+  - Iteration 2 hypothesis: the confirmed duplicate startup `GET /posts` (two identical 6844 B requests from `soci-post-list` init — `sort` setAttribute → `_refreshData`, then `filter` setAttribute → `_refreshFilterFetch`) delays LCP.
+  - One-line guard in `soci-post-list.js` `fetchAndMerge` (`if(url === this._currentDataUrl) return`); measured via `run_baseline.py`: cold 622.9/1055.6, warm 623.1/1074.0 (FCP/LCP medians) vs iter1 targets 624.2/1096.3 and 623.8/1056.4 — all deltas inside run-to-run noise.
+  - REVERTED the code change (no commit); lab record + key finding appended to `speed-lab/SPEED_LAB.md`, raw metrics in `speed-lab/metrics/baseline-iter2.json`.
+  - Key finding: FCP/LCP are not data-fetch-bound — all resources load by ~119 ms, TBT 0, yet FCP ~625 ms / LCP ~1055–1113 ms; iter3 target is the ~500–980 ms post-load paint gap (desktop CPU-throttle multiplier, staggered render, or remaining eager assets: `soci-sidebar.js` 53 KB, `soci-post-list.js` 28.5 KB, `markdown.wasm`).
+
+## 2026-08-18 — Speed lab Qwen track: iteration 4 (REVERT)
+
+- **Speed lab** (`speed-lab/`, branch `cursor/speed-lab-qwen-nonio`, never merge)
+  - Iteration 4 hypothesis (iter3 follow-up): defer only the six per-route page scripts (`post.js`, `user.js`, `notifications.js`, `admin/{subscribe,settings,financials}.js`) while keeping `markdown.js`/`markdown.wasm` eager — capture the ~61 ms FCP win without the `markdown.wasm`-init LCP cost blamed for iter3's regression.
+  - One `defer` attr per script tag across 6 `.pug` files (zero JS changes); bootstrap safety re-verified (`document.currentScript.closest('soci-route')` + `DOMContentLoaded` init survive `defer`).
+  - Measured via `run_baseline.py`: cold FCP median 549.5 (−74.7 vs iter1 624.2), warm FCP 551.2 (−72.6); but cold LCP median 1154.3 (+58.0 vs 1096.3), warm LCP 1139.9 (+83.5), TTI +67.5/+83.2. All 3 cold LCP runs (1148.6–1215.7) exceed iter1's worst (1098.2) and all 3 warm (1133.2–1208.9) exceed iter1's worst warm (1076.3) ⇒ real regression, not noise.
+  - REVERTED (six `.pug` files checked out; submodule clean at `115703b`); no commit. Lab record + raw metrics appended to `speed-lab/SPEED_LAB.md` (`speed-lab/metrics/baseline-iter4.json`).
+  - Key finding: iter3's follow-up falsified — `markdown.wasm` init was **not** the LCP cost; deferring even six small per-route scripts still delays the JS-painted LCP node while static-shell FCP improves ~73 ms in both lanes. Combined with iter3: unblocking mid-body parse reliably buys ~60–75 ms FCP at a ~58–112 ms LCP/TTI cost, with or without `markdown.js` deferred. Stop optimizing parse-blocking; next target is the painted LCP node itself (`div#placeholder` in `soci-post-list` + the ~500–980 ms post-load paint gap).
+
+## 2026-08-18 — Speed lab Qwen track: iteration 5 (REVERT)
+
+- **Speed lab** (`speed-lab/`, branch `cursor/speed-lab-qwen-nonio`, never merge)
+  - Iteration 5 hypothesis (iter4 follow-up): the LCP node (`div#placeholder` "Viewing all tags" in `soci-post-list` shadow DOM) is created by `tags.js` post-parse (`lazyload` → `onActivate` → `createElement`); a static `<soci-post-list tag="all">` in `pages/tags.pug` would upgrade during eager module evaluation and paint the placeholder as early as FCP. `pages/tags.js` `onActivate` now reuses the static element (sets/removes `tag`/`community`) instead of clearing and creating.
+  - Measured via `run_baseline.py`: cold median 623.4/1088.8 (FCP/LCP), warm median 603.2/1069.8 vs iter1 targets 624.2/1096.3 and 623.8/1056.4 — cold LCP −7.5 ms, warm LCP +13.4 ms, warm FCP −20.6 ms: mixed deltas inside the ~40 ms run-to-run LCP spread. Not "overall faster."
+  - REVERTED (both `.pug`/`.js` files checked out; submodule clean at `115703b`); no commit. Lab record + raw metrics appended to `speed-lab/SPEED_LAB.md` (`speed-lab/metrics/baseline-iter5.json`).
+  - Key finding: element *availability* is not the LCP gate — the placeholder is laid out by ~FCP no matter who creates it; LCP stays pinned ~1050–1092 ms in every run since iter1. Also: `lcp-breakdown-insight` is unreliable for shadow-DOM pseudo-element LCP nodes (claims TTFB 59 ms + render delay 110 ms vs the actual 1092 ms LCP metric). Next targets: verify from the trace whether a later, larger node *replaces* the placeholder as the final LCP candidate; trim remaining eager home modules (`soci-sidebar.js` 53 KB, `soci-post-list.js` 28.5 KB); reduce staggered `createPosts` re-layout.
+
+## 2026-08-18 — Speed lab Qwen track: iteration 6 (KEEP)
+
+- **Speed lab** (`speed-lab/`, branch `cursor/speed-lab-qwen-nonio`, never merge)
+  - Iteration 6 hypothesis (iter5 follow-up): trim the biggest remaining eager home module — move the voice/LiveKit subsystem out of `soci-sidebar.js` (53.1 KB → 34.7 KB, −18.4 KB) into `soci-frontend/components/voice/soci-voice.js` (19.8 KB), dynamically imported only by authenticated voice use; `_startVoicePresenceSocket` gated on `authToken` so the anonymous home path never loads it.
+  - Measured via `run_baseline.py`: cold median 587.4/1052.8 (FCP/LCP), warm median 584.4/995.5 vs iter1 targets 624.2/1096.3 and 623.8/1056.4 — all six FCP runs (584.0–605.1) and all six LCP runs (cold 1018.6–1054.2, warm 976.3–1035.5) beat iter1's worst ⇒ real, not noise. CDP smoke: 21 fixture posts, sidebar upgraded, 0 exceptions, 0 console errors, zero fetches of the voice module on the anonymous path.
+  - KEPT and committed (`qwen-iter6` in superrepo + submodule): sidebar `53,134 → 34,689 B`, new `components/voice/soci-voice.js`. Lab record + raw metrics in `speed-lab/SPEED_LAB.md` / `speed-lab/metrics/baseline-iter6.json`. New Qwen-track best: cold 587/1053, warm 584/996.
+  - Key finding: confirms the iter2–iter5 paint-gap story — the ~500–980 ms post-load-idle gap is driven by eager module parse/eval cost; shaving home-path-dead JS moves both FCP and the JS-painted LCP node. Next targets: `soci-post-list.js` (28.5 KB, largest remaining eager home module); verify from the trace whether a later, larger node replaces the placeholder as the final LCP candidate.
