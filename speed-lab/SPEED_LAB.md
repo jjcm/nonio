@@ -243,3 +243,174 @@ Verdict: every cold LCP run (1081.9–1161.9) is above iter6's worst cold (1054.
 Next hypotheses: (b) verify from the trace whether a later, larger node replaces the placeholder as the final LCP candidate (iter5/iter6 b); (c) reduce staggered `createPosts` re-layout (iter6 c); (d) if (b) shows the card grid is the true LCP, reconsider the forbidden static-markup idea *with* measured LCP impact.
 
 Raw: `speed-lab/metrics/baseline.json` (copied to `baseline-iter7.json`).
+
+### iter8: drop the `#items` opacity/translate entrance transition (2026-08-19 PT)
+
+Hypothesis (iter6/iter7 next-hypothesis b, restated as the single remaining *paint-gate* candidate): the default-view feed fades in as a unit — `#items { opacity:0; transform:translateY(12px) }` animating `→ opacity:1; translateY(0)` over 0.35s once `[loaded]` flips (i.e. after the `/posts` fetch resolves). The LCP node `div#placeholder` ("Viewing all tags") is a *child* of `#items`, so while the container sits at `opacity:0` the placeholder is not contentful-painted. If we make `#items` visible from first paint (lanes view already does this via its override), the placeholder can register as LCP ~350ms+ earlier. Pure paint-timing change, zero extra bytes, zero layout change.
+
+Change (1 file, reverted):
+- `soci-post-list.js` `css()`: removed `opacity: 0; transform: translateY(12px)` from the base `#items` rule, deleted the now-redundant `:host([view="lanes"]) #items { opacity:1; transform:none }` override, and deleted the `:host([loaded]) #items { … transition: transform 0.35s …, opacity 0.35s … }` block. Kept the separate lane/unplaced `translateY(12px)` rules (L183/L194) and the appended-post stagger (L617). No `transitionend`/`loaded`-attribute JS dependency removed — `loaded` is only an attribute toggle around the fetch.
+
+REVERT — mixed profile, not "faster" (regresses cold FCP + warm LCP/TTI).
+
+| | FCP ms | LCP ms | TTI ms | TBT | score |
+|---|---:|---:|---:|---:|---:|
+| cold median | 604.9 (+17.5) | 998.0 (−54.8) | 1003.9 (−49.0) | 0 | 0.99 |
+| warm median | 585.0 (+0.6) | 1036.5 (+41.0) | 1038.6 (+37.1) | 0 | 0.98 |
+
+Cold runs: FCP 604.3 / 605.1 / 604.9; LCP 998.0 / 1054.8 / 996.3
+Warm runs: FCP 605.2 / 585.0 / 585.0; LCP 998.2 / 1036.5 / 1037.6
+
+Correctness (pre-revert): `node --check` passes; all 7 Lighthouse runs rendered the 21-post feed (TBT 0, score ≥0.98, no console exceptions); CDP smoke confirmed 21 fixture posts (10 sl-img / 10 sl-txt / 1 sl-vid) and `#items` computed `opacity:1` under the change.
+
+Verdict: the paint-gate hypothesis is **partially** real — cold LCP drops 54.8ms and cold TTI 49.0ms, but it is *purchased* with a consistent cold FCP regression (all three cold runs land 604.3–605.1 vs iter6's 587.4 median, i.e. ~+17.5ms, tight enough to be signal not noise) and a warm LCP regression (+41.0ms) with warm TTI +37.1ms. Making the whole `#items` subtree visible at first paint adds a larger paint region to the very first contentful frame, which delays FCP by ~17ms on cold and shifts the warm LCP/TTI later. Net: it trades FCP + warm LCP for cold LCP — exactly the "FCP-only that regresses LCP" shape the keep-rule excludes, mirrored. Not a uniform win ⇒ REVERT. Reading: the 0.35s `[loaded]` fade was not the *sole* LCP gate (removing it moves LCP but not to the thumbnail/FCP floor), so the placeholder's LCP timestamp is set mostly by when `#items` first becomes non-zero-opacity *and* the surrounding paint, not by the duration of the fade — consistent with iter5's finding that element *availability*, not animation, is the real gate.
+
+Next hypotheses: (b) verify from the trace whether a later, larger node replaces the placeholder as the final LCP candidate (iter5/iter6 b) — now sharpened: the lever is making `#items` non-zero-opacity *at first paint without enlarging the first-paint region* (e.g. fade only a background/overlay rather than the content container); (c) reduce staggered `createPosts` re-layout (iter6 c); (d) if (b) shows the card grid is the true LCP, reconsider the forbidden static-markup idea *with* measured LCP impact.
+
+Raw: `speed-lab/metrics/baseline.json` (copied to `baseline-iter8.json`).
+
+### iter9: bounded-batch the staggered `createPosts` appends (list view) (2026-08-19 PT)
+
+Hypothesis (iter6/iter7/iter8 next-hypothesis c): list-view `createPosts` renders the first `Math.ceil(window.innerHeight / 104)` cards synchronously, then appends the rest **one per `requestIdleCallback`** (`renderNextPost`). Each append forces its own style recalc + layout, and those cycles interleave with the 0.35s `[loaded]` opacity ramp, stalling transition frames and delaying the LCP candidate's contentful paint. Batch the remainder (5 cards per idle tick, one `innerHTML` join per batch, same per-tick yield) to cut per-card DOM round-trips ~5× and reduce layout churn during the fade. No `#items` CSS touched (no path to iter8's FCP regression); initial slice unchanged.
+
+Change (1 file, reverted):
+- `soci-post-list.js` list-view `renderNextPost`: per-card `temp.innerHTML = renderFn(remainingPosts[0])` + `slice(1)` recursion replaced with `batch = 5` — chunk HTML built via `chunk.map(renderFn).join('')`, appended via `while (temp.firstElementChild) this.appendChild(temp.firstElementChild)`, recurse on `remainingPosts.slice(batch)`. Generation and `_itemsSlot` guards preserved.
+
+REVERT — cold LCP win purchased with FCP regressions on both lanes; warm LCP/TTI also regressed. Not "overall faster."
+
+| | FCP ms | LCP ms | TTI ms | TBT | score |
+|---|---:|---:|---:|---:|---:|
+| cold median | 604.2 (+16.8) | 1019.9 (−32.9) | 1019.9 (−33.0) | 0 | 0.98 |
+| warm median | 605.2 (+20.8) | 1000.6 (+5.1) | 1006.6 (+5.1) | 0 | 0.98 |
+
+Cold runs: FCP 585.6 / 605.4 / 604.2; LCP 1041.5 / 1019.9 / 977.3
+Warm runs: FCP 605.5 / 605.2 / 605.2; LCP 1000.6 / 957.6 / 1038.8
+
+Correctness (pre-revert): all 7 Lighthouse runs rendered the 21-post feed under the patched module (TBT 0, TTI 959.4–1043.2 ms, score ≥0.98, no console exceptions).
+
+Verdict: the staggered-re-layout lever is **not** the LCP gate. Batching moved cold LCP −32.9ms at the median (best cold run 977.3 ms is the best cold LCP this track has ever recorded) but cost +16.8ms cold FCP and +20.8ms warm FCP, with warm LCP/TTI +5.1ms. The LCP candidate is already in the DOM via the synchronous initial slice *before any idle callback fires*, so post-append timing only chases below-the-fold cards — consistent with iter8's reading that the LCP timestamp is set by when `#items` first becomes non-zero-opacity, not by what is appended afterwards. Caveat on the FCP column: the edit cannot touch first paint, and cold FCP here is bimodal (585.6 vs 604.2–605.4) in the same ~605 ms cluster all three iter8 cold runs landed in — the cluster looks environmental/run-to-run rather than caused by this change. Either way the keep-rule excludes an LCP win that regresses FCP, and warm is unambiguously slower ⇒ REVERT.
+
+Next hypotheses: (a) sharpened iter6/7/8 (b): make `#items` non-zero-opacity *at first paint without enlarging the first-paint region* — fade a background/overlay (or apply the opacity ramp to a `::before` veil sized to the header/input FCP region only) instead of the content container; (d) if trace-verification shows the card grid is the true final LCP candidate, reconsider the static-markup idea *with* measured LCP impact.
+
+Raw: `speed-lab/metrics/baseline.json` (copied to `baseline-iter9.json`).
+
+### iter10: replace the `#items` opacity/transform fade with a fading `::before` background veil (2026-08-19 PT)
+
+Hypothesis (iter9 next-hypothesis a, the sharpened iter6/7/8 (b)): the placeholder/candidate LCP element cannot contentful-paint while `#items` sits at `opacity: 0`, but making the container visible at first paint (iter8) enlarged the first-paint region and cost ~+17ms cold FCP. Keep `#items` at full opacity from first paint *without enlarging the first visible contentful region* by fading a non-contentful background instead of the content container: an `#items::before` veil (solid `var(--bg-bold)`, the host's own background, so visually indistinguishable from empty space, and solid-color paint is not contentful — FCP should stay the small header/input region) that fades out on `[loaded]`.
+
+Change (1 file, reverted):
+- `soci-post-list.js` `#items`: dropped `opacity: 0; transform: translateY(12px)`, the `:host([loaded]) #items` ramp, and the now-redundant `:host([view="lanes"]) #items { opacity: 1; transform: none }` override; added `position: relative` plus `&::before { content: ''; position: absolute; inset: 0; background: var(--bg-bold); pointer-events: none; transition: opacity 0.35s var(--soci-ease); }` and `:host([loaded]) #items::before { opacity: 0; }`. Per-card fades (`soci-post.js` `[loaded]` ramps, lanes-view `::slotted` rules) untouched. Lanes container rules (`display: grid-lanes` etc.) untouched.
+
+REVERT — no win on any metric; uniformly slower than both the locked keep-bar (iter6) and the immediately preceding measurement (iter9).
+
+| | FCP ms | LCP ms | TTI ms | TBT | score |
+|---|---:|---:|---:|---:|---:|
+| cold median | 605.4 (+18.0) | 1057.3 (+4.5) | 1057.5 (+4.6) | 0 | 0.98 |
+| warm median | 605.0 (+20.6) | 1037.6 (+42.1) | 1039.8 (+38.3) | 0 | 0.98 |
+
+(deltas vs locked iter6 keep-bar 587.4/1052.8 cold, 584.4/995.5 warm, TTI lock 1052.9/1001.5)
+
+Cold runs: FCP 604.8 / 605.4 / 607.0; LCP 1056.2 / 1057.3 / 1066.1
+Warm runs: FCP 604.9 / 605.0 / 605.1; LCP 1037.4 / 1037.6 / 1038.3
+
+vs iter9 (previous measurement): cold LCP +37.4ms (1019.9 → 1057.3), warm LCP +37.0ms (1000.6 → 1037.6), TTI cold +37.6 / warm +33.2, FCP effectively flat.
+
+Cluster caveat (not used to excuse KEEP, only noted for the record): every single run landed in the known slow environmental clusters — cold/warm FCP in the ~604.9–607.0 band (same cluster iter8/iter9 FCPs landed in), warm LCP/TTI in the ~1037–1040 band (iter9 warm run 3 alone hit 1038.8 on otherwise-unchanged warm-lane code paths). Some of the absolute delta is therefore run-to-run variance, but the *direction* (no improvement anywhere, TTI regressed on both lanes) holds regardless.
+
+Verdict: the veil is effectively a no-op for the cards — `soci-post-li :host` is `position: relative`, so every card always paints *above* the veil (verified in `soci-post-li.js:21`), meaning the veil never occludes LCP-eligible content: this variant reduces to "remove the container fade entirely + fade a background-colored rectangle". Under that reading it is strictly weaker than iter8 (which removed the fade *and* still produced the −54.8ms cold LCP win), and it produced no cold LCP win at all. Two readings follow: (1) "non-zero container opacity at first paint" is **not** what bought iter8's cold LCP — iter10 had it from first paint and gained nothing, so iter8's win is most plausibly attributable to dropping `transform: translateY(12px)` (the animating transform creates a composited layer on `#items`; a 350ms CSS transform animation keeps the whole subtree on the compositor, which defers LCP contentful-paint of its slotted children); or (2) the placeholder-reported LCP element and its ~1000ms+ timestamp is an artifact of the fade/layer stack in a way that only full structural changes (static markup) would move. Either way the keep-rule excludes this (no uniform win; TTI +4.6/+38.3) ⇒ REVERT.
+
+Next hypotheses: (a) isolate the transform — keep the `[loaded]` opacity ramp but drop *only* `transform: translateY(12px)` (and the lanes `transform: none` override) from `#items`; if that alone reproduces iter8's cold LCP win without (or with less) the FCP cost, the composited-transform layer is the gate; (b) trace-level identification of the *true* final LCP node — Lighthouse's `lcp-element` audit keeps attributing the tiny header placeholder (238×17, 4046px²) while cold LCP lands ~977–1066ms, 200–450ms after FCP and ~300–500ms after the feed + first image thumbnail are already visible in the frame shots, so the audit's attribution is suspect and the real candidate (first image `img`? card text block?) is unidentified; (c) re-baseline pristine iter6 HEAD once if the ~605/~1038 clusters persist, to separate machine state from code effects.
+
+Raw: `speed-lab/metrics/baseline.json` (copied to `baseline-iter10.json`).
+
+### iter11: drop ONLY `transform: translateY(12px)` from `#items`, keep the `[loaded]` opacity ramp (2026-08-19 PT)
+
+Hypothesis (iter10 next-hypothesis a): iter8 removed the `#items` fade wholesale and won −54.8 ms cold LCP, but iter10 showed that first-paint visibility *without* the fade bought nothing — so the remaining suspect from iter8's change set is the `transform: translateY(12px)` composited layer (a 350 ms transform animation keeps the whole `#items` subtree on the compositor, deferring contentful paint of slotted children). Isolate it: keep the `opacity: 0 → 1` ramp, drop the translate.
+
+Change (1 file, reverted):
+- `soci-post-list.js` `#items`: dropped `transform: translateY(12px)` (kept `opacity: 0`); `:host([view="lanes"]) #items`: dropped the translate-cancel `transform: none` (kept `opacity: 1`); `:host([loaded]) #items`: dropped `transform: translateY(0)` and narrowed `transition` to `opacity 0.35s var(--soci-ease)` only. Lanes per-`::slotted` child transforms (pre-polyfill flash rules) and the `_loadMore` JS inline stagger untouched — the hypothesis targets `#items` itself only.
+
+REVERT — no win on any lane; uniformly slower than the locked iter6 keep-bar.
+
+| | FCP ms | LCP ms | TTI ms | TBT | score |
+|---|---:|---:|---:|---:|---:|
+| cold median | 604.2 (+16.8) | 1085.5 (+32.7) | 1088.7 (+35.8) | 0 | 0.98 |
+| warm median | 604.7 (+20.3) | 1067.5 (+72.0) | 1072.7 (+71.2) | 0 | 0.98 |
+
+(deltas vs locked iter6 keep-bar 587.4/1052.8 cold, 584.4/995.5 warm, TTI lock 1052.9/1001.5)
+
+Cold runs: FCP 604.6 / 584.8 / 604.2; LCP 1087.5 / 1027.5 / 1085.5 (cold run 2 hit the fast FCP cluster — 584.8 FCP with 1027.5 LCP, the only run anywhere near the bar; the other two sit in the slow FCP ~604 cluster with LCP ~1086)
+Warm runs: FCP 604.4 / 604.9 / 604.7; LCP 1086.8 / 1049.5 / 1067.5
+
+vs iter7 (closest pristine-ish recent measurement, 598.2/1091.2 cold, 585.6/1061.5 warm): cold FCP +6.0, cold LCP −5.7 (noise), warm FCP +19.1, warm LCP +6.0. No lane uniformly faster.
+
+Correctness (pre-revert): all 7 Lighthouse runs rendered the 21-post fixture feed under the patched module (TBT 0, TTI 1036.5–1094.0 ms, score 0.98, no console exceptions); 21-post smoke via `/posts` before and after revert.
+
+Verdict: the composited-transform hypothesis is **not supported**. Keeping the opacity ramp while dropping the translate reproduced none of iter8's cold LCP win (median +32.7 vs bar; the one fast-cluster run's 1027.5 LCP is within the ~1027–1088 bimodal spread that has characterized LCP since iter8). Since iter10 (first-paint visibility, no fade) also produced no cold LCP win, neither "remove the translate" nor "make the container visible at first paint" alone explains iter8's −54.8 ms — the opacity ramp (element at `opacity: 0` until `[loaded]`) remains the common factor gating the LCP timestamp, and iter8's win may have been a within-run artifact rather than a reproducible code effect (iter8's run was the last one that hit the fast warm-FCP ~585 cluster).
+
+Machine-state caveat (now the dominant confound): warm FCP drifted 585.0 (iter8) → 605.2 (iter9) → 605.0 (iter10) → 604.7 (iter11) **on the same reverted pristine code** — a +20 ms cluster shift larger than most deltas chased in this track. Absolute numbers measured after ~14:00 PT cannot be compared directly to the iter6 bar (measured the prior evening). This does not change the keep call (keep requires being *faster*; nothing beat the bar) but it means the next iteration's verdict must be made against a fresh pristine re-baseline, not the iter6 bar.
+
+Next hypotheses: (c first) re-baseline **pristine iter6 HEAD** once to re-anchor the keep-bar against current machine state — only then do fade-related comparisons mean anything; (b) trace-level identification of the *true* final LCP node (Lighthouse still attributes the 238×17 header placeholder while frame shots show the feed + first thumbnail visible 200–450 ms earlier); if the re-baseline reproduces a cold LCP ~1050 ± 40 on pristine code, the LCP lever is likely structural (static first-card markup) rather than in the fade/transform stack — at which point the forbidden-list static-markup idea would need re-scoping with measured impact.
+
+Raw: `speed-lab/metrics/baseline.json` (copied to `baseline-iter11.json`).
+
+### iter12: pristine re-baseline, NO code change (calibration, 2026-08-19 PT)
+
+Purpose (iter11 next-hypothesis c, now the only pre-committed branch): warm FCP drifted +20 ms (585 → ~605) across iter8→iter11 on the *same* reverted pristine code, i.e. the machine-state confound now out-sizes most deltas chased in this track. Re-baseline pristine HEAD once (submodule verified clean at `faf6932` = iter1+iter6 kept state, 21-post smoke OK) to re-anchor the keep-bar against current machine state before any further comparison.
+
+No change. `run_baseline.py` on pristine iter1+iter6 code:
+
+| | FCP ms | LCP ms | TTI ms | TBT | score |
+|---|---:|---:|---:|---:|---:|
+| cold median | 604.8 | 1054.3 | 1054.4 | 0 | 0.98 |
+| warm median | 604.8 | 998.8 | 1000.8 | 0 | 0.98 |
+
+Cold runs: FCP 604.3 / 605.3 / 604.8 (all in the ~605 cluster); LCP 956.2 / 1057.8 / 1054.3; TTI 958.1 / 1058.1 / 1054.4
+Warm runs: FCP 585.3 / 604.8 / 604.8 (bimodal — one fast-cluster run); LCP 1036.9 / 957.4 / 998.8; TTI 1039.2 / 959.3 / 1000.8
+
+Reading:
+1. **FCP floor shifted, LCP did not.** FCP cold is permanently in the ~605 cluster (+17.4 vs the 587.4 bar) and warm is bimodal 585/605 (median +20.4) — the old FCP bar (587.4/584.4) is unreachable in the current window. LCP/TTI reproduce the iter6 bar within noise (cold LCP +1.5, warm LCP +3.3, TTI +1.5/−0.7). LCP comparisons remain valid against the iter6 bar; FCP comparisons must now use the 604.8 floor.
+2. **Correction to the iter8 log:** iter8's recorded "cold FCP +17.5 cost (all 3 runs 604.3–605.1 = signal)" was **environmental, not code** — pristine now measures the identical cold-FCP cluster (604.3–605.3). iter8's only true cost was warm LCP +37.7 (1036.5 vs re-anchored 998.8); its win stands: cold LCP −56.3 (998.0 vs 1054.3). iter8 remains REVERT under the standing keep rule (warm-LCP regression), but as a pure −56 cold LCP / +38 warm LCP trade, not an FCP-tax story. (The iter6-era log already showed 584–605 FCP variance *within* one run, so the bimodality is long-standing; the current window is simply stuck slow-side.)
+3. **iter11 REVERT confirmed against the re-anchored floor:** cold LCP 1085.5 vs 1054.3 (+31.2), warm LCP 1067.5 vs 998.8 (+68.7) — a genuine regression, not drift.
+4. **iter10 reading unchanged:** 1057.3 ≈ floor +3.0 — still "no win"; the veil ate the entire iter8-style gain (+~59 ms vs the iter8 reading), consistent with a full-feed-region `::before` paint + fade delaying first thumbnail paint.
+
+Verdict: CALIBRATION (no keep/revert — no code changed). Effective comparison bar for future iterations: **LCP/TTI = iter6 bar (1052.8/995.5, TTI 1052.9/1001.5); FCP = current floor 604.8/604.8** (any future FCP "regression" vs the 587/584 bar under ~20 ms is environmental). Keep rule unchanged: overall faster, no lane regressed.
+
+Next hypotheses for iter13: the fade/transform space is **exhausted** — iter10 (visibility, no fade) and iter11 (ramp kept, no transform) both produced no win, and the one remaining pre-committed branch (structural/static first-card markup) is on the locked do-not-retry list. Strongest remaining non-forbidden, never-retried lever is the one that produced both prior KEEPs (iter1 barrel split, iter6 voice split): **trim the largest remaining eager home module, `soci-post-list.js` (28.5 KB)** — named the next target in the iter6 log, then abandoned for paint-side hypotheses. Candidate shape: extract the lanes-view machinery (alternate-view CSS/JS) into a dynamically imported module loaded only on first switch to lanes, if sizing shows ≥ ~8 KB movable without touching the default `list` path or the `[loaded]` chain.
+
+Raw: `speed-lab/metrics/baseline.json` (copied to `baseline-iter12.json`).
+
+### iter13 gate: lanes-view split closed without measurement (2026-08-19 PT)
+
+Gate review of the iter13 candidate above. No code changed; no `run_baseline.py` cycle spent.
+
+- Movable mass without touching the eager polyfill is only ≈ **6 KB** (lanes methods ≈ 4.5 KB + lanes CSS ≈ 1.3 KB + lanes radio template ≈ 0.2 KB), below the pre-committed **~8 KB** threshold.
+- Moving `grid-lanes-polyfill.js` too would raise the total to ≈ **13–14 KB**, but that is a strict superset of iter7's already-reverted lazy-polyfill import. Iter7 regressed LCP by **+38.4 ms cold** and **+66.0 ms warm** (TTI +47.6 / +64.1), and its reading was explicit: `soci-post-list.js` is on the LCP critical path, and removing sibling imports/code from it is not a meaningful lever unless the module's own parse/eval is deferred.
+- Checked `opencode-prompt.md`: it contains no independent locked do-not-retry list. The only explicit locked branch in the lab record is the structural/static first-card markup idea (line 379). The lanes split is therefore formally non-forbidden, but the iter7 precedent + size gate make it not worth measuring.
+
+Direction pending: (b) un-forbid CDP true-LCP-node tracing, (c) re-scope the frozen static/structural markup idea with measured impact, or (d) pause at the iter6 kept state.
+
+### iter14: immutable Cache-Control for JS/CSS on the :4200 static handler (2026-08-19 PT) — **KEEP**
+
+Hypothesis (never tried before): warm is a no-cache/re-download storm because the node dev server serving :4200 sends **zero** cache headers. Proven before touching code: `curl -D -` on `/soci.js`, `/soci.css`, `/components/soci-components.js`, `/pages/post.js` shows no `Cache-Control`, no `ETag`, no `Last-Modified` → responses are uncacheable (no heuristic cache possible), so every warm Lighthouse pass re-downloaded the full JS/CSS set. This is the plain-HTTP explanation for iter0's "warm FCP ≈ cold".
+
+Change: `soci-frontend/index.js` `handler.file` now sends `Cache-Control: public, max-age=31536000, immutable` for `.js .css .wasm .png .webp .jpg .jpeg .gif .svg .ico .woff .woff2`. HTML (pug renders, SPA fallback) and the range-request mp4 path are untouched; the API is a separate host (:4201) and unchanged. Submodule commit `c43db4f`; server restarted on 4200; smoke: `GET :4201/posts` = exactly 21 fixture posts; `curl` confirms `immutable` header on JS/CSS and none on `/`.
+
+Medians vs re-anchored bar (FCP 604.8/604.8, LCP/TTI = iter6 1052.8/995.5, TTI 1052.9/1001.5):
+
+| | FCP ms | LCP ms | TTI ms | TBT | score |
+|---|---:|---:|---:|---:|---:|
+| cold median | 606.4 | 961.4 | 963.2 | 0 | 0.99 |
+| warm median | 217.0 | 470.1 | 472.1 | 0 | 1.00 |
+
+Cold runs: FCP 606.4 / 606.6 / 605.6; LCP 960.8 / 961.4 / 1017.6; TTI 962.7 / 963.2 / 1021.6. Warm runs: FCP 217.0 / 217.4 / 217.0 (tightest cluster of the whole lab); LCP 530.2 / 470.1 / 449.7; TTI 530.2 / 472.1 / 449.7.
+
+Reading:
+1. **Biggest single win of the lab.** Warm FCP −387.8, warm LCP −525.4, warm TTI −529.4; Lighthouse performance score 0.98 → 1.00. The warm lane now runs on a fully disk-cached shell: no asset network time remains in that lane.
+2. **Cold also improved** — cold LCP 961.4 (−91.4 vs the iter6 bar, and below iter8's 998.0 reading) with cold FCP +1.6 (606.4 vs 604.8 = within the long-standing ±3 ms cluster; all runs sit in the 605–607 band the iter12 calibration calls environmental). No lane regressed.
+3. The iter0 anomaly (warm ≈ cold) is explained: it was never a code property, it was missing cache headers on the harness's own static server. Every prior iteration's warm numbers were inflated by full JS/CSS re-download.
+4. Tradeoff: the dev server now pins JS/CSS in the browser cache for a year — stale-code risk in dev if a file changes in place (mitigated in this lab because the warm profile is recreated per baseline; a reload with the user-data-dir wiped is always possible). Not yet content-hashed filenames; `immutable` + stable URLs is the lab-scoped approximation.
+
+Verdict: **KEEP.** New Qwen-track best: cold 606.4/961.4, warm 217.0/470.1 (FCP/LCP medians). Committed as `qwen-iter14` (superrepo gitlink + submodule `c43db4f`).
+
+Raw: `speed-lab/metrics/baseline.json` (copied to `baseline-iter14.json`).
