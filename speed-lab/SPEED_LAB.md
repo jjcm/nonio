@@ -778,3 +778,27 @@ Reading:
 Verdict: **KEEP** (rule met: cold LCP −19.8 with cold FCP an exact tie and warm lanes tie/within-noise — no lane slower, no cross-metric regression). Committed as `qwen-iter30` (submodule + superrepo gitlink + this ledger + `CURRENT_STATE.md`). **New Qwen-track record and future keep bar: cold 427.9/783.0, warm 177.0/429.9.**
 
 Raw: `speed-lab/metrics/cold-{1..3}.json` + `warm-prime.json` + `warm-{1..3}.json` hold the with-change kept run (no post-revert sweep needed — kept); consolidated as `speed-lab/metrics/baseline-iter30.json`.
+
+### iter31: memoize per-file gzip buffers in the :4200 static handler (2026-08-20 PT) — **KEEP**
+
+Hypothesis: every cold Lighthouse pass re-fetches ~65 gzip-eligible artifacts from :4200 (cold-1.json network: 61 js + 1 css + 1 wasm + 2 svg), and each one pays `zlib.gzipSync` on the server per request. Iter30's rejection of memoization ("~0.64 ms per artifact — below noise floor") was right *per artifact* but wrong in aggregate: 65 serial encodes per cold load is tens of ms of server CPU directly on the response latency of the assets the feed waits for. Compress each file once, cache the raw+gz buffers keyed by path, validate with `fs.stat` mtimeMs/size per request; serve the cached Buffer. `gzipSync` output is deterministic in Node (MTIME field zero — verified empirically), so wire bytes are byte-identical to the per-request path. HTML/pug send sites (`maybeGzip`) untouched — the document stays per-request gzipped.
+
+Change (`soci-frontend/index.js`, +34/−14, **kept**): `var GZIP_CACHE = {}`; the file handler's non-range branch now (a) stats `fileKey`, (b) on cache hit with matching mtime+size sends `cached.gz`/`cached.raw` directly (no `readFile`, no `gzipSync`), (c) on miss/invalidation reads the file and stores `{mtime, size, raw, gz: zlib.gzipSync(raw)}` for gzip-eligible exts before sending. Header wiring identical: `Content-Type`, iter14 `immutable` Cache-Control, `Content-Encoding: gzip` + `Vary: Accept-Encoding` only when the client wants gzip. Pre-measurement smoke: 21 fixture posts; `/soci.js` with `Accept-Encoding: gzip` → `Content-Encoding: gzip` + `Vary` + immutable; without → no `Content-Encoding`; two consecutive gzipped serves sha256-identical (cache-hit stable); decoded body sha256-identical to the on-disk file; `markdown.wasm` gunzip `cmp` clean. Server restarted on :4200 (PID 18549).
+
+Medians vs iter30 bar (cold 427.9/783.0, warm 177.0/429.9):
+
+| | FCP ms | LCP ms | TBT | score |
+|---|---:|---:|---:|---:|
+| cold median | 423.1 (−4.8) | 784.9 (+1.9) | 0 | 1.00 |
+| warm median | 177.0 (tie) | 429.8 (−0.1) | 0 | 1.00 |
+
+With-change run (3 cold + prime + 3 warm): cold FCP 429.4 / 423.1 / 422.6 (median 423.1, **−4.8**); cold LCP 784.9 / 754.9 / 793.2 (median 784.9, +1.9 — sub-2 ms, tie, and 2 of 3 cold runs still inside the iter30 762.0–798.9 band). Warm prime 422.9/792.9 — cold-shaped, as expected. Warm FCP 177.0 ×3 (exact tie); warm LCP 429.8 / 429.7 / 429.8 (median 429.8, −0.1). SI cold 447.4/423.1/450.5; warm 241.0/245.3/238.5; TBT 0 on all seven loads; Lighthouse 1.00 on every load.
+
+Reading:
+1. **The win is on the cold FCP lane via aggregate encode cost, exactly as hypothesized.** First paint is the document (~8 KB gzipped, still per-request) plus the first js/css wave; every one of the 65 artifact responses used to wait behind a server-side `gzipSync` before the first compressed bytes could flush. Removing 65 serial encodes per load shaves the per-response latency floor — a sub-ms-per-artifact saving that only the ~65-deep cold waterfall can express as a lane movement. Warm lanes see no change by construction (assets `immutable`-cached after the cold pass; the document is the only per-request gzip left and is below the warm noise floor).
+2. **Cold LCP +1.9 is a distribution tie, not a regression.** 754.9 / 784.9 / 793.2 straddles the iter30 median (783.0) with the same ~38 ms spread class; the LCP lane is still wasm+render dominated (iter30), and 1.9 ms is sub-2 ms by the lab's own established noise convention (iter27: "−2.0 noise").
+3. **Wire integrity verified, not assumed.** `zlib.gzipSync` at Node defaults emits a zeroed MTIME header → byte-identical output per input (empirically confirmed before measuring), so this is a pure server-CPU reduction with the same payload on the wire; cache invalidation is content-based (mtime+size), so redeploys of a same-size same-mtime file are the only theoretical staleness path and the lab workflow rewrites files with new mtimes.
+
+Verdict: **KEEP** (cold FCP −4.8 with no lane regressing beyond the sub-2 ms tie band; no FCP-only win crossing LCP). Committed as `qwen-iter31` (submodule + superrepo gitlink + this ledger + `CURRENT_STATE.md`). **New Qwen-track record and future keep bar: cold 423.1/784.9, warm 177.0/429.8.**
+
+Raw: `speed-lab/metrics/cold-{1..3}.json` + `warm-prime.json` + `warm-{1..3}.json` hold the with-change kept run (no post-revert sweep needed — kept); consolidated as `speed-lab/metrics/baseline-iter31.json`.
