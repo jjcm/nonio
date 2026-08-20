@@ -1,3 +1,29 @@
+## 2026-08-20 — Speed lab comparison recap: Fable vs local Qwen 3.8 (EXPERIMENTAL, DO NOT MERGE)
+
+- **New: `speed-lab/compare/`** — public-ready recap of the two overnight speed labs that ran on
+  the same Nonio feed fixture (21 posts, seed `4dc103a4306564ed7bb6cddb48a9f14f078f6b16`).
+  Lab-only; no product runtime code was touched on either keeper branch.
+  - `charts/a`–`f` (1600px PNG) plus `data/*.csv` for every plotted point. Lighthouse desktop and
+    Slow 4G are always plotted on separate axes because the two tracks never shared a harness:
+    Fable ran Playwright Slow 4G throughout and Lighthouse only from iteration 12; Qwen ran
+    Lighthouse desktop only, on different hardware.
+  - `video/` — six 1280×800 Slow 4G clips (vanilla / Fable / Qwen, cold and warm) and a 2×3 grid.
+    Recorded via CDP screencast so each frame's offset from `performance.timeOrigin` is exact.
+    Measured this run: vanilla cold FCP/LCP 4180/4700 ms, Fable 768/816, Qwen 2004/2440; warm FCP
+    4180 / 228 / 232. Requests on cold load: 108 / 40 / 86.
+  - `README.md` (comparison writeup) and `tweets.md` (thread + standalone, alt text, media map).
+  - `tools/` — `record.mjs`, `compile-video.py`, `build-data.py`, `make-charts.py`,
+    `run-variant.sh`.
+- **Findings worth keeping:** both agents independently found cache headers and compression as the
+  two biggest levers (Fable at iterations 1 and 5, Qwen at 14 and 28). Fable's lead on cold load is
+  bundling — 40 requests versus 86 on the throttled cold path. The two cache changes are not the
+  same change: Fable used `max-age=300` + ETag/304 because filenames are not content-hashed, Qwen
+  used `max-age=31536000, immutable` on the same non-hashed URLs. Qwen reverted brotli after
+  measuring +168 ms cold FCP from quality-11 encoding per request; Fable kept brotli because it had
+  already added a compressed-output cache.
+- **Never merge:** [PR #161](https://github.com/jjcm/nonio/pull/161) (`cursor/speed-lab-nonio-feed`),
+  `cursor/speed-lab-qwen-nonio`, and this recap branch are all experimental.
+
 ## 2026-02-23 — Community admin settings refactor
 
 - **Frontend (soci-frontend)**
