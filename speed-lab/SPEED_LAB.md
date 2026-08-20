@@ -605,4 +605,30 @@ Reading:
 
 Verdict: **REVERT** (cold FCP +17.0, cold LCP +95.0, warm FCP exact tie; warm LCP −20.5 is the only faster lane). `index.pug` restored, `git -C soci-frontend diff` clean (submodule at `c43db4f`, generated `index.html` back at HEAD too). Post-revert confirmation sweep reproduces the bar pattern (cold FCP 585.2 / 605.2 / 604.7; cold LCP 958.5 / 1017.8 / 1036.4; warm FCP 217.0 / 217.0 / 217.3; warm LCP 469.5 / 530.5 / 470.3 — the ~530 warm mode present again, reaffirming the warm 470/530 bimodal is environmental). Keep bar unchanged: cold 606.4/961.4, warm 217.0/470.1 (iter14). Remaining non-forbidden candidate: (b) content-hash filenames — a build-pipeline change, not "small" for the protocol; otherwise close out at the iter14 state.
 
-Raw: `speed-lab/metrics/cold-{1..3}.json` + `warm-{1..3}.json` hold the post-revert confirmation sweep; with-change numbers above (per-run raw JSONs superseded by the confirmation sweep, as in iter17/iter20/iter21).
+Raw: `speed-lab/metrics/cold-{1..3}.json` + `warm-{1..3}.json` hold the post-revert confirmation sweep; with-change numbers above (per-run raw JSONs superseded by the confirmation sweep, as in iter17/iter20/iter21/iter23).
+
+### iter24: `rel="preconnect"` for the image CDN `http://localhost:4203` (2026-08-20 PT) — **REVERT**
+
+Hypothesis (the prompt's "else" branch — the preferred webfont `rel="preconnect"` lever is closed by construction, again confirmed in iter22 that the project has zero webfonts): the feed's first/visible thumbnails are fetched from the image CDN at `http://localhost:4203` (the exact origin `config.js` issues requests against — note `127.0.0.1:4203` is *not* the host the browser dials, so a `127.0.0.1` preconnect would be a total no-op). A `<link rel="preconnect">` for that origin should cut the cold-lane DNS+TCP(+TLS) handshake RTT before the first image fetch lands, shaving cold LCP (bar 961.4) with no FCP cost. Deliberately skipped a match for the video CDN `:4204`: video is one of 21 posts far down the feed, its bytes are not on the FCP/LCP critical path, and per iter23's cold-FCP lesson the "only if cheap" bar isn't met — a second held connection to a low-value origin risks a cold-lane cost for a no-op gain.
+
+Change (1 line in `soci-frontend/index.pug`, reverted): `link(rel="preconnect" href="http://localhost:4203")` after the favicon `link`. Served-HTML preconnect confirmed present during the with-change run; the :4200 lab server compiles `index.pug` in memory per request (`pug.renderFile`), so the edit was live immediately (no build).
+
+Medians vs iter14 bar (cold 606.4/961.4, warm 217.0/470.1):
+
+| | FCP ms | LCP ms | TBT | score |
+|---|---:|---:|---:|---:|
+| cold median | 605.3 | 1038.3 | 0 | 0.98 |
+| warm median | 217.0 | 529.9 | 0 | 1.00 |
+
+With-change run (3 cold + 3 warm): cold FCP 605.2 / 605.3 / 605.7 (median 605.3, −1.1 — inside the ±20 ms band, noise); cold LCP 1038.3 / 1037.1 / 1038.7 (median 1038.3, +76.9 — a tight 1037–1039 cluster, σ ≈ 0.8 ms, not a random outlier). Warm FCP 217.0 ×3 (exact tie with the bar); warm LCP 470.0 / 530.1 / 529.9 (median 529.9, +59.8 — two of three draws in the ~530 mode). TBT 0 on every run.
+
+Reading:
+1. **No lane faster, two lanes materially slower.** Cold FCP is a −1.1 tie (noise) but cold LCP is +76.9 and warm LCP +59.8 — both clear regressions. Under the strict faster-on-all-lanes rule (and the "no LCP loss that regresses FCP" cross-lane read), this is a textbook revert.
+2. **The preconnect did not shorten a handshake that gated the LCP paint.** Cold LCP is the first feed card's media paint, and per iter21's finding the *reported* LCP node is actually the header `div#placeholder` text — so warming the :4203 connection ahead of the image neither removes a handshake on the LCP path nor pulls a byte that gates it. The +76.9 cold LCP is consistent with a connection slot idling a prewarmed origin while the real critical bytes (HTML → module → feed) race on cold-cache fetches — the same cost channel iter23 found for a head preload.
+3. **The verdict does not rest on the warm lane.** Warm LCP +59.8 is mostly the documented 470/530 bimodal (2 of 3 here drew ~530) and alone wouldn't disqualify; cold LCP 1037–1039 is pinned ≈ 77 ms above the bar (not bimodal), so the rejection holds on the cold lane alone.
+
+Verdict: **REVERT** (cold LCP +76.9, warm LCP +59.8; cold FCP −1.1 noise, warm FCP exact tie — no faster lane). `index.pug` restored, `git -C soci-frontend diff` clean (submodule at `c43db4f`; preconnect confirmed absent from served bytes). Post-revert confirmation sweep reproduces the bar pattern (cold FCP 585.5 / 605.1 / 604.0, median 604.0; cold LCP 1056.4 / 957.9 / 1036.1, median 1036.1; warm FCP 217.0 ×3; warm LCP 530.2 / 469.5 / 529.7, median 529.7 — the ~530 warm mode present, reaffirming the 470/530 bimodal is environmental). Keep bar unchanged: cold 606.4/961.4, warm 217.0/470.1 (iter14).
+
+Key finding: `rel="preconnect"` is the last remaining "small" front-end *resource-hint* lever, now exhausted alongside script defer, `tags.js` loading/priority, fetchpriority/eager on the first thumbnail, and head preload. This is one more in a long line of post-iter14 reverts (iter7/8/15/17/19/20/21/22/23) confirming the LCP lane is insensitive to connection/fetch/priority hints; with the webfont preconnect space closed by construction (iter22) and preconnect proven inert, the resource-hint lever space is closed by measurement. Remaining non-forbidden candidate: (b) content-hash filenames — a build-pipeline change, not "small" for the protocol; otherwise close out at the iter14 state.
+
+Raw: `speed-lab/metrics/cold-{1..3}.json` + `warm-{1..3}.json` hold the post-revert confirmation sweep; with-change numbers above (per-run raw JSONs superseded by the confirmation sweep, as in iter17/iter20/iter21/iter23/iter24).
