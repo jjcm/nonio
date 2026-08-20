@@ -1,0 +1,7 @@
+variant,lane,first_paint_ms,fcp_ms,lcp_ms,load_ms,requests,transfer_bytes,posts
+vanilla,cold,1004,4180,4700,4843,108,706340,21
+vanilla,warm,1012,4180,4208,4653,108,706340,21
+fable,cold,428,768,816,1182,40,106744,21
+fable,warm,180,228,228,539,40,300,21
+qwen,cold,456,2004,2440,2217,86,161584,21
+qwen,warm,184,232,232,217,86,8574,21
