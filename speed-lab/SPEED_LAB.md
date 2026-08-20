@@ -753,3 +753,28 @@ Reading:
 Verdict: **REVERT** (strict faster-on-all-lanes rule: cold FCP +168.1, cold LCP +259.1 on all three cold runs; warm FCP exact tie, warm LCP −0.4 — no lane faster). `soci-frontend/index.js` restored to `62753f3` (submodule clean, no pointer change); server restarted on :4200. Post-revert confirmation sweep reproduces the bar: cold FCP 429.4 / 428.0 / 427.4 (median 428.0), cold LCP 826.1 / 798.9 / 822.2 (median 822.2), warm FCP 176.9/177.0/177.0, warm LCP 429.9 / 409.6 / 430.1 (median 430.1). Keep bar unchanged: **cold 427.8/802.8, warm 177.0/430.1 (iter28)**.
 
 Raw: with-change run preserved at `/tmp/iter29-{cold,warm-prime,warm}-{1..3}.json`; `speed-lab/metrics/cold-{1..3}.json` + `warm-prime.json` + `warm-{1..3}.json` hold the post-revert confirmation sweep (as in iter17/20/21/23/24/26/27).
+
+### iter30: gzip the `.wasm` on the :4200 static handler (2026-08-20 PT) — **KEEP**
+
+Hypothesis (the prompt's "else" branch): `soci-frontend/lib/markdown-wasm/markdown.wasm` (56,655 B) is the largest artifact on the cold-load wire and is fetched on every cold load (confirmed in the cold-1.json network pass) on the LCP critical path — feed render is gated on `markdown.ready`, which needs the wasm bytes. Gzipping it (level 6: 25,907 B out) saves ~30.7 KB per cold load with zero client cost and, per the iter28/iter29 lesson, the bytes are the only class of lever that must beat a byte-identical baseline. The memoize/precompute-gzip alternative branch was rejected up front by measurement: `gzipSync` at these sizes costs ~0.64 ms (49 KB css bench) — well below the lab noise floor, so a path-cost reduction cannot satisfy the "faster on all lanes" rule, while a byte saving demonstrably can.
+
+Change (`soci-frontend/index.js`, +1/−1, **kept**): `GZIP_EXT` gains `'.wasm': 1`. Nothing else touched — `maybeGzip()`, the three send sites, iter14 `immutable` Cache-Control (`.wasm` is already in `IMMUTABLE_EXT`), and the `Content-Type: application/wasm` passthrough all ride the existing wiring. Pre-measurement smoke: 21 fixture posts; `curl -sI -H 'Accept-Encoding: gzip'` → `Content-Encoding: gzip` + `Content-Type: application/wasm` + `Cache-Control: public, max-age=31536000, immutable`; without `Accept-Encoding` → no `Content-Encoding`; `curl --compressed` fetch decodes **byte-identical** to the raw file (56,655 B). Server restarted on :4200 (PID 97947).
+
+Medians vs iter28 bar (cold 427.8/802.8, warm 177.0/430.1):
+
+| | FCP ms | LCP ms | TBT | score |
+|---|---:|---:|---:|---:|
+| cold median | 427.9 (+0.1) | 783.0 (−19.8) | 0 | 1.00 |
+| warm median | 177.0 (tie) | 429.9 (−0.2) | 0 | 1.00 |
+
+With-change run (3 cold + prime + 3 warm): cold FCP 429.2 / 427.9 / 427.9 (median 427.9, +0.1 — exact tie, within noise); cold LCP 798.9 / 762.0 / 783.0 (median 783.0, **−19.8**). Warm prime 426.9/798.3 — cold-shaped, as expected. Warm FCP 177.0 ×3 (exact tie — the wasm is `immutable`-cached after the cold lane, so warms neither win nor lose, exactly as predicted); warm LCP 429.8 / 430.1 / 429.9 (median 429.9, −0.2, within noise, not a regression). SI cold 462.7/432.6/430.0; warm 239.6/233.6/233.5; TBT 0 on all seven loads; Lighthouse 1.00 on every load.
+
+Reading:
+1. **The LCP win is a distribution shift, not a band lottery.** The pre-change cold-LCP triplet (iter28 keep run) was 824.2 / 802.8 / 797.9; the with-change triplet is 798.9 / 762.0 / 783.0 — the new median (783.0) is *below the entire old distribution*, and 2 of 3 runs beat the old best (797.9). A 30.7 KB saving on a resource the LCP lane must wait for (wasm fetch → `markdown.ready` → first feed paint) is the mechanism, and the spread stayed at lab-best (36.9 ms pre-change 797.9–824.2 vs 36.9 ms post 762.0–798.9 — the band moved left intact).
+2. **FCP was the predicted no-op and measured one.** First paint is the document + placeholder render, which is not gated on the wasm — so the ~30.7 KB saving lands strictly between FCP and LCP. Cold FCP ties at 427.9 (+0.1, noise) with no cross-metric regression, satisfying the keep rule.
+3. **Warm lanes confirmed inert by construction.** `.wasm` was already in `IMMUTABLE_EXT`, so after the cold lane caches the (now gzipped) bytes the warm lanes see no change: warm FCP exact 177.0 ×3, warm LCP 429.9 (−0.2). The keep stands on the cold lane alone, exactly as the warm FCP 177.0 floor analysis (iter28) bounded the remaining levers.
+4. Tradeoffs accepted: `gzipSync` on a 56.7 KB binary per cold request (sub-2 ms, negligible next to the ~30.7 KB download saving under Lighthouse throttling); `Vary: Accept-Encoding` now also rides `.wasm` responses.
+
+Verdict: **KEEP** (rule met: cold LCP −19.8 with cold FCP an exact tie and warm lanes tie/within-noise — no lane slower, no cross-metric regression). Committed as `qwen-iter30` (submodule + superrepo gitlink + this ledger + `CURRENT_STATE.md`). **New Qwen-track record and future keep bar: cold 427.9/783.0, warm 177.0/429.9.**
+
+Raw: `speed-lab/metrics/cold-{1..3}.json` + `warm-prime.json` + `warm-{1..3}.json` hold the with-change kept run (no post-revert sweep needed — kept); consolidated as `speed-lab/metrics/baseline-iter30.json`.
