@@ -414,3 +414,171 @@ Reading:
 Verdict: **KEEP.** New Qwen-track best: cold 606.4/961.4, warm 217.0/470.1 (FCP/LCP medians). Committed as `qwen-iter14` (superrepo gitlink + submodule `c43db4f`).
 
 Raw: `speed-lab/metrics/baseline.json` (copied to `baseline-iter14.json`).
+
+### iter15: lazy-load the 5 modal components off the eager barrel (2026-08-19 PT) — **REVERT**
+
+Hypothesis (candidate a from the iter14 next-step, re-scoped): the barrel still eagerly imports 5 modal components (`soci-login-modal`, `soci-create-account-modal`, `soci-create-community-modal`, `soci-create-channel-modal`, `soci-image-viewer-modal`, ≈15 KB, 5 module fetches) that the anonymous home feed never instantiates — modals are created on demand by `modalManager`, which already ships an unused `config.load` hook in `createModal`.
+
+Change: removed the 5 imports/defines from `components/soci-components.js`; gave each `modalRegistry` entry a `load: () => import(...).then(define)` hook so the element is imported + defined only on first `open()`. All call sites (`soci-sidebar` showLogin/showCreateAccount/showCreateCommunity, text-channel `_openImageViewer`) already `await` the open, so behavior is preserved. Not a retry of any logged revert; `soci-post-list.js` and the voice split untouched. Smoke: `GET :4201/posts` = exactly 21 fixture posts; `node --check` clean on both edited modules.
+
+Medians vs iter14 bar (cold 606.4/961.4, warm 217.0/470.1):
+
+| | FCP ms | LCP ms | TTI ms | TBT | score |
+|---|---:|---:|---:|---:|---:|
+| cold median | 585.6 | 1018.0 | 1019.1 | 0 | 0.98 |
+| warm median | 217.0 | 490.2 | 490.2 | 0 | 1.00 |
+
+Cold runs: FCP 585.8 / 585.6 / 585.4; LCP 1018.0 / 997.4 / 1020.0; TTI 1018.1 / 999.1 / 1020.1. Warm runs: FCP 217.3 / 217.0 / 216.9; LCP 472.0 / 490.2 / 529.9; TTI 474.0 / 490.2 / 529.9.
+
+Reading:
+1. Same FCP/LCP trade shape as iter8, mirrored: cold FCP −20.8 (all 3 runs 585.4–585.8, a tight cluster ≈20 ms under the bar — real module-graph relief) but cold LCP/TTI +56.6/+55.9 and warm LCP/TTI +20.1/+18.1. Freeing main-thread time earlier in the shell load consistently *delays* the LCP node by the same magnitude — the LCP lane is pinned to the post-list module graph's eval window, and shifting that window costs exactly what FCP gains.
+2. Warm FCP 217.0 is a dead tie (strictly-faster rule not met on any lane), and warm LCP degraded on 2 of 3 runs (472.0 / 490.2 / 529.9 — the slowest warm-LCP spread of the lab).
+3. Confirms the iter7/iter8 pattern a third time: any change that alters the eager module graph's timing trades cold-FCP against LCP and never wins both at once. The barrel is at its fixed point — the modals were the last clean "never-instantiated" mass, and removing it is not a net win.
+
+Verdict: **REVERT.** Both edited files restored to `c43db4f` state (`git checkout`); no commit. Keep bar unchanged: cold 606.4/961.4, warm 217.0/470.1 (iter14). Remaining iter15 candidates (b: content-hash filenames; c: non-veil CSS/paint tweak) are the only ones left under the current constraints; the module-graph timing trade now argues for (c) or closing out at the iter14 state.
+
+Raw: `speed-lab/metrics/baseline.json` (pre-revert numbers above; superseded by the next run).
+
+### iter17: eager-load `pages/tags.js` as a head module, removing the home route's lazy fetch (2026-08-19 PT) — **REVERT**
+
+Hypothesis: the LCP element (`#tag-input` placeholder inside the `soci-post-list` that `pages/tags.js` creates on `routeactivate`) sits behind a DOMContentLoaded + async classic-fetch + eval round trip (the `lazyload` script formerly in `soci-route#tags`). Making it the 4th head `<script type="module">` starts its fetch in parallel during parse and evaluates it right after soci-components.js (once `window.soci` exists), so the `routeactivate` listener (or the `registerPage` `if(page.dom.active)` catch-up) engages ~1 tick after parse instead of DCL+fetch+eval. Non-home routes stay lazy (iter1); cache headers (iter14) untouched.
+
+Change: added `script(src="/pages/tags.js" type="module")` to `index.pug` head after soci-components.js; removed `include pages/tags.pug` from `soci-route#tags`; `pages/tags.js` now uses `document.querySelector('soci-route#tags')` instead of `document.currentScript.closest('soci-route')`; deleted `pages/tags.pug`. Deliberately placed in the head (not inside the route) so `activate(fresh)`'s `innerHTML = domCopy` re-insertion can't re-execute/re-register it on fresh re-activations. Smoke: `node --check` clean; `curl :4200/` confirms the module tag + self-closing tags route with no lazyload line; `GET :4201/posts` = exactly 21 fixture posts.
+
+Medians vs iter14 bar (cold 606.4/961.4, warm 217.0/470.1):
+
+| | FCP ms | LCP ms | TBT | score |
+|---|---:|---:|---:|---:|
+| cold median | 623.6 | 994.8 | 0 | 0.98 |
+| warm median | 217.0 | 450.2 | 0 | 1.00 |
+
+Cold runs: FCP 623.0 / 623.6 / 624.2 (tight ±0.9, all ≈17 ms over the bar); LCP 975.5 / 994.8 / 1033.6. Warm runs: FCP 217.0 / 217.0 / 217.0 (exact tie with bar); LCP 450.0 / 450.2 / 529.5. Per-run TTI not preserved (raw JSONs cleaned in the post-revert sweep); TTI ≈ LCP on every prior lab iteration.
+
+Reading:
+1. The warm-lane prediction held: warm LCP −19.9 (2 of 3 runs under the bar; median 450.2) — the async tags.js fetch/eval that used to sit between DCL and feed creation is gone.
+2. But cold regressed on both lanes: FCP **+17.2** (tight cluster, ±0.9 — a real effect, not noise) and LCP **+33.4**. Mechanism not fully pinned down: the extra head-module fetch/eval hop in the no-cache profile is the suspect, but module tags don't block parsing, so the +17 ms FCP shift resists a clean first-principles explanation. What is certain: the cost lands on the cold LCP/FCP lanes, and it is systematic across all three runs.
+3. Fourth confirmation (iter7, iter8, iter15, now iter17) that the LCP lane is pinned to the eager module graph's timing: any re-ordering of that graph trades one lane against the other and has never won both at once. Moving a home-route script from lazy to eager is that trade with the sign flipped — it buys warm, spends cold.
+
+Verdict: **REVERT** (strict faster-on-all-lanes rule: cold FCP +17.2, cold LCP +33.4, warm FCP exact tie). All three edits restored to submodule `c43db4f` state (`git checkout`); no commit. Keep bar unchanged: cold 606.4/961.4, warm 217.0/470.1 (iter14). Remaining non-forbidden candidates: (b) content-hash filenames, (c) small CSS/paint tweak, or close out at the iter14 state.
+
+Raw: `speed-lab/metrics/baseline.json` (pre-revert numbers above; superseded by the next run).
+
+### iter18: put the LCP header (`#tag-input`) in static home-route markup (2026-08-19 PT) — **REVERT**
+
+Hypothesis (re-scoped from the iter17 next-step to "static markup, not an eager module"): the audit attributes LCP to the feed header's `#tag-input`, which today only exists once lazy `pages/tags.js` creates the `soci-post-list` (a DCL + async fetch + eval round trip that lands ≈ the LCP tick). If the input already sits in `soci-route#tags`'s light DOM at route-activation, it paints ≈FCP (well ahead of tags.js eval) and LCP should collapse toward ≈FCP — without making tags.js eager (iter17 showed that spends cold) and without adding a 4th head module. tags.js stays lazy; on `onActivate` it removes only the prior `soci-post-list`, not the input, so the hero persists and the list appends beneath it.
+
+Change: `pages/tags.pug` gains `input#tag-input(type="text" placeholder="Viewing all tags")` immediately before the `lazyload` script; `soci.css` adds a `soci-route#tags #tag-input` box mirroring the shadow-DOM input (238×28, matching border/background/padding, one `&::placeholder` nested rule); `pages/tags.js` `onActivate` swaps `tags.dom.innerHTML = ''` for `tags.dom.querySelector('soci-post-list')?.remove()` so the fresh-route `domCopy` re-inserts the static input on re-activation and the new list nests under it. No eager-module change; cache headers (iter14) untouched. Smoke: `curl :4200/` shows `<input id="tag-input" ...>` in the `#tags` route's light DOM (restored into `domCopy` by `activate(fresh)`); the feed still appends `soci-post-list` — 21 fixture posts render.
+
+Medians vs iter14 bar (cold 606.4/961.4, warm 217.0/470.1):
+
+| | FCP ms | LCP ms | TBT | score |
+|---|---:|---:|---:|---:|
+| cold median | 585.0 | 1053.2 | 0 | 0.98 |
+| warm median | 217.0 | 529.9 | 0 | 1.00 |
+
+Cold runs: FCP 605.2 / 585.0 / 584.4 (median 585.0, ~−21 ms under the bar); LCP 1053.2 / 1053.6 / 1034.0 (median 1053.2, ~+92 ms over). Warm runs: FCP 217.0 / 217.2 / 217.0 (exact tie with the bar); LCP 470.0 / 530.8 / 529.9 (median 529.9, ~+60 ms over; only run 1 hit the bar). TBT 0 on every run.
+
+Reading:
+1. The static input IS an early contentful element — cold FCP improved (−21.4), confirming it paints at route-activation, ahead of the lazy tags.js path. Static markup does shift the *first* paint.
+2. But it is NOT the LCP. LCP regressed on both lanes (+91.8 cold, +59.8 warm). The input (~238px) is smaller than the feed's first large card, so the feed card — not the header — is the real LCP. The static input, sitting in normal flow at the top of the route, pushes the list down (~44px) and adds another box to lay out, and that delayed the feed card's paint by ~60–90 ms.
+3. This corrects the "LCP = `#tag-input`" model carried from the iter16/iter17 framing: the header input is a small early element and an FCP contributor at best, not the largest one. Making a small header element the LCP hero via static markup spends LCP on the feed that actually owns it.
+
+Verdict: **REVERT** (strict faster-on-all-lanes rule: warm LCP +59.8, cold LCP +91.8; only cold FCP −21.4 is a gain). All three edits restored to submodule `c43db4f` state (verified `git -C soci-frontend diff` clean); no commit. Keep bar unchanged: cold 606.4/961.4, warm 217.0/470.1 (iter14). The LCP lane stays pinned to the feed's creation/paint timing — a fifth confirmation across iter7/8/15/17 — and a static small-element hero is the wrong lever. Remaining non-forbidden candidates: (b) content-hash filenames, (c) a small CSS/paint tweak that moves the FEED's LCP card itself (not the header), or close out at the iter14 state.
+
+### iter19: shorten the `#items` entrance ramp 0.35s → 0.12s (keep fade + transform) (2026-08-19 PT) — **REVERT**
+
+Hypothesis (new-regime reading of warm-3.json): with iter14's disk-cached shell, the warm main thread is idle from ~95 ms to ~470 ms (total work ≈100 ms, no long tasks) and the 380 ms FCP→LCP gap sits exactly on the `#items` opacity ramp: LCP ≈ `[loaded]`-flip (~85 ms) + 350 ms ramp (warm 470.1; cold ≈ flip ~610 + 350 = 961.4). If Blink's LCP fade-in-delay rule is charging the ramp duration onto the feed-card LCP candidate, shortening the ramp 3.1× should cut ≈230 ms off LCP on both lanes with zero FCP cost (first-paint area unchanged — `#items` is still opacity 0 until flip). Deliberately **not** the forbidden wholesale removal (iter8): the fade and the translate both stay, only the duration shrinks.
+
+Change (1 file, 1 line, reverted): `soci-post-list.js` `:host([loaded]) #items` transition `0.35s` → `0.12s` on both `transform` and `opacity`. No JS reads the duration (verified: no `transitionend`/350 references); lanes-view per-child 0.25s staggers untouched. `node --check` clean; 21-post smoke OK; `immutable` cache headers untouched.
+
+Medians vs iter14 bar (cold 606.4/961.4, warm 217.0/470.1):
+
+| | FCP ms | LCP ms | TTI ms | TBT | score |
+|---|---:|---:|---:|---:|---:|
+| cold median | 599.2 | 1179.2 | 1180.7 | 0 | 0.97 |
+| warm median | 237.4 | 523.9 | 523.9 | 0 | 1.00 |
+
+Cold runs: FCP 599.2 / 612.6 / 595.1 (spans the known 585–615 environmental band; median within noise); LCP 1187.1 / 1148.3 / 1179.2 (all ≈+220 ms over the bar). Warm runs: FCP 240.5 / 231.3 / 237.4 (+20.4 — the iter12-documented ≈20 ms machine-state drift); LCP 524.4 / 463.9 / 523.9 (2 of 3 above 520; only run 2 near bar).
+
+Reading:
+1. **The fade-in-delay model is dead.** Faster ramp → *slower* LCP (+217.8 cold, +53.8 warm) — the opposite of the ramp-end prediction. Combined with iter8 (wholesale removal: −56.3 cold / +37.7 warm), iter10 (veil, no fade: no win) and iter11 (no transform, ramp kept: +31/+69), the `#items` entrance stack is now proven exhausted in **both** regimes (old no-cache and post-iter14 disk-cached): every perturbation of the opacity/transform/veil/duration space either regresses or is neutral. LCP in the current regime is pinned to the feed card's own paint timing, not to the container's animation schedule.
+2. The warm-FCP +20.4 drift recurs (237.4 vs 217.0) on this single CSS-value change, consistent with the environmental ±20 ms band iter12 attributed to machine state — it does not change the verdict, since warm LCP independently failed.
+3. Cold LCP +217.8 is far beyond any observed drift band: a genuine effect of the shorter ramp on final-card paint scheduling.
+
+Verdict: **REVERT** (strict faster-on-all-lanes rule: cold LCP +217.8, warm LCP +53.8, warm FCP +20.4 — no lane faster). File restored to `c43db4f` state (verified `git -C soci-frontend diff` clean); no commit. Keep bar unchanged: cold 606.4/961.4, warm 217.0/470.1 (iter14). The paint-side of the feed is now a fixed point. Remaining non-forbidden candidates: (b) content-hash filenames, or close out at the iter14 state.
+
+Raw: `speed-lab/metrics/baseline.json` (pre-revert numbers above; superseded by any next run).
+
+### iter20: intrinsic size (`aspect-ratio: 16/9`) for the first feed card's media box (2026-08-19 PT) — **REVERT**
+
+Hypothesis: the first card in the popular feed is `sl-img-01` (800x450, score 21 = highest). Its `<picture><img>` carries no intrinsic size and `#media` has no height, so the media box is 0px until the .webp bytes arrive and decode — a post-paint reflow each cold run. Reserving the final 16/9 box up front (`width:100%` → height `min(w·9/16, 320px max)`, exactly the 800x450 fixtures' post-load geometry, zero CLS) should settle the image's LCP-candidate layout early and let the image paint as soon as it decodes, cutting cold LCP (bar 961.4) with no FCP cost.
+
+Change (1 file, 1 line, reverted): `soci-post-card.js` `#media img` rule gains `aspect-ratio: 16 / 9;`. All 10 image fixtures (800x450) and the 1280x720 video fixture are 16:9; `max-height: 320px` clamp untouched. `node --check` clean; 21-post smoke of `/posts?sort=popular` OK (first 3 = image); static server picked up the change without restart; iter14 `immutable` cache headers untouched.
+
+Medians vs iter14 bar (cold 606.4/961.4, warm 217.0/470.1):
+
+| | FCP ms | LCP ms | TBT | score |
+|---|---:|---:|---:|---:|
+| cold median | 604.3 | 1020.3 | 0 | 0.98 |
+| warm median | 217.2 | 470.1 | 0 | 1.00 |
+
+Cold runs: FCP 585.1 / 604.3 / 605.0 (median 604.3, −2.1 — noise); LCP 1017.6 / 1054.5 / 1020.3 (median 1020.3, +58.9; all three runs above 1017, none inside the bar's reachability band). Warm runs: FCP 217.0 / 217.3 / 217.2 (exact tie with the bar); LCP 469.7 / 471.0 / 470.1 (median 470.1 = exact tie with the bar; ±1.3 ms, not faster). TBT 0 on every run.
+
+Reading:
+1. **Warm lane is exactly bar.** In the post-iter14 regime the .webp is disk-cached (iter14 made images immutable too), so bytes paint fast regardless of box reservation — paint converges to the same instant with or without the reserved layout. Intrinsic sizing buys nothing on warm.
+2. **Cold lane regressed +58.9.** With the reserved box, the ~179,000px² media box is a visible LCP candidate from card creation (pre-bytes) and holds the candidate; in the bar state the 0px box isn't a candidate until load, and the bar's 961.4 is reached when a smaller/earlier candidate wins in some runs (the post-revert confirmation run reaches 959.8). The reservation does not accelerate the image's own fetch/decode (fetch still starts at `connectedCallback`; preloads are forbidden), so it cannot win on cold — it only changes which element Blink reports and when.
+3. Sixth confirmation (iter7/8/15/17/19 + iter20) that the LCP lane is pinned to the first feed card's media arrival+paint. A layout-side reservation of the box does not move the bytes' critical path.
+
+Verdict: **REVERT** (strict faster-on-all-lanes rule: cold LCP +58.9; warm lanes tied, not faster). File restored to `c43db4f` state (verified `git -C soci-frontend diff` clean and served bytes no longer contain `aspect-ratio`); post-revert confirmation run reproduces the bar (cold FCP 605.4, cold LCP 959.8/1019.3/1058.1; warm 217.0 ×3, LCP 470.1/530.2/470.4); no commit. Keep bar unchanged: cold 606.4/961.4, warm 217.0/470.1 (iter14). Remaining non-forbidden candidate: (b) content-hash filenames — a build-pipeline change, not "small" for the protocol; otherwise close out at the iter14 state.
+
+Raw: `speed-lab/metrics/baseline.json` (post-revert confirmation numbers; with-change numbers above).
+
+### iter21: `fetchpriority=high` on the first feed thumbnail (2026-08-19 PT) — **REVERT**
+
+Hypothesis: in the list view the first feed card's thumbnail `<img>` (96×72) is loaded at the default `auto` priority alongside the other ~9 feed images; it is the largest early content in the feed. Forcing `fetchpriority=high` on that one image should pull its byte-fetch ahead of the siblings and cut cold LCP (bar 961.4) with no FCP cost — the first-paint area is unchanged, only the fetch priority of one element moves.
+
+Change (1 file, ~1 line, reverted): `soci-post-li.js` `_setImageSource` sets `fetchpriority="high"` only when the post is the first child `<li>` of its `soci-post-list` (all others keep the default `auto`). Both the batch `innerHTML` path and the streaming `fetchAndMerge` append path set it before insertion, so the attribute survives either build. `node --check` clean; CDP smoke: 21 posts, view=list, 0 cards, first li `fetchPriority="high"`, 2nd/4th `"auto"`. iter14 `immutable` cache headers untouched.
+
+Medians vs iter14 bar (cold 606.4/961.4, warm 217.0/470.1):
+
+| | FCP ms | LCP ms | TBT | score |
+|---|---:|---:|---:|---:|
+| cold median | 604.3 | 957.8 | 0 | 0.98 |
+| warm median | 217.0 | 529.5 | 0 | 1.00 |
+
+With-change run (3 cold + 3 warm; per-run raw JSONs superseded by the post-revert confirmation sweep — see iter17 for the same sweep): cold FCP median 604.3 (−2.1), cold LCP median 957.8 (−3.6); warm FCP 217.0 ×3 (exact tie with the bar); warm LCP median 529.5 (+59.4). TBT 0 on every run.
+
+Reading:
+1. **The LCP element is the feed header's placeholder text, not the thumbnail.** `lcp-breakdown-insight` reports the LCP node as `div#placeholder` — the `::placeholder` text "Viewing all tags" of `#tag-input` in the feed header (`soci-post-list.js:244`) — in all 6 runs. It is a text element. The 96×72 thumbnail (and every other feed image) never wins the LCP election, so `fetchpriority` on it is mechanically inert for the LCP lane.
+2. The "gains" (cold FCP −2.1, cold LCP −3.6) sit inside the known ±20 ms environmental band and are not a real effect — both lanes are text/LCP-timing dominated and one feed image's fetch priority cannot move either. The decisive result is the warm lane: warm LCP +59.4 and warm FCP an exact tie (tie ≠ win under the strict keep rule).
+3. The `lcp-breakdown-insight` subparts (TTFB ~30 ms + elementRenderDelay 60–83 ms ≈ 115 ms) don't reconcile with the actual LCP timestamp (~1.0 s cold / ~0.47–0.53 s warm), consistent with an early text render gated on paint/fade scheduling rather than on the header's render cost — further evidence the feed image bytes are off the LCP critical path entirely.
+
+Verdict: **REVERT** (strict faster-on-all-lanes rule: warm LCP +59.4; warm FCP exact tie; cold deltas within noise). Change removed from `soci-post-li.js` (verified `git -C soci-frontend diff` clean, submodule at `c43db4f`); no commit. Post-revert confirmation run reproduces the bar (cold FCP 604.6/585.5/605.0; cold LCP 1056.0/1015.3/999.8; warm FCP 217.0 ×3; warm LCP 469.9/529.5/449.6, median 469.9 ≈ bar 470.1). Keep bar unchanged: cold 606.4/961.4, warm 217.0/470.1 (iter14). This corrects the "LCP = the first feed card's media" model reaffirmed in iter18/iter20: across all six post-iter14 runs the LCP node is the header's `div#placeholder` text. The through-line with iter7/8/15/17/19/20 stands — the LCP lane is decoupled from the feed image bytes — but the LCP *element* is the header text, not the media box, so byte-priority levers (fetchpriority/preload) are out of scope. Remaining non-forbidden candidate: (b) content-hash filenames — a build-pipeline change, not "small" for the protocol; otherwise close out at the iter14 state.
+
+Raw: `speed-lab/metrics/baseline.json` (post-revert confirmation numbers; with-change medians above).
+
+### iter22: explicit `loading="eager"` on the first feed card's thumbnail (2026-08-20 PT) — **REVERT**
+
+Hypothesis (the prompt's "else" branch — the preferred font-display lever was verified a no-op up front, below): the list-view feed's first thumbnail `<img>` (96×72) is created with no `loading` attribute (spec default ≈ eager for in-viewport). Setting `loading="eager"` explicitly on the first card's thumbnail only should be spec-neutral; the run tests that neutrality against the LCP lane.
+
+Font lever not measurable: the checkout contains no webfonts anywhere — no `@font-face`, no font `<link>`/preload, no `document.fonts`/`FontFace` usage in soci-frontend. `#tag-input` (the LCP header input) uses `font-family: inherit` → the native system stack from `soci.css:445`, and the first card's `.title`/`#details` inherit the same stack. There is no font swap, preload, or subset to perform — the entire font-side lever space is a no-op by construction in this codebase.
+
+Change (1 line, reverted): in `soci-post-list.js` `createPosts`'s list-view branch, after the batch `innerHTML` render of the first `numberToRender` cards: `this.firstElementChild?.shadowRoot?.querySelector?.('#thumbnail img')?.setAttribute('loading', 'eager')`. First card only (its shadow thumbnail `<img>`, src set in `_setImageSource` at connect); the other batched cards and the idle-appended remainder keep the attribute-less default. `node --check` clean; smoke: served page bytes unchanged until runtime, first card's img carries `loading="eager"` after feed creation.
+
+Medians vs iter14 bar (cold 606.4/961.4, warm 217.0/470.1):
+
+| | FCP ms | LCP ms | TBT | score |
+|---|---:|---:|---:|---:|
+| cold median | 605.2 | 1015.9 | 0 | 0.98 |
+| warm median | 217.0 | 529.7 | 0 | 1.00 |
+
+With-change run (3 cold + 3 warm): cold FCP 604.6 / 605.2 / 605.2 (median 605.2, −1.2 = noise); cold LCP 1015.9 / 1016.5 / 957.9 (median 1015.9, +54.5; 2 of 3 runs in the ~1016 band). Warm FCP 217.0 ×3 (exact tie with the bar); warm LCP 529.6 / 529.7 / 529.9 (median 529.7, +59.6 — a tight cluster, all three in the ~530 warm mode). TBT 0 on every run.
+
+Reading:
+1. **Spec-neutral change, empirically LCP-negative on both lanes.** A missing `loading` attribute already behaves as `eager` per the HTML spec, so a +60 ms LCP shift cannot be cleanly attributed to the attribute itself — and the post-revert confirmation sweep lands one run in the same ~530 warm mode at the unchanged bar (530.2 / 450.2 / 469.6), confirming the warm LCP 470/530 bimodal is environmental, not caused by the one-line no-op. Strict rule applies regardless: warm LCP median +59.6, warm FCP exact tie → no faster lane.
+2. **The font lever is documented dead, not measured dead.** Every font-display/swap/preconnect/subset variant on the tag header input or first-card text is a no-op by construction until a webfont is introduced to the project. iter22 closes the entire font-side candidate space for this codebase.
+3. Seventh confirmation (iter7/8/15/17/19/20/21 + iter22) that post-iter14 the LCP lane is insensitive to single-feed-element fetch/loading levers. With iter21's finding (the reported LCP node is the header's `div#placeholder` text, not the media box) this iteration removes the last remaining "small" front-end lever touching feed image loading or fonts. The warm 470/530 bimodal itself is now the dominant variance source: the bar's warm 470.1 sits at the favorable mode's edge, and any candidate's warm-lane verdict is partly which mode the sweep draws.
+
+Verdict: **REVERT** (strict faster-on-all-lanes rule: warm LCP +59.6; warm FCP exact tie; cold FCP −1.2 noise, cold LCP +54.5). Change removed; `git -C soci-frontend diff` clean, submodule at `c43db4f`. Post-revert confirmation run reproduces the bar pattern (cold FCP 605.1 / 604.7 / 604.9; cold LCP 979.9 / 1036.8 / 997.0; warm FCP 217.0 ×3; warm LCP 530.2 / 450.2 / 469.6 — the ~530 mode present at bar). Keep bar unchanged: cold 606.4/961.4, warm 217.0/470.1 (iter14). Remaining non-forbidden candidate: (b) content-hash filenames — a build-pipeline change, not "small" for the protocol; otherwise close out at the iter14 state, a recommendation strengthened by this iteration's font-space closure.
+
+Raw: `speed-lab/metrics/cold-{1..3}.json` + `warm-{1..3}.json` hold the post-revert confirmation sweep; with-change numbers above (per-run raw JSONs superseded by the confirmation sweep, as in iter17/iter20/iter21).
