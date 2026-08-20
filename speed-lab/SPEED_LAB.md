@@ -729,3 +729,27 @@ Reading:
 Verdict: **KEEP** (strict rule met with margin: every lane faster — cold FCP −178.6, cold LCP −158.6, warm FCP −40.0, warm LCP −40.0; TBT 0 across all loads). Committed as `qwen-iter28` (submodule `62753f3` + superrepo gitlink + this ledger + `CURRENT_STATE.md`). **New Qwen-track record and future keep bar: cold 427.8/802.8, warm 177.0/430.1.**
 
 Raw: `speed-lab/metrics/cold-{1..3}.json` + `warm-prime.json` + `warm-{1..3}.json` hold the with-change kept run (no post-revert sweep needed — kept); consolidated as `speed-lab/metrics/baseline-iter28.json`.
+
+### iter29: prefer brotli over gzip when Accept-Encoding includes br (2026-08-20 PT) — **REVERT**
+
+Hypothesis (the prompt's preferred lever): iter28's gzip path is the keep bar; Chrome sends `Accept-Encoding: gzip, deflate, br, zstd`, so a brotli-first branch in `maybeGzip()` (built-in `zlib.brotliCompressSync`, Node v26.7.0 — no new dependency) with the existing `gzipSync` branch kept verbatim as fallback should shrink the wire a further ~15% (measured: `soci.js` 3.64 KB→3.09 KB, `soci.css` 9.04 KB→7.71 KB; doc + svg in the same direction) with zero client cost and the same sub-ms server cost — since gzip's win was the bytes, smaller bytes must win more.
+
+Change (`soci-frontend/index.js`, +8/−3 in `maybeGzip()` only, **reverted**): when `Accept-Encoding` contains `br`, encode with `zlib.brotliCompressSync` (default quality 11) and set `Content-Encoding: br`; else fall through to the unchanged `zlib.gzipSync` + `Content-Encoding: gzip` branch; `Vary: Accept-Encoding` set on either encoded path. `GZIP_EXT` set, the three send sites, and iter14's `immutable` Cache-Control all untouched. Pre-measurement smoke: 21 fixture posts served; server restarted fresh on :4200; curls confirm `Content-Encoding: br` for `Accept-Encoding: br,gzip` on js/css/doc and `Content-Encoding: gzip` for `Accept-Encoding: gzip` (fallback path intact); a python `br` fetch of `/soci.js` decodes to a valid 3.09 KB payload; `Cache-Control: immutable` rides the br response unchanged.
+
+Medians vs iter28 bar (cold 427.8/802.8, warm 177.0/430.1):
+
+| | FCP ms | LCP ms | TBT | score |
+|---|---:|---:|---:|---:|
+| cold median | 595.9 (+168.1) | 1061.9 (+259.1) | 0 | 0.98 |
+| warm median | 177.0 (tie) | 429.7 (−0.4) | 0 | 1.00 |
+
+With-change run (3 cold + prime + 3 warm): cold FCP 593.0 / 595.9 / 596.7 (median 595.9, **+168.1**); cold LCP 1051.1 / 1061.9 / 1070.9 (median 1061.9, **+259.1**). Warm prime 592.2/1038.8 — cold-shaped, as expected, since the prime refetches the non-cacheable document. Warm FCP 177.0 ×3 (exact tie — assets are `immutable`-cached, the doc's ~15% br-vs-gzip saving is below warm-noise floor); warm LCP 429.6 / 429.7 / 489.7 (median 429.7, −0.4; the 489.7 run lands back in the pre-iter28 ~490-530 upper band). TBT 0 on all seven loads.
+
+Reading:
+1. **The 15% byte saving was real but bought at ~165 ms FCP / ~260 ms LCP of CPU** — exactly the cold lanes, the only lanes that pay for the re-encode every load. `brotliCompressSync` at default quality 11 is orders of magnitude slower per byte than `gzipSync` at default level 6; at these sizes (~30-49 KB each, four artifacts per cold load) it dominates the document-response latency and pushes cold LCP back into the pre-iter28 1038–1071 pinned band that gzip had collapsed to 798–826. The warm lanes cache the encoded body, so they neither win nor lose — a FCP-only tie + LCP −0.4 is not "all lanes faster."
+2. **Compression algorithm is a lever, compression cost is a tax, and at this payload scale the tax > the saving for brotli.** The iter28 win came from moving ~90.6 KB→21.0 KB on the wire; iter29's further 21.0→~19.6 KB (~7%) cannot pay for a ~165-260 ms encode. (A precomputed `.br`/`.wasm`-style build step or `brotliCompressSync(data, zlib.constants.BROTLI_QUALITY_1)` would be the only shape in which brotli could re-enter, and ~7% of an already-small payload is not that lever's scale — build-pipeline territory, not "small.")
+3. The gzip path, iter14 immutable headers, and the send-site wiring are all confirmed intact post-revert (served :4200 bytes back to `62753f3` state; `grep -c brotli index.js` = 0).
+
+Verdict: **REVERT** (strict faster-on-all-lanes rule: cold FCP +168.1, cold LCP +259.1 on all three cold runs; warm FCP exact tie, warm LCP −0.4 — no lane faster). `soci-frontend/index.js` restored to `62753f3` (submodule clean, no pointer change); server restarted on :4200. Post-revert confirmation sweep reproduces the bar: cold FCP 429.4 / 428.0 / 427.4 (median 428.0), cold LCP 826.1 / 798.9 / 822.2 (median 822.2), warm FCP 176.9/177.0/177.0, warm LCP 429.9 / 409.6 / 430.1 (median 430.1). Keep bar unchanged: **cold 427.8/802.8, warm 177.0/430.1 (iter28)**.
+
+Raw: with-change run preserved at `/tmp/iter29-{cold,warm-prime,warm}-{1..3}.json`; `speed-lab/metrics/cold-{1..3}.json` + `warm-prime.json` + `warm-{1..3}.json` hold the post-revert confirmation sweep (as in iter17/20/21/23/24/26/27).
