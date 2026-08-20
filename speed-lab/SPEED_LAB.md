@@ -582,3 +582,27 @@ Reading:
 Verdict: **REVERT** (strict faster-on-all-lanes rule: warm LCP +59.6; warm FCP exact tie; cold FCP −1.2 noise, cold LCP +54.5). Change removed; `git -C soci-frontend diff` clean, submodule at `c43db4f`. Post-revert confirmation run reproduces the bar pattern (cold FCP 605.1 / 604.7 / 604.9; cold LCP 979.9 / 1036.8 / 997.0; warm FCP 217.0 ×3; warm LCP 530.2 / 450.2 / 469.6 — the ~530 mode present at bar). Keep bar unchanged: cold 606.4/961.4, warm 217.0/470.1 (iter14). Remaining non-forbidden candidate: (b) content-hash filenames — a build-pipeline change, not "small" for the protocol; otherwise close out at the iter14 state, a recommendation strengthened by this iteration's font-space closure.
 
 Raw: `speed-lab/metrics/cold-{1..3}.json` + `warm-{1..3}.json` hold the post-revert confirmation sweep; with-change numbers above (per-run raw JSONs superseded by the confirmation sweep, as in iter17/iter20/iter21).
+
+### iter23: `rel="preload" as="script"` for `pages/tags.js` in the head (2026-08-20 PT) — **REVERT**
+
+Hypothesis (the prompt's preferred lever, narrowed by construction): the home-route JS split into two classes — `soci-components.js` (an eager `type="module"` already at head top, fetched at parse discovery; a `modulepreload` for it is a byte-for-byte no-op since the browser dedupes and the parser reaches line 9 immediately) and `pages/tags.js` (a classic 682 B script that on every route is injected *only at DOMContentLoaded* by the inline `lazyload('/pages/tags.js', …)` call at `pages/tags.pug:2`, so its fetch is gated on full HTML parse even though it runs on all loads). Preloading `/pages/tags.js` in the head should start that fetch in parallel with the HTML and remove one parse-gated RTT before the home feed's page registration (`soci.registerPage`), which the LCP header text waits on.
+
+Change (1 line in `soci-frontend/index.pug`, reverted): `link(rel="preload" as="script" href="/pages/tags.js")` after the `soci-components.js` module tag. Note for future iterations: the :4200 lab server is `node index.js` in soci-frontend, which compiles `index.pug` in memory per request (`pug.renderFile`) — the generated `index.html` is not in the loop, so pug edits are live immediately and `npm run build` is irrelevant here (an early build in this iteration needlessly touched the generated `index.html`; it was restored to HEAD).
+
+Medians vs iter14 bar (cold 606.4/961.4, warm 217.0/470.1):
+
+| | FCP ms | LCP ms | TBT | score |
+|---|---:|---:|---:|---:|
+| cold median | 623.4 | 1056.4 | 0 | 0.98 |
+| warm median | 217.0 | 449.6 | 0 | 1.00 |
+
+With-change run (3 cold + 3 warm): cold FCP 623.2 / 623.4 / 623.8 (median 623.4, +17.0); cold LCP 1074.5 / 976.7 / 1056.4 (median 1056.4, +95.0). Warm FCP 217.0 ×3 (exact tie with the bar); warm LCP 449.5 / 449.6 / 449.6 (median 449.6, −20.5 — a tight cluster, all three in the favorable ~449 warm mode). TBT 0 on every run.
+
+Reading:
+1. **One warm-lane win, two cold-lane losses, one tie.** The warm LCP 449.6 cluster is the tightest warm result of the whole lab and 20 ms better than the bar, but the keep rule is faster-on-all-lanes and the cold lane regressed on both FCP (+17.0) and LCP (+95.0) while warm FCP is an exact tie (tie ≠ win).
+2. **The cold FCP shift looks systematic, not environmental.** All three cold FCP runs cluster at 623.2–623.8 (σ < 1 ms), ~19 ms above the 604–605 band every prior cold sweep has sat in; a ±20 ms *random* environmental band wouldn't pin three runs to the same elevated value. A head-level preload for a parse-gated script apparently costs the cold lane (extra early-head parse slot + the preloaded response occupying a connection/fetch slot during cold-cache fetches), more than it saves once DOMContentLoaded frees the real script injection.
+3. The warm gain is consistent with the preloaded 682 B response reusing the connection and landing before the DOMContentLoaded injection, but per the strict rule it is a LCP-only win that trades cold FCP/LCP — disqualifying under "no LCP win that regresses FCP" read across lanes.
+
+Verdict: **REVERT** (cold FCP +17.0, cold LCP +95.0, warm FCP exact tie; warm LCP −20.5 is the only faster lane). `index.pug` restored, `git -C soci-frontend diff` clean (submodule at `c43db4f`, generated `index.html` back at HEAD too). Post-revert confirmation sweep reproduces the bar pattern (cold FCP 585.2 / 605.2 / 604.7; cold LCP 958.5 / 1017.8 / 1036.4; warm FCP 217.0 / 217.0 / 217.3; warm LCP 469.5 / 530.5 / 470.3 — the ~530 warm mode present again, reaffirming the warm 470/530 bimodal is environmental). Keep bar unchanged: cold 606.4/961.4, warm 217.0/470.1 (iter14). Remaining non-forbidden candidate: (b) content-hash filenames — a build-pipeline change, not "small" for the protocol; otherwise close out at the iter14 state.
+
+Raw: `speed-lab/metrics/cold-{1..3}.json` + `warm-{1..3}.json` hold the post-revert confirmation sweep; with-change numbers above (per-run raw JSONs superseded by the confirmation sweep, as in iter17/iter20/iter21).
