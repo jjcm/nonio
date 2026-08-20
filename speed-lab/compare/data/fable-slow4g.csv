@@ -1,0 +1,21 @@
+iter,verdict,cold_load_ms,cold_fcp_ms,cold_lcp_ms,cold_feedpaint_ms,warm_load_ms,warm_fcp_ms,warm_lcp_ms,warm_feedpaint_ms,n,change
+0,baseline,4605.9,3968,4448,4447.6,4434.8,3968,3996,4269.1,5,baseline (no product change)
+1,kept,4662.6,3996,4468,4460.1,314.7,328,328,506.4,5,static-file ETag/Last-Modified + 304 + Cache-Control max-age=300 in soci-frontend dev server
+2,kept,3040.9,2392,2856,2848.6,313.4,336,336,512.9,5,"defer non-feed components (post detail, comments, uploaders, channels, ledger, modals) to dynamic import after window load"
+3,kept,2868.7,2184,2668,2674.9,312.8,328,328,508.2,5,defer markdown-wasm loader script (was parser-blocking + eager 56KB wasm fetch)
+4,rejected,2918.8,2188,2720,2709.5,320.5,336,336,519.1,5,modulepreload the eager module subtree (29 shell hints)
+5,kept,1767.2,1560,1980,1972.8,206.4,220,220,407.2,5,gzip compressible dev-server responses (JS/CSS/HTML/JSON/SVG/wasm incl. document)
+6,kept,1981.9,1564,1788,1783.3,214.2,252,252,230.0,5,"embed anonymous /posts payload path-keyed in feed shell HTML; client consumes once, live-fetch on any mismatch"
+7,kept,1882.0,1444,1664,1658.4,207.8,236,236,223.0,5,convert 8 parser-blocking page scripts to lazyload pattern (init at DOMContentLoaded)
+8,kept,1802.2,1376,1584,1578.3,213.9,244,244,226.7,5,load markdown-wasm on demand from soci-markdown-view (removes shell script + 56KB wasm from feed); fix post.js deep-link activation race
+9,kept,1395.7,968,1188,1180.0,211.1,236,236,222.6,5,"esbuild-bundle soci.js + soci-components.js at server boot (ESM splitting, no minify); serve bundled artifacts"
+10,kept,1366.7,936,1144,1140.8,212.5,236,236,221.4,5,minify boot-time bundles (43KB -> 37.5KB gz)
+11,kept,1209.5,776,1000,982.3,212.8,240,240,229.5,5,server-injected modulepreload for the 2 shared bundle chunks; wipe dist before rebuild
+12,kept,1223.6,784,828,815.5,212.5,240,240,225.9,5,shell preload for the single LCP thumbnail (first image-type post in the embedded payload)
+13,kept,1209.5,780,824,807.7,206.7,236,236,223.5,5,skip redundant boot-time /posts merge fetch (fetchAndMerge only when URL differs from loaded data)
+14,kept,1202.7,784,824,815.7,211.1,236,236,224.4,5,compile shell template once at boot (pug.compileFile; TTFB 40ms -> 2-3ms)
+15,kept,1202.7,780,824,815.4,211.2,240,240,226.2,5,dedupe identical boot GETs across both data helpers (2s shared promise cache; /tags x3 + /communities x2 -> 1+1)
+16,kept (first-principles wash),1202.2,784,824,814.2,206.5,236,236,223.4,5,gzip output cache keyed by path+ETag (largest-file TTFB 6.9ms -> 0.9ms)
+17,rejected,1151.7,736,776,764.8,583.2,272,272,260.0,5,"inline minified soci.css into the shell (removes render-blocking request, doubles document size)"
+19,kept,1166.1,744,796,776.5,211.7,236,236,224.5,5,prefer brotli over gzip (q11 cached statics: bundle 37.5KB -> 31.5KB; q5 dynamic docs)
+20,kept,1165.8,748,788,779.7,517.0,180,204,191.0,5,content-hash ETag + 304 for dynamic shell documents
