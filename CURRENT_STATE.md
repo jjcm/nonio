@@ -1,3 +1,53 @@
+## 2026-08-21 — Speed: feed load + in-app transitions
+
+Measured on a local stack (MariaDB, goose, Go API, CDNs, frontend) with a
+Playwright harness on two throttled lanes: Slow 4G (150 ms RTT / 1.6 Mbps) and
+a desktop wifi profile (20 ms RTT / 20 Mbps). Medians of n=9.
+
+- **Frontend (soci-frontend)**
+  - `index.js`: gzip for text/JSON/JS/CSS/SVG over 512 B, with output memoized
+    per path+ETag so a hot asset is compressed once rather than per request.
+    ETag + 304 on static files (size+mtime) and on the rendered shell (content
+    hash). `Cache-Control: public, max-age=300` for static assets —
+    deliberately short and deliberately not `immutable`, because these
+    filenames are not content-hashed. Shell is compiled once instead of on
+    every request (was 31 ms per request); the cache is validated against
+    pug's own reported include list, so template edits still take effect
+    without a restart.
+  - `pages/user.pug`: dropped a bare `soci-post-list` placeholder that fetched
+    the entire unfiltered frontpage feed and was then discarded by
+    `user.renderContent()`.
+  - `soci-post-list`: suppressed the duplicate feed request that
+    `attributeChangedCallback('filter')` issued during `_initializeControls()`.
+    API requests per navigation: user 6 → 3, tag 2 → 1.
+  - `soci-post`: reveal on the next frame instead of after a fixed
+    `setTimeout(…, 100)`. The element renders at opacity 0 for the whole
+    fetch, so the entrance transitions still animate; the 100 ms was dead time.
+  - `soci-comment-list`: build the comment tree before fetching
+    `/comment-votes`, and skip that request entirely when not signed in (it
+    answered 401 for anonymous readers, costing them a full round trip before
+    any comment appeared).
+  - Entrance animations on the feed and the post page now ease opacity on
+    `--soci-ease-out` instead of the symmetric `--soci-ease`. Durations and
+    transform curves are unchanged. The old curve held content below
+    perceptible opacity for ~65 ms after the response had already landed.
+
+- **Backend (soci-backend)**
+  - New `httpd/middleware/gzip.go`, wrapping all three route groups. Feed JSON
+    is the largest thing a client downloads during an in-app navigation and
+    compresses ~5x. Buffers the first 512 B so the decision uses both content
+    type and actual size; WebSocket upgrades bypass it; Hijack/Flush pass
+    through. `/posts` 8894 → 1860 B.
+
+- **Results** (Slow 4G medians, click to first contentful render of the
+  destination)
+  - Homepage → tag: 241.1 → 191.1 ms (−21 %)
+  - Homepage → user: 275.9 → 224.5 ms (−19 %)
+  - Homepage → post: 292.5 → 197.9 ms (−32 %); time-to-usable, meaning body
+    plus comments, 342.5 → 197.9 ms (−42 %)
+  - Homepage load: cold FCP 3976 → 2640 ms, cold LCP 4480 → 3056 ms, warm FCP
+    3968 → 208 ms, warm feed paint 4300 → 361 ms. No metric regressed.
+
 ## 2026-02-23 — Community admin settings refactor
 
 - **Frontend (soci-frontend)**
