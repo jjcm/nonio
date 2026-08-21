@@ -289,7 +289,155 @@ regression, and the two rows that prove it are the last three:
   renders early enough that its thumbnails are requested *before* the load
   event, so they are counted in it.
 
-The page finishes ~100 ms sooner (`allAllDone`), shows its posts ~100 ms sooner,
+The page finishes ~100 ms sooner (`allDone`), shows its posts ~100 ms sooner,
 and its LCP is 100 ms earlier cold. `loadEventEnd` grew because it started
 including work that master deferred past it. This is why `allDone` was added to
-the harness.
+the harness. (Iteration 9 later removes this ambiguity entirely — `loadEventEnd`
+ends up far below master too.)
+
+### Iteration 7 — KEEP (post `visible`)
+
+*Hypothesis:* every `opacity: 0 → 1` entrance on `soci-post` (host, media,
+title, tags, description, comments) eases on `--soci-ease` for the same reason
+the feed did, so the same token swap should help. The host's `0.1s` ease-in-out
+in particular needs ~70 % of its duration to reach full opacity, which matches
+the measured `visible − fcr` gap on the post route.
+
+Targets: post. Durations and transform curves unchanged.
+
+| lane | route | before | after | Δ |
+| --- | --- | --- | --- | --- |
+| slow4g | post visible | 256.9 | 241.3 | **−15.6** |
+| wifi | post visible | 124.4 | 107.8 | **−16.6** |
+
+`fcr` moved −5 ms on both lanes; tag and user unchanged.
+
+#### Measurement integrity note
+
+While re-running iteration 7 the tag route reported 175.8 where iteration 6 had
+reported 189.7, which looked like a free 14 ms. It is not. Per-run values are
+bimodal:
+
+```
+slow4g/tag: 187.4  190.5  176.1  175.5  176.0
+```
+
+Two clusters ~13 ms apart — one animation frame. `fcr` is quantised to whichever
+frame the reveal lands on, so **one frame (~13 ms) is the noise floor** for these
+numbers and any single-frame "win" is meaningless. From here on n=9 is used for
+decisions and the final table, and iteration 6's −34 ms (two-plus frames,
+reproduced) stands.
+
+### Iteration 8 — REVERT (no win, real staleness bug)
+
+*Hypothesis:* the sidebar refetches `/communities` on every route activation
+because its panels re-render, so memoizing it should speed up the user route.
+
+Targets: user. Result: requests on a user navigation 3 → 2, and a wash on
+latency — slow4g user 225.3 → 225.4, wifi 106.7 → 107.8, both inside the
+one-frame noise floor.
+
+Reverted, and the reason is worth recording: `toggleSubscribe()` calls
+`_loadCommunities()` immediately after a successful subscribe, with the comment
+"Reload list which will include the new subscription". Under the memo that call
+becomes a no-op and the community the user just subscribed to never appears in
+their sidebar. Every future mutation site would have to remember to pass
+`force`. Zero measured benefit for a new class of staleness bug is a bad trade,
+so this one goes back even though it does remove a request.
+
+### Iteration 9 — KEEP (largest win overall; homepage load)
+
+*Hypothesis:* the frontend server sends every asset uncompressed, with no
+validator and no `Cache-Control`, and recompiles `index.pug` on every request
+(measured: 31 ms per request). Fixing all three should move homepage load a lot
+and must not regress transitions.
+
+Targets: homepage load. `soci-frontend/index.js`.
+
+- gzip for text/JSON/JS/CSS/SVG over 512 B, output memoized per path+ETag so a
+  hot asset is compressed once, not per request.
+- ETag from size+mtime for static files, content hash for the rendered shell;
+  conditional requests answer 304.
+- `Cache-Control: public, max-age=300` for static assets — deliberately short
+  and deliberately **not** `immutable`, because these filenames are not
+  content-hashed. `no-cache` for the shell, which still permits a 304.
+- Shell compiled once. Invalidation uses pug's own reported `dependencies`,
+  stat-ed per request (~20 stats, far cheaper than a recompile). An `fs.watch`
+  version was tried first and **silently missed changes** — verified by editing
+  `pages/user.pug` and watching the served ETag not move. The stat version was
+  verified the same way: ETag changes on edit, returns on revert, and the marker
+  appears in the served HTML.
+
+Shell 30254 → 8265 B. Shell render 31 ms → 1 ms.
+
+Homepage load, Slow 4G, n=5, vs master:
+
+| metric | master | after iter 1–7 | after iter 9 | Δ vs master |
+| --- | --- | --- | --- | --- |
+| cold FCP | 3976 | 3948 | 2640 | **−1336** |
+| cold LCP | 4480 | 4380 | 3056 | **−1424** |
+| cold feed paint | 4472 | 4375 | 3038 | **−1434** |
+| cold all-done | 4684 | 4576 | 3240 | **−1444** |
+| cold loadEventEnd | 4277 | 4576 | 3218 | **−1059** |
+| warm FCP | 3968 | 3952 | 208 | **−3760** |
+| warm LCP | 4008 | 3988 | 208 | **−3800** |
+| warm feed paint | 4300 | 4198 | 361 | **−3938** |
+| warm all-done | 4656 | 4556 | 717 | **−3940** |
+| warm loadEventEnd | 4271 | 4556 | 187 | **−4084** |
+
+Transitions unaffected (see final table). Verified the app still renders 21 rows
+and that no response carries a long-lived or `immutable` cache header.
+
+## Final result (n=9, master vs all kept iterations)
+
+Both submodules rebuilt and the stack restarted for each side.
+
+### Transitions
+
+| lane | route | metric | master | lab | Δ | % |
+| --- | --- | --- | --- | --- | --- | --- |
+| slow4g | tag | fcr | 241.1 | 191.1 | **−50.0** | −20.7 % |
+| slow4g | tag | visible | 441.1 | 373.6 | −67.5 | −15.3 % |
+| slow4g | tag | usable | 241.1 | 191.1 | −50.0 | −20.7 % |
+| slow4g | user | fcr | 275.9 | 224.5 | **−51.4** | −18.6 % |
+| slow4g | user | visible | 475.6 | 407.0 | −68.6 | −14.4 % |
+| slow4g | user | usable | 275.9 | 224.5 | −51.4 | −18.6 % |
+| slow4g | post | fcr | 292.5 | 197.9 | **−94.6** | −32.3 % |
+| slow4g | post | visible | 360.4 | 241.1 | −119.3 | −33.1 % |
+| slow4g | post | usable | 342.5 | 197.9 | **−144.6** | −42.2 % |
+| wifi | tag | fcr | 92.7 | 58.7 | −34.0 | −36.7 % |
+| wifi | tag | visible | 292.4 | 240.9 | −51.5 | −17.6 % |
+| wifi | user | fcr | 158.9 | 108.1 | −50.8 | −32.0 % |
+| wifi | user | visible | 325.6 | 308.1 | −17.5 | −5.4 % |
+| wifi | post | fcr | 158.7 | 59.7 | −99.0 | −62.4 % |
+| wifi | post | visible | 225.5 | 109.9 | −115.6 | −51.3 % |
+| wifi | post | usable | 158.7 | 59.7 | −99.0 | −62.4 % |
+
+### Where the remaining time goes
+
+On Slow 4G the destination fetch is one 150 ms round trip and that is now most
+of what is left: tag `fcr` is 191 ms against a response that lands around
+155 ms. Beating that floor needs either prefetch-on-intent or rendering
+optimistically from feed data the client already holds.
+
+Neither was attempted, deliberately:
+
+- **Prefetch on hover** would show up as exactly zero improvement in this
+  harness, which clicks programmatically with no pointer movement. Crediting it
+  would mean redefining the metric mid-lab.
+- **Optimistic render from the homepage payload** is genuinely safe for the post
+  route — the feed already carries the post's title, author, type, dimensions,
+  tags and (for text posts) full content — and would take post `fcr` close to a
+  single frame. For tag and user it is not safe: the server orders a tagged feed
+  by tag score and paginates it, so a client-side filter of the unfiltered feed
+  can differ in both membership and order, and reconciling would visibly
+  reshuffle the list. Worth doing for the post route as its own change with its
+  own review; out of scope here.
+
+## Ideas measured and rejected
+
+| Idea | Result |
+| --- | --- |
+| Memoize `/communities` across route activations | Wash on latency; breaks the post-subscribe sidebar refresh. Reverted (iteration 8). |
+| Eliminate the `Post.MarshalJSON` N+1 | Real N+1 — `getPostTags()` per post, `Tag.FindByID()` per tag, `Author.FindByID()` per post, so ~105 queries for an 11-post tagged feed. But local server time for `/posts?tag=photography` is **0.4 ms**, so there is no win to measure here and nothing honest to claim. Not shipped. Noted for a lab with production-like DB latency. |
+| Suppress duplicate feed requests | Kept, but as a request-volume win only (iterations 1–2): halves API calls per navigation with no measurable client latency change. |
