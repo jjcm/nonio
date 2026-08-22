@@ -47,7 +47,61 @@ a desktop wifi profile (20 ms RTT / 20 Mbps). Medians of n=9.
     plus comments, 342.5 → 197.9 ms (−42 %)
   - Homepage load: cold FCP 3976 → 2640 ms, cold LCP 4480 → 3056 ms, warm FCP
     3968 → 208 ms, warm feed paint 4300 → 361 ms. No metric regressed.
+## 2026-08-21 — Faster, shorter page and post load animations
 
+- **Frontend (soci-frontend)**
+  - Halved the duration and vertical travel distance of post-list load animations in list and lanes views.
+  - Halved the duration and vertical travel distance of primary, secondary, and tertiary route load animations.
+
+## 2026-02-27 — User page post-list filtering + sidebar Posts default active
+
+- **Frontend (soci-frontend)**
+  - Fixed `soci-post-list` to honor `data` and `user` attributes: when `data` is set (e.g. `data="/posts?user=username&sort=top"`), the component now uses that URL and merges sort/filter from its controls. Added `user` attribute support so `_buildPostsUrl()` includes `?user=` when present.
+  - User page post list now correctly filters to the current user's posts (user.js already passed `data`; soci-post-list now consumes it).
+  - Sidebar user panel: Posts is the default active nav item when navigating to `/user/:username`. Fixes: (1) `_setActiveNavItem('none')` was clearing all `soci-tag-li[active]` after the user panel set them—now `_notifyUserPanelRouteState` is called again after `_setActiveNavItem`; (2) `soci-post-list`'s `_syncFromLocation` was calling `activateTag` on connect/hashchange, which cleared the user panel's Posts—now it skips `activateTag` when pathname is `/user/...`.
+
+## 2026-02-24 — Added soci-emoji component and migrated custom emoji rendering
+
+- **Frontend (soci-frontend)**
+  - Added new `components/soci-emoji.js` web component (`<soci-emoji name="...">`) with shadow-root `<img>` rendering.
+  - `soci-emoji` now updates image URL whenever `name` changes and uses fixed sizing behavior:
+    - host-managed inline sizing,
+    - inner image `height: calc(100% + 4px)` and `margin: -2px 0`.
+  - Registered `soci-emoji` globally in `components/soci-components.js`.
+  - Migrated custom emoji usage to `soci-emoji` in:
+    - markdown rich-text decoration (`lib/soci-rich-text.js`),
+    - text-channel reaction chips and picker (`components/soci-text-channel-view-threaded.js`),
+    - inline token rendering + emoji suggestion rows in `soci-input` (`components/soci-input.js`),
+    - personal/community emoji admin grids (`pages/admin/emojis.js`, `pages/community-emojis.js`).
+  - Updated emoji CSS selectors to style `soci-emoji` hosts in emoji grids.
+  - Follow-up polish:
+    - removed legacy `.emoji` class attachment from `soci-emoji` usage paths,
+    - sized markdown paragraph emojis to `21px` (`soci-markdown-view p soci-emoji`),
+    - sized reaction-chip emojis to `14px` (`.reaction soci-emoji` in text-channel view).
+
+## 2026-02-24 — Text channel composers moved to soci-input
+
+- **Frontend (soci-frontend)**
+  - Updated `components/soci-text-channel-view-threaded.js` to replace both channel composers (`#message-input` and `#thread-input`) from `textarea` to `soci-input`.
+  - Preserved Enter-to-send behavior (Shift+Enter newline) by intercepting keydown in capture phase on `soci-input`.
+  - Updated emoji picker insertion path to use `soci-input.insertText(...)` so selected emojis insert at the current cursor in the active composer.
+  - Removed textarea-specific resize behavior in the text-channel composer (now no-op with `soci-input`-managed editing).
+  - Added public `insertText(...)` method to `components/soci-input.js` for programmatic token insertion from external controls (emoji picker).
+
+## 2026-02-24 — Markdown/user-input rich token rendering (emoji + mentions)
+
+- **Frontend (soci-frontend)**
+  - Added shared rich-text token utilities in `lib/soci-rich-text.js` for `:emoji:` and `@username` scanning plus DOM decoration helpers.
+  - Updated `components/soci-markdown-view.js` to post-process parsed markdown with token-aware DOM decoration:
+    - custom emojis render as inline images (`/emoji/:name.webp`) with text fallback on image load failure,
+    - mentions render as `/user/:username` links,
+    - token conversion skips code/unsafe contexts (`pre`, `code`, links, etc.).
+  - Refactored `components/soci-input.js` from `textarea` to a `contenteditable` editor that:
+    - preserves form-associated value as plain text,
+    - renders inline emoji and mention tokens while editing,
+    - supports dynamic suggestion menus for `@username` (from `/users/search`) and custom emojis (from emoji sets),
+    - supports keyboard selection/acceptance for suggestions (arrow keys, Enter/Tab, Escape).
+  - Removed legacy text-channel-only markdown emoji post-processing from `components/soci-text-channel-view-threaded.js` in favor of centralized `soci-markdown-view` behavior.
 ## 2026-02-23 — Community admin settings refactor
 
 - **Frontend (soci-frontend)**
