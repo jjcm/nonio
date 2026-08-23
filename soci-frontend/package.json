@@ -6,7 +6,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node first-launch-setup.js && node index.js",
-    "build": "pug -O '{\"pretty\": true}' index.pug"
+    "build": "pug -O '{\"pretty\": true}' index.pug",
+    "test": "node first-launch-setup.js && node --test 'test/*.test.js'"
   },
   "repository": {
     "type": "git",

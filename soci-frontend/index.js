@@ -302,6 +302,7 @@ var handler = {
   }
 }
 
-server.listen(config.PORT)
-console.log(`listening on ${config.PORT}`)
+var port = process.env.PORT || config.PORT
+server.listen(port)
+console.log(`listening on ${port}`)
 console.log('-----------------')
