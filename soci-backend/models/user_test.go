@@ -11,7 +11,7 @@ func TestCanCreateAUser(t *testing.T) {
 
 	err := createUser("user@example.com", "", "password")
 	if err != nil {
-		t.Errorf("Creating a user should not have errors. Error: " + err.Error())
+		t.Errorf("Creating a user should not have errors. Error: %v", err)
 	}
 }
 
@@ -29,7 +29,7 @@ func TestAUsersPasswordCanBeChecked(t *testing.T) {
 	}
 	err = user.Login("wrongpassword")
 	if err == nil {
-		t.Errorf("The incorrect password should have thrown an error. Error: " + err.Error())
+		t.Error("The incorrect password should have thrown an error.")
 	}
 }
 
