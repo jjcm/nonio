@@ -261,8 +261,15 @@ func (p *Post) FindByURL(url string, communityID ...int) error {
 func GetPostsByParams(params *PostQueryParams) ([]*Post, error) {
 	args := []interface{}{}
 
+	// Feed responses truncate content to 10 lines / 2000 chars anyway, so cap
+	// what MySQL reads and ships here instead of transferring whole blog
+	// bodies for 100 rows. 4096 leaves ample slack for the line-based
+	// truncation to produce identical output.
 	query := `
-		SELECT p.*, c.url AS community_url
+		SELECT p.id, p.title, p.url, p.domain, p.link, p.user_id, p.thumbnail,
+			p.type, p.score, LEFT(p.content, 4096) AS content, p.created_at,
+			p.updated_at, p.width, p.height, p.comment_count, p.is_encoding,
+			p.community_id, c.url AS community_url
 		FROM posts p
 		LEFT JOIN communities c ON p.community_id = c.id
 		WHERE p.created_at > ? AND (p.is_encoding = false OR (p.type = 'video' AND p.is_encoding = true AND p.created_at < DATE_SUB(CURRENT_TIMESTAMP(), INTERVAL 24 HOUR)))`

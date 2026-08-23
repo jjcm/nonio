@@ -232,10 +232,16 @@ func GetPosts(w http.ResponseWriter, r *http.Request) {
 	}
 	SendJSONResponse(w, jsonData, 200)
 
-	// Add the query to our cache
+	// Add the query to our cache. The cache is keyed by the raw URL, which
+	// clients control, so cap its size: writes already nuke it wholesale on
+	// every post/comment/vote, and a wholesale drop at the cap keeps an
+	// attacker (or an offset crawler) from growing the map forever.
 	cacheResponse.Response = jsonData
 	cacheResponse.CreatedAt = time.Now()
 	postCacheMu.Lock()
+	if len(PostCache) >= 1024 {
+		PostCache = make(map[string]PostQueryResponse)
+	}
 	PostCache[r.URL.String()] = cacheResponse
 	postCacheMu.Unlock()
 }

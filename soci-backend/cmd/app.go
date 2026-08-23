@@ -37,7 +37,10 @@ func runApp(c *cli.Context) error {
 	_, nextTime := schedule.NextRun()
 	log(fmt.Sprintf("Next payment calculation will run on %v", nextTime.Format("Mon Jan 2 15:04:05 2006")))
 
-	models.FixUserSubs()
+	// One Stripe round trip per unpatched user, so don't hold the HTTP
+	// listener closed while it works: with a few hundred rows this blocked
+	// startup (and every restart) for a minute.
+	go models.FixUserSubs()
 
 	log("Starting web api at port " + sociConfig.AppPort)
 	http.ListenAndServe(":"+sociConfig.AppPort, nil)

@@ -24,9 +24,14 @@ var testingDBInitErr error
 var testingDBTables []string
 
 // setupTestingDB mirrors the bootstrap in models/models_test.go for
-// handler-level HTTP tests: a real socidb_testing database migrated by goose.
+// handler-level HTTP tests. It uses its own database (not socidb_testing)
+// because 'go test ./...' runs this package in parallel with models, and
+// sharing one database would let the suites truncate each other mid-test:
+//
+//	CREATE DATABASE socidb_handlers_testing;
+//	GRANT ALL PRIVILEGES ON socidb_handlers_testing.* TO 'dbtestuser'@'localhost';
 func setupTestingDB() {
-	var testingDBName = "socidb_testing"
+	var testingDBName = "socidb_handlers_testing"
 	os.Setenv("APP_KEY", "secret")
 	os.Setenv("STRIPE_SECRET_KEY", "secret")
 	os.Setenv("STRIPE_PUBLISHABLE_KEY", "secret")
