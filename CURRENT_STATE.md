@@ -1,3 +1,56 @@
+## 2026-08-23 — Condensed migrations, test coverage, architecture perf pass
+
+Follow-on to the monorepo unification below, same branch/PR.
+
+- **Migrations condensed to one file** (`soci-backend/migrations/00001_initial_schema.sql`).
+  Reproduces the old 55-migration chain exactly — verified by diffing
+  `mysqldump --no-data` of a fresh DB built each way (byte-identical). The old
+  chain's UPDATEs were all mid-chain backfills (no-ops on empty DBs), so no
+  seed script is needed. Note: old `00037_add_admin_users.sql.sql` was a silent
+  no-op under goose (double extension), so `admin_users` never existed on
+  fresh DBs and is referenced nowhere — intentionally absent. Deployed DBs at
+  goose v55 treat version 1 as applied; they pick up the new indexes via the
+  one-shot `soci-backend/scripts/2026-08-23-add-hot-path-indexes.sql`.
+- **Backend perf (measured on a seeded local stack: 3000 posts, 30000
+  comments, 300 users; medians of 9; responses byte-identical before/after):**
+  - Batch hydration: `GET /posts` was 201 queries per uncached page (1 list +
+    100 per-post tags + 100 per-post authors via lazy `MarshalJSON`); now 3.
+    `GET /comments` was 202 (author + post per comment); now 3. Latency
+    24.6→5.7 ms and 19.4→5.4 ms respectively.
+  - Five hot-path indexes in the initial schema: `comments(post_id)`,
+    `posts(community_id, created_at)`, `posts(user_id)`,
+    `posts_tags_votes(voter_id)`, `notifications(user_id)`. EXPLAIN
+    comments-by-post went ALL/29967 rows → ref/120; `/comments` 5.4→2.0 ms.
+  - Feed query now selects `LEFT(content, 4096)` instead of full bodies;
+    `PostCache` capped at 1024 entries (was unbounded, keyed by raw URL);
+    `FixUserSubs` no longer blocks startup (was ~1 min per restart with a few
+    hundred unpatched users).
+- **CDN perf:** all four CDNs served files with no Cache-Control at all
+  (browser heuristic caching). Now: avatars/emojis `max-age=300` (mutable,
+  username-keyed paths), image/video media `max-age=86400` (write-once but not
+  content-hashed, so no immutable), html-cdn pages `max-age=3600` +
+  temp previews `no-store` + gzip on its HTML/CSS/JS (~10x on markup).
+  video-cdn uploads stream to disk via `io.Copy` instead of buffering whole
+  files in memory.
+- **Frontend perf:** back-navigation to the same feed reattaches the previous
+  `soci-post-list` (5-minute bound) instead of remounting — verified live:
+  1 `/posts` on initial load, 0 on back-navs (was 1 each), 1 on tag change.
+  Fresh routes no longer leak every detached child forever
+  (`soci-route.currentDom` cleared on fresh activation). `soci-post-list`
+  no longer fires a doomed fetch from attributes set before insertion.
+  `/votes` arriving after paint now re-marks upvote chrome in place
+  (`votesloaded` event, additive-only). Stylesheet moved above the
+  synchronous markdown script in `index.pug` head.
+- **Tests added** (all green): backend hydration + first-ever
+  `httpd/handlers` HTTP tests + gzip middleware tests (handlers use their own
+  `socidb_handlers_testing` DB so `go test ./...` can run packages in
+  parallel); CDN tests (fake-API auth utils, avatar upload guards, emoji name
+  sanitization, config parsing, video session/url-mapping state, cache/gzip
+  wrappers); frontend `npm test` via node's built-in runner (server ETag/304/
+  gzip behavior + api client logic), no new framework. Also fixed two
+  pre-existing breaks that Go 1.24 vet turned into compile failures
+  (`models/user_test.go`, `soci-image-cdn/route/move.go`).
+
 ## 2026-08-23 — Monorepo unification (no more submodules)
 
 - Vendored all five former submodules (`soci-frontend`, `soci-backend`,
