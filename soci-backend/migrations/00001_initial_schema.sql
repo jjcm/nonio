@@ -15,7 +15,13 @@
 --    database and nothing in the code references it. It is intentionally
 --    absent here.
 --  * Databases created with the old chain are already at goose version 55
---    and will treat this file (version 1) as already applied.
+--    and will treat this file (version 1) as already applied. To pick up
+--    the new hot-path indexes below on such a database, run the ALTERs in
+--    scripts/2026-08-23-add-hot-path-indexes.sql once.
+--  * On top of the historical schema, this file adds five secondary
+--    indexes on hot query paths (marked "hot path" below): comments.post_id,
+--    posts(community_id, created_at), posts.user_id,
+--    posts_tags_votes.voter_id, notifications.user_id.
 
 CREATE TABLE `users` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -66,6 +72,8 @@ CREATE TABLE `comments` (
   `edited` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
   KEY `author_id` (`author_id`),
+  -- hot path: every post page loads its thread with WHERE post_id = ?
+  KEY `post_id` (`post_id`),
   CONSTRAINT `comments_ibfk_1` FOREIGN KEY (`author_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -180,7 +188,9 @@ CREATE TABLE `notifications` (
   `comment_id` bigint(20) unsigned NOT NULL DEFAULT 0,
   `read` tinyint(1) NOT NULL DEFAULT 0,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  -- hot path: notification list + unread count filter WHERE user_id = ?
+  KEY `user_id` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `payouts` (
@@ -212,7 +222,11 @@ CREATE TABLE `posts` (
   `is_encoding` tinyint(1) NOT NULL DEFAULT 0,
   `community_id` int(11) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `url_community_unique` (`url`,`community_id`)
+  UNIQUE KEY `url_community_unique` (`url`,`community_id`),
+  -- hot path: every feed query filters community_id and created_at
+  KEY `community_created` (`community_id`,`created_at`),
+  -- hot path: user profile feeds filter WHERE user_id = ?
+  KEY `user_id` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `posts_tags` (
@@ -234,7 +248,9 @@ CREATE TABLE `posts_tags_votes` (
   `tallied` tinyint(1) NOT NULL DEFAULT 0,
   `creator_id` bigint(20) unsigned NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `u_posts_tags_voters` (`post_id`,`tag_id`,`voter_id`)
+  UNIQUE KEY `u_posts_tags_voters` (`post_id`,`tag_id`,`voter_id`),
+  -- hot path: /votes loads a signed-in user's votes with WHERE voter_id = ?
+  KEY `voter_id` (`voter_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `roles` (
