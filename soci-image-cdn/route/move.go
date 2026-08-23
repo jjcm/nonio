@@ -14,7 +14,7 @@ func MoveFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println("moving an image\n")
+	fmt.Println("moving an image")
 	r.ParseMultipartForm(1 << 30)
 
 	// Get the user's email if we're authorized
