@@ -9,8 +9,9 @@ import (
 )
 
 func setupRoutes(settings *config.Config) {
-	http.Handle("/", http.FileServer(http.Dir("./files/videos")))
-	http.Handle("/thumbnail/", http.StripPrefix("/thumbnail/", http.FileServer(http.Dir("./files/thumbnails"))))
+	videoCache := "public, max-age=86400"
+	http.Handle("/", cacheControl(videoCache, http.FileServer(http.Dir("./files/videos"))))
+	http.Handle("/thumbnail/", http.StripPrefix("/thumbnail/", cacheControl(videoCache, http.FileServer(http.Dir("./files/thumbnails")))))
 	http.HandleFunc("/upload", route.UploadFile)
 	http.HandleFunc("/move", route.MoveFile)
 	http.HandleFunc("/encode", route.Encode)

@@ -2,6 +2,7 @@ package route
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
@@ -67,12 +68,13 @@ func UploadFile(w http.ResponseWriter, r *http.Request) {
 	}
 	defer tempFile.Close()
 
-	// read the uploaded file into a buffer and write it to our temp file
-	fileBytes, err := ioutil.ReadAll(file)
-	if err != nil {
+	// stream the upload straight to the temp file instead of buffering the
+	// whole video in memory (concurrent multi-GB uploads spiked RAM)
+	if _, err := io.Copy(tempFile, file); err != nil {
 		fmt.Println(err)
+		util.SendError(w, "Error saving the uploaded file.", 500)
+		return
 	}
-	tempFile.Write(fileBytes)
 
 	fmt.Printf("Moving %v to %v\n", url, tempFile.Name())
 

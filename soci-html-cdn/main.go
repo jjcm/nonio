@@ -6,14 +6,17 @@ import (
 	"os"
 	"soci-html-cdn/config"
 	"soci-html-cdn/route"
+	"soci-html-cdn/util"
 )
 
 func setupRoutes(settings *config.Config) {
 	http.HandleFunc("/upload", route.UploadFile)
 	http.HandleFunc("/move", route.MoveFile)
-	http.Handle("/temp/", http.StripPrefix("/temp/", http.FileServer(http.Dir("./files/temp"))))
-	http.Handle("/nonio-embedded-page.js", http.FileServer(http.Dir("./static")))
-	http.Handle("/", http.FileServer(http.Dir("./files")))
+	// gzip: this CDN serves HTML/CSS/JS, the most compressible payloads in
+	// the system, and previously shipped them uncompressed
+	http.Handle("/temp/", http.StripPrefix("/temp/", cacheControl("no-store", util.Gzip(http.FileServer(http.Dir("./files/temp")).ServeHTTP))))
+	http.Handle("/nonio-embedded-page.js", cacheControl("public, max-age=300", util.Gzip(http.FileServer(http.Dir("./static")).ServeHTTP)))
+	http.Handle("/", cacheControl("public, max-age=3600", util.Gzip(http.FileServer(http.Dir("./files")).ServeHTTP)))
 
 	port := os.Getenv("APP_PORT")
 	if port == "" {

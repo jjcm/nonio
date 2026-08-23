@@ -9,8 +9,9 @@ import (
 )
 
 func setupRoutes(settings *config.Config) {
-	http.Handle("/", http.FileServer(http.Dir("./files/images")))
-	http.Handle("/thumbnail/", http.StripPrefix("/thumbnail/", http.FileServer(http.Dir("./files/thumbnails"))))
+	imageCache := "public, max-age=86400"
+	http.Handle("/", cacheControl(imageCache, http.FileServer(http.Dir("./files/images"))))
+	http.Handle("/thumbnail/", http.StripPrefix("/thumbnail/", cacheControl(imageCache, http.FileServer(http.Dir("./files/thumbnails")))))
 	http.HandleFunc("/upload", route.UploadFile)
 	http.HandleFunc("/fetch-og-image", route.FetchOGImage)
 	http.HandleFunc("/move", route.MoveFile)
