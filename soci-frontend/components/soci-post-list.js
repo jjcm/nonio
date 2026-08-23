@@ -18,6 +18,7 @@ export default class SociPostList extends SociComponent {
       if(this.getAttribute('view') === 'lanes' && this._items) relayout(this._items)
     }
     this._onHashChange = () => this._syncFromLocation()
+    this._onVotesLoaded = () => this._applyVotes()
   }
 
   css(){
@@ -348,6 +349,7 @@ export default class SociPostList extends SociComponent {
 
     this.addEventListener('card-loaded', this._onCardLoaded)
     window.addEventListener('hashchange', this._onHashChange)
+    document.addEventListener('votesloaded', this._onVotesLoaded)
 
     this._initializeControls()
     this._syncFromLocation()
@@ -358,6 +360,7 @@ export default class SociPostList extends SociComponent {
     if(this._itemsSlot) unpolyfill(this._itemsSlot)
     this.removeEventListener('card-loaded', this._onCardLoaded)
     window.removeEventListener('hashchange', this._onHashChange)
+    document.removeEventListener('votesloaded', this._onVotesLoaded)
     if(this._fetchController) this._fetchController.abort()
     if(this._loadController) this._loadController.abort()
   }
@@ -555,6 +558,10 @@ export default class SociPostList extends SociComponent {
   }
 
   async _refreshData(){
+    // Attributes set before insertion (pages create the list, set tag or
+    // community, then append) would otherwise start a fetch that the sort
+    // and filter applied in connectedCallback immediately abort and redo.
+    if(!this.isConnected) return
     const url = this._buildPostsUrl()
     if(url === this._currentDataUrl) return
     this._currentDataUrl = url
@@ -562,8 +569,23 @@ export default class SociPostList extends SociComponent {
   }
 
   _refreshFilterFetch(){
+    if(!this.isConnected) return
     this._updateTitle()
     this.fetchAndMerge(this._buildPostsUrl())
+  }
+
+  // Upvote chrome is stamped at render time from soci.votes; when /votes
+  // resolves after the feed has painted, re-mark in place (additive only, so
+  // a vote the user just clicked is never stripped by a stale response).
+  _applyVotes(){
+    const votes = window.soci?.votes || {}
+    this.querySelectorAll('soci-post-li, soci-post-card').forEach(post => {
+      const upvoted = votes[post.getAttribute('post-id')]
+      if(!upvoted?.length) return
+      post.querySelectorAll('soci-tag[tag-id]').forEach(tag => {
+        if(upvoted.includes(parseInt(tag.getAttribute('tag-id')))) tag.toggleAttribute('upvoted', true)
+      })
+    })
   }
 
   async _loadPosts(url){

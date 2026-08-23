@@ -52,7 +52,13 @@ export default class SociRouter extends SociComponent {
     }
     // If fresh is true, we load a fresh copy of the route. Otherwise we load
     // the previous state.
-    if(fresh) this.innerHTML = this.domCopy
+    if(fresh) {
+      // Fresh routes never drain currentDom, so the children detached on
+      // every deactivate accumulated there forever - each feed visit
+      // retained a full detached post list.
+      this.currentDom = []
+      this.innerHTML = this.domCopy
+    }
     else this._attachChildren()
 
     // TODO

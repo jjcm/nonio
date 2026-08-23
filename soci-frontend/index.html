@@ -4,6 +4,7 @@
   <meta http-equiv="content-type" content="text/html; charset=utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <link rel="icon" type="image/svg+xml" href="/lib/favicon.svg">
+  <link rel="stylesheet" href="/soci.css">
   <script src="/lib/markdown-wasm/markdown.js"></script>
   <script src="/soci.js" type="module"></script>
   <script src="/components/soci-components.js" type="module"></script>
@@ -17,8 +18,8 @@
         root.appendChild(resource)
       })
     }
+    
   </script>
-  <link rel="stylesheet" href="/soci.css">
   <soci-sidebar loading>
     <section id="user" slot="user">
       <soci-user self></soci-user>
@@ -388,9 +389,7 @@
     </soci-route>
     <soci-route id="user" test="both" path="^/user/" fresh>
       <div class="content" load-order="secondary">
-        <div class="inner-content">
-          <soci-post-list></soci-post-list>
-        </div>
+        <div class="inner-content"></div>
       </div>
       <script src="/pages/user.js"></script>
     </soci-route>

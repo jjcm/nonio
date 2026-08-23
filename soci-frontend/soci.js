@@ -147,6 +147,8 @@ let soci = {
         votes[vote.postID].push(vote.tagID)
       })
       soci.votes = votes
+      // /votes races /posts on boot; anything already rendered re-marks itself
+      document.dispatchEvent(new CustomEvent('votesloaded'))
     })
   },
   animateSidebar() {
