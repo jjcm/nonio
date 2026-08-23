@@ -1,0 +1,27 @@
+mixin endpoint
+  .endpoint&attributes(attributes)
+    .content
+      if block
+        block
+
+mixin auth
+  h3 Requirements
+  ul
+    li
+      h4 Authentication
+      div Admin role required.
+      :code(javascript)
+        401 Unauthorized
+
+block content
+  h1 Admin API
+  p Admin-only routes. Requires admin role in JWT.
+  .endpoints
+    +endpoint#post_admin_ban
+      h2 <span>POST</span> /admin/ban
+      p Ban a user site-wide.
+      +auth
+    +endpoint#post_admin_nuke
+      h2 <span>POST</span> /admin/nuke
+      p Nuke a user (delete all content). Admin only.
+      +auth

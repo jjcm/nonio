@@ -1,0 +1,42 @@
+mixin endpoint
+  .endpoint&attributes(attributes)
+    .content
+      if block
+        block
+
+mixin auth
+  h3 Requirements
+  ul
+    li
+      h4 Authentication
+      div With no auth, should return
+      :code(javascript)
+        401 Unauthorized
+
+block content
+  h1 Emojis API
+  .endpoints
+    +endpoint#get_community_emojis
+      h2 <span>GET</span> /community/emojis?community=:slug
+      p Get emojis for a community.
+      +auth
+    +endpoint#post_community_emoji_create
+      h2 <span>POST</span> /community/emoji/create
+      p Create community emoji. Moderator only.
+      +auth
+    +endpoint#post_emoji_create
+      h2 <span>POST</span> /emoji/create
+      p Create user-owned emoji.
+      +auth
+    +endpoint#get_emojis_sets
+      h2 <span>GET</span> /emojis/sets
+      p Get emoji sets available to user.
+      +auth
+    +endpoint#post_emoji_subscribe
+      h2 <span>POST</span> /emoji/subscribe
+      p Subscribe to an emoji set.
+      +auth
+    +endpoint#get_emoji
+      h2 <span>GET</span> /emoji?id=:id
+      p Get emoji by ID.
+      +auth

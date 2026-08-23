@@ -1,0 +1,68 @@
+doctype html
+html(lang="en")
+  title Nonio
+  meta(http-equiv="content-type" content="text/html; charset=utf-8")
+  meta(name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1")
+  link(rel="icon" type="image/svg+xml" href="/lib/favicon.svg")
+  script(src="/lib/markdown-wasm/markdown.js")
+  script(src="/soci.js" type="module")
+  script(src="/components/soci-components.js" type="module")
+  script.
+    let lazyload = (path, parent) => {
+      document.addEventListener('DOMContentLoaded', ()=>{
+        let resource = document.createElement('script')
+        resource.async = 'true'
+        resource.src = path
+        let root = parent ? parent : document.head
+        root.appendChild(resource)
+      })
+    }
+  link(rel="stylesheet" href="/soci.css")
+
+  include sidebar.pug
+  #pages
+    soci-route#text-channel(path="^/@[\\w-]+:[^/#?]+$" fresh)
+      script.
+        lazyload('/pages/text-channel.js', document.currentScript.closest('soci-route'))
+    soci-route#tags(test="both" path="^(/@[\\w-]+)?/?(#.*)?$" fresh)
+      include pages/tags.pug
+    soci-route#admin-create(path="/admin/create-account").admin-page
+      include pages/admin/create.pug
+    soci-route#admin-subscribe(path="/admin/subscribe" fresh).admin-page
+      include pages/admin/subscribe.pug
+    soci-route#admin-forgot-password(path="/admin/forgot-password").admin-page
+      include pages/admin/forgot-password.pug
+    soci-route#admin-change-forgotten-password(path="/admin/change-forgotten-password").admin-page
+      include pages/admin/change-forgotten-password.pug
+    soci-route#admin-settings(path="/admin/settings").admin-page
+      include pages/admin/settings.pug
+    soci-route#notifications(path="/notifications")
+      include pages/notifications.pug
+    soci-route#user(test="both" path="^/user/" fresh)
+      include pages/user.pug
+    soci-route#submit(path="^(/@[\\w-]+)?/submit$" fresh)
+      include pages/submit.pug
+    soci-route#admin-financials(path="/admin/financials").admin-page
+      include pages/admin/financials.pug
+    soci-route#admin-emojis(path="/admin/emojis").admin-page
+      include pages/admin/emojis.pug
+    soci-route#about(path="/about")
+      include pages/about/about.pug
+    soci-route#privacy-policy(path="/about/privacy-policy")
+      include pages/about/privacy-policy.pug
+    soci-route#contact(path="/about/contact")
+      include pages/about/contact.pug
+
+    soci-route#community-settings(path="^(/@[\\w-]+)/admin$" fresh)
+      include pages/community-settings.pug
+    soci-route#community-users(path="^(/@[\\w-]+)/admin/users$" fresh)
+      include pages/community-users.pug
+    soci-route#community-financials(path="^(/@[\\w-]+)/admin/financials$" fresh)
+      include pages/community-financials.pug
+    soci-route#community-emojis(path="^(/@[\\w-]+)/admin/emojis$" fresh)
+      include pages/community-emojis.pug
+
+    soci-route#post(default fresh)
+      include pages/post.pug
+
+  script(src="/pages/post.js")

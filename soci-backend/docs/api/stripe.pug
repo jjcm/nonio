@@ -1,0 +1,50 @@
+mixin endpoint
+  .endpoint&attributes(attributes)
+    .content
+      if block
+        block
+
+mixin auth
+  h3 Requirements
+  ul
+    li
+      h4 Authentication
+      div With no auth, should return
+      :code(javascript)
+        401 Unauthorized
+
+block content
+  h1 Stripe API
+  p Stripe integration for subscriptions and creator payouts.
+  .endpoints
+    +endpoint#post_stripe_subscription_create
+      h2 <span>POST</span> /stripe/subscription/create
+      p Create a Stripe subscription.
+      +auth
+    +endpoint#post_stripe_subscription_delete
+      h2 <span>POST</span> /stripe/subscription/delete
+      p Cancel Stripe subscription.
+      +auth
+    +endpoint#post_stripe_subscription_edit
+      h2 <span>POST</span> /stripe/subscription/edit
+      p Edit Stripe subscription.
+      +auth
+    +endpoint#get_stripe_subscription
+      h2 <span>GET</span> /stripe/subscription
+      p Get current Stripe subscription.
+      +auth
+    +endpoint#get_stripe_price_config
+      h2 <span>GET</span> /stripe/price-config
+      p Get Stripe price configuration.
+      +auth
+    +endpoint#post_stripe_create_customer
+      h2 <span>POST</span> /stripe/create-customer
+      p Create Stripe customer.
+      +auth
+    +endpoint#get_stripe_connect_link
+      h2 <span>GET</span> /stripe/get-connect-link
+      p Get Stripe Connect onboarding link for creators.
+      +auth
+    +endpoint#post_stripe_webhooks
+      h2 <span>POST</span> /stripe/webhooks
+      p Stripe webhook endpoint. Internal use.

@@ -1,0 +1,12 @@
+export default {
+  "PORT": "4200",
+  "HOST": "http://localhost",
+  "API_HOST": "http://localhost:4201",
+  "AVATAR_HOST": "http://localhost:4202",
+  "IMAGE_HOST": "http://localhost:4203",
+  "VIDEO_HOST": "http://localhost:4204",
+  "HTML_HOST": "http://localhost:4205",
+  "THUMBNAIL_HOST": "http://localhost:4203/thumbnail",
+  "PRERENDER_HOST": "",
+  "STRIPE_PUBLISHABLE_KEY": ""
+}

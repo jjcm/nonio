@@ -1,0 +1,115 @@
+mixin endpoint(type, path, id, todo)
+  a.endpoint(href=id)
+    span(class=type)=type
+    = path
+    if todo
+      .todo TODO
+
+#sidebar
+  .sidebar-header
+    button#llm-copy-btn.llm-btn LLMs
+  .category API Server
+  a.endpoint(href="https://api.non.io") https://api.non.io
+  .category Models
+  a.endpoint(href="#model_post") Post
+  a.endpoint(href="#model_post_tag") PostTag
+  a.endpoint(href="#model_post_tag_vote") PostTagVote
+  a.endpoint(href="#model_tag") Tag
+  a.endpoint(href="#model_comment") Comment
+  a.endpoint(href="#model_comment_vote") CommentVote
+  .category Posts
+  +endpoint('GET', '/posts', '#get_posts')
+  +endpoint('GET', '/posts/:url', '#get_view_post')
+  a.endpoint(href="#post_creation") Post creation
+  a.endpoint(href="#image_post_creation_example") Image upload example
+  a.endpoint(href="#video_post_creation_example") Video upload example
+  +endpoint('POST', '/post/create', '#post_post_create')
+  +endpoint('POST', '/post/delete', '#post_post_delete')
+  +endpoint('GET', '/post/url-is-available/:url', '#get_post_url_is_available')
+  +endpoint('POST', '/post/encoding-complete', '#post_encoding_complete')
+  +endpoint('POST', '/post/parse-external-url', '#post_post_parse_external_url')
+  .category Tags
+  +endpoint('GET', '/tags', '#get_tags')
+  +endpoint('GET', '/tags/:prefix', '#get_tags_by_prefix')
+  .category PostTags
+  +endpoint('POST', '/posttag/create', '#post_posttag_create')
+  +endpoint('POST', '/posttag/add-vote', '#post_posttag_add_vote')
+  +endpoint('POST', '/posttag/remove-vote', '#post_posttag_remove_vote')
+  .category Comments
+  +endpoint('GET', '/comments?post=...', '#get_post_comments')
+  +endpoint('GET', '/comments?user=...', '#get_user_comments')
+  +endpoint('POST', '/comment/create', '#post_comment_create')
+  +endpoint('POST', '/comment/edit', '#post_comment_edit')
+  +endpoint('POST', '/comment/delete', '#post_comment_delete')
+  .category User
+  +endpoint('POST', '/user/login', '#post_user_login')
+  +endpoint('POST', '/user/refresh-access-token', '#post_user_refresh_access_token')
+  +endpoint('POST', '/user/register', '#post_user_register')
+  +endpoint('GET', '/user/username-is-available/:username', '#get_user_username_is_available')
+  +endpoint('GET', '/users/:username', '#get_user')
+  +endpoint('POST', '/user/forgot-password-request', '#post_forgot_password_request')
+  +endpoint('POST', '/user/change-forgotten-password', '#post_change_forgotten_password')
+  +endpoint('POST', '/user/change-password', '#post_user_change_password')
+  +endpoint('POST', '/user/update-description', '#post_user_update_description')
+  +endpoint('GET', '/user/get-financials', '#get_user_financials')
+  +endpoint('GET', '/user/get-financial-ledger', '#get_user_financial_ledger')
+  +endpoint('GET', '/users/search', '#get_users_search')
+  +endpoint('POST', '/user/choose-free-account', '#post_user_choose_free_account')
+  .category Notifications
+  a.endpoint(href="#model_notification") Model
+  +endpoint('GET', '/notifications', '#get_notifications')
+  +endpoint('GET', '/notifications/unread-count', '#get_notification_count')
+  +endpoint('POST', '/notification/mark-read', '#post_notification_mark_read')
+  .category Communities
+  +endpoint('GET', '/communities', '#get_communities')
+  +endpoint('GET', '/communities/:slug', '#get_community')
+  +endpoint('POST', '/community/create', '#post_community_create')
+  +endpoint('POST', '/community/subscribe', '#post_community_subscribe')
+  +endpoint('POST', '/community/unsubscribe', '#post_community_unsubscribe')
+  +endpoint('GET', '/communities/subscribed', '#get_communities_subscribed')
+  +endpoint('GET', '/community/moderators', '#get_community_moderators')
+  +endpoint('POST', '/community/update', '#post_community_update')
+  +endpoint('POST', '/community/ban', '#post_community_ban')
+  +endpoint('POST', '/community/unban', '#post_community_unban')
+  +endpoint('GET', '/community/users', '#get_community_users')
+  +endpoint('GET', '/community/financials', '#get_community_financials')
+  .category Channels
+  +endpoint('GET', '/community/channels', '#get_community_channels')
+  +endpoint('POST', '/community/channel/create', '#post_community_channel_create')
+  +endpoint('GET', '/community/channel/messages', '#get_community_channel_messages')
+  +endpoint('POST', '/community/channel/messages', '#post_community_channel_messages')
+  +endpoint('GET', '/community/channel/ws', '#get_community_channel_ws')
+  +endpoint('GET', '/community/channel/thread', '#get_community_channel_thread')
+  +endpoint('POST', '/community/channel/message/react', '#post_community_channel_message_react')
+  .category Voice
+  +endpoint('POST', '/voice/join', '#post_voice_join')
+  +endpoint('POST', '/voice/presence', '#post_voice_presence')
+  +endpoint('GET', '/voice/presence/ws', '#get_voice_presence_ws')
+  .category Stripe
+  +endpoint('POST', '/stripe/subscription/create', '#post_stripe_subscription_create')
+  +endpoint('POST', '/stripe/subscription/delete', '#post_stripe_subscription_delete')
+  +endpoint('POST', '/stripe/subscription/edit', '#post_stripe_subscription_edit')
+  +endpoint('GET', '/stripe/subscription', '#get_stripe_subscription')
+  +endpoint('GET', '/stripe/price-config', '#get_stripe_price_config')
+  +endpoint('POST', '/stripe/create-customer', '#post_stripe_create_customer')
+  +endpoint('GET', '/stripe/get-connect-link', '#get_stripe_connect_link')
+  .category Subscriptions
+  +endpoint('GET', '/subscriptions', '#get_subscriptions')
+  +endpoint('POST', '/subscription/create', '#post_subscription_create')
+  +endpoint('POST', '/subscription/delete', '#post_subscription_delete')
+  .category Admin
+  +endpoint('POST', '/admin/ban', '#post_admin_ban')
+  +endpoint('POST', '/admin/nuke', '#post_admin_nuke')
+  .category Emojis
+  +endpoint('GET', '/community/emojis', '#get_community_emojis')
+  +endpoint('POST', '/community/emoji/create', '#post_community_emoji_create')
+  +endpoint('POST', '/emoji/create', '#post_emoji_create')
+  +endpoint('GET', '/emojis/sets', '#get_emojis_sets')
+  +endpoint('POST', '/emoji/subscribe', '#post_emoji_subscribe')
+  +endpoint('GET', '/emoji', '#get_emoji')
+
+  .logo
+    <svg height="16" viewBox="0 0 233 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M20.6688 0.599998V23H16.4128L5.24475 9.4V23H0.12475V0.599998H4.41275L15.5487 14.2V0.599998H20.6688ZM45.879 23.384C43.5537 23.384 41.4523 22.8827 39.575 21.88C37.719 20.8773 36.2577 19.5013 35.191 17.752C34.1457 15.9813 33.623 13.9973 33.623 11.8C33.623 9.60267 34.1457 7.62933 35.191 5.88C36.2577 4.10933 37.719 2.72267 39.575 1.72C41.4523 0.717333 43.5537 0.216 45.879 0.216C48.2043 0.216 50.295 0.717333 52.151 1.72C54.007 2.72267 55.4683 4.10933 56.535 5.88C57.6017 7.62933 58.135 9.60267 58.135 11.8C58.135 13.9973 57.6017 15.9813 56.535 17.752C55.4683 19.5013 54.007 20.8773 52.151 21.88C50.295 22.8827 48.2043 23.384 45.879 23.384ZM45.879 18.968C47.2017 18.968 48.3963 18.6693 49.463 18.072C50.5297 17.4533 51.3617 16.6 51.959 15.512C52.5777 14.424 52.887 13.1867 52.887 11.8C52.887 10.4133 52.5777 9.176 51.959 8.088C51.3617 7 50.5297 6.15733 49.463 5.56C48.3963 4.94133 47.2017 4.632 45.879 4.632C44.5563 4.632 43.3617 4.94133 42.295 5.56C41.2283 6.15733 40.3857 7 39.767 8.088C39.1697 9.176 38.871 10.4133 38.871 11.8C38.871 13.1867 39.1697 14.424 39.767 15.512C40.3857 16.6 41.2283 17.4533 42.295 18.072C43.3617 18.6693 44.5563 18.968 45.879 18.968ZM91.6375 0.599998V23H87.3815L76.2135 9.4V23H71.0935V0.599998H75.3815L86.5175 14.2V0.599998H91.6375ZM106 0.599998H111.184V23H106V0.599998ZM136.41 23.384C134.085 23.384 131.984 22.8827 130.106 21.88C128.25 20.8773 126.789 19.5013 125.722 17.752C124.677 15.9813 124.154 13.9973 124.154 11.8C124.154 9.60267 124.677 7.62933 125.722 5.88C126.789 4.10933 128.25 2.72267 130.106 1.72C131.984 0.717333 134.085 0.216 136.41 0.216C138.736 0.216 140.826 0.717333 142.682 1.72C144.538 2.72267 146 4.10933 147.066 5.88C148.133 7.62933 148.666 9.60267 148.666 11.8C148.666 13.9973 148.133 15.9813 147.066 17.752C146 19.5013 144.538 20.8773 142.682 21.88C140.826 22.8827 138.736 23.384 136.41 23.384ZM136.41 18.968C137.733 18.968 138.928 18.6693 139.994 18.072C141.061 17.4533 141.893 16.6 142.49 15.512C143.109 14.424 143.418 13.1867 143.418 11.8C143.418 10.4133 143.109 9.176 142.49 8.088C141.893 7 141.061 6.15733 139.994 5.56C138.928 4.94133 137.733 4.632 136.41 4.632C135.088 4.632 133.893 4.94133 132.826 5.56C131.76 6.15733 130.917 7 130.298 8.088C129.701 9.176 129.402 10.4133 129.402 11.8C129.402 13.1867 129.701 14.424 130.298 15.512C130.917 16.6 131.76 17.4533 132.826 18.072C133.893 18.6693 135.088 18.968 136.41 18.968Z" fill="var(--text-color)"/>
+      <path d="M176.377 18.2H165.977L163.993 23H158.681L168.665 0.599998H173.785L183.801 23H178.361L176.377 18.2ZM174.745 14.264L171.193 5.688L167.641 14.264H174.745ZM204.883 0.599998C206.867 0.599998 208.585 0.930665 210.035 1.592C211.507 2.25333 212.638 3.192 213.427 4.408C214.217 5.624 214.611 7.064 214.611 8.728C214.611 10.3707 214.217 11.8107 213.427 13.048C212.638 14.264 211.507 15.2027 210.035 15.864C208.585 16.504 206.867 16.824 204.883 16.824H200.371V23H195.187V0.599998H204.883ZM204.595 12.6C206.153 12.6 207.337 12.2693 208.147 11.608C208.958 10.9253 209.363 9.96533 209.363 8.728C209.363 7.46933 208.958 6.50933 208.147 5.848C207.337 5.16533 206.153 4.824 204.595 4.824H200.371V12.6H204.595ZM227.687 0.599998H232.871V23H227.687V0.599998Z" fill="var(--link-color)"/>
+    </svg>

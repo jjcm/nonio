@@ -1,0 +1,408 @@
+mixin endpoint
+  .endpoint&attributes(attributes)
+    .content
+      if block
+        block
+
+mixin auth
+  h3 Requirements
+  ul 
+    li 
+      h4 Authentication
+      div With no auth, should return
+      :code(javascript)
+        401 Unauthorized
+
+block content
+  h1 Posts API
+  .endpoints
+    +endpoint#get_posts
+      h2 <span>GET</span> /posts
+      p Returns 100 posts.
+      h3 Parameters
+      .parameter
+        .param ?offset=<span>NUMBER</span>
+        p Offsets the responses by a set number.
+      .parameter
+        .param ?sort=<span class="default">popular</span>|<span>top</span>|<span>new</span>
+        p Returns posts sorted by a particular algorithm.
+        ul 
+          li 
+            h4 popular <span>default</span>
+            p Posts are sorted by score, within a time span between now and the requesting user's last login, or 24 hours, whichever is longer.
+          li 
+            h4 new
+            p Posts are sorted by date. Newest first.
+          li 
+            h4 top
+            p Posts are sorted by score. Highest first.
+
+      .parameter
+        .param ?time=<span class="default">all</span>|<span>day</span>|<span>week</span>|<span>month</span>|<span>year</span>
+        p Only returns posts that were created within a specific time period.
+        ul 
+          li 
+            h4 all <span>default</span>
+            p No time constraints.
+          li 
+            h4 day
+            p Only returns posts created in the last day.
+          li 
+            h4 week
+            p Only returns posts created in the last week.
+          li 
+            h4 month
+            p Only returns posts created in the last month.
+          li 
+            h4 year
+            p Only returns posts created in the last year.
+
+      .parameter
+        .param ?tag=<span class="default">TAG</span>
+        p Only returns results that match a specific tag. Multiple tags can be listed by separating tags with a <span>+</span>. If more than one tag is listed, it will return posts that match any of the tags. As an example:
+        :code(javascript)
+          /posts?tag=funny+wtf
+        p will return 100 posts that either have a tag of funny or wtf.
+
+      .parameter
+        .param ?user=<span class="default">USER</span>
+        p Only returns results posts that were made by a specific user.
+      .parameter
+        .param ?community=<span class="default">SLUG</span>
+        p Scope posts to a community. Use community slug (with or without @ prefix).
+      .parameter
+        .param ?type=<span>image</span>|<span>video</span>|<span>blog</span>|<span>link</span>|<span>audio</span>
+        p Filter by post type.
+
+      +auth
+
+      h3 Example response
+      :code(javascript)
+        {
+          posts: [
+            {
+              "id": 2,
+              "title": "test post",
+              "user": "wombodombo",
+              "time": "1577171754000",
+              "url": "this_is_crazy",
+              "link": "", //optional
+              "content": "{\"ops\":[{\"insert\":\"This is a cool photo.\\n\"}]}", //quilljs formatted content
+              "type": "image",
+              "score": 148,
+              "commentCount": 21,
+              "width": 1920, //will appear for video and image content
+              "height": 1080, //will appear for video and image content
+              "tags": [
+                {
+                  "tag": "funny",
+                  "score": 10,
+                },
+                {
+                  "tag": "meme",
+                  "score": 7,
+                },
+                {
+                  "tag": "image",
+                  "score": 4,
+                }
+              ]
+            },
+
+            // ...etc
+
+          ]
+        }
+
+    +endpoint#get_view_post
+      h2 <span>GET</span> /posts/:url or /posts/@community/:url
+      p.
+        Returns the data for a single post, referenced by its url.
+        Use /posts/:url for default community, or /posts/@communitySlug/:url for a specific community.
+        Alternatively use ?community=slug when fetching /posts/:url.
+        The date for the tags is the date the postTag association was first created.
+
+      h3 Requirements
+      p None. Should be available publicly
+
+      h3 Example response
+      :code(javascript)
+        {
+          "id": 2,
+          "title": "test post",
+          "user": "wombodombo",
+          "time": "1577171754000",
+          "url": "this_is_crazy",
+          "link": "", //optional
+          "content": "{\"ops\":[{\"insert\":\"This is a cool photo.\\n\"}]}", //quilljs formatted content
+          "type": "image",
+          "score": 148,
+          "commentCount": 21,
+          "width": 1920, //will appear for video and image content
+          "height": 1080, //will appear for video and image content
+          "tags": [
+            {
+              "tag": "funny",
+              "score": 10,
+            },
+            {
+              "tag": "meme",
+              "score": 7,
+            },
+            {
+              "tag": "image",
+              "score": 4,
+            }
+          ]
+        }
+
+    +endpoint#post_creation
+      h2 Post Creation
+      p Submitting posts on nonio is a multi-step process, depending on the type of post you are submitting.
+      p For text posts, you can submit the post directly to the /post/create endpoint.
+      p For link posts, you will want to submit the URL to the /post/parse-external-url endpoint to get a summary of the opengraph data for the URL, and then submit the post to the /post/create endpoint with the data you received from the /post/parse-external-url endpoint. This isn't required, but it will give you information you likely want to include in your post.
+      p For image and video posts, you will need to go through more complicated steps, which are detailed below.
+    
+    +endpoint#image_post_creation_example
+      h2 Example image post creation flow 
+      p This will walk through the steps needed to create an image post. 
+
+      h3 Step 1: Upload the image
+      h4 <span>POST</span> https://image.non.io/upload
+      h5 Payload
+      :code(javascript)
+        //form data
+        files: (binary)
+
+      h5 Response
+      p Responds with the temporary name of the image after encoding. This can be accessed via https://image.non.io/${tempName}.webp or via other file extensions. 
+      :code(javascript)
+        4e4b2709-e82e-415d-ae6d-5e9f1efaaae8
+
+      h3 Step 2: Move the image
+      h4 <span>POST</span> https://image.non.io/move
+      h5 Payload
+      :code(javascript)
+        //form data
+        oldUrl: "5e4b2709-e92e-415d-ae6d-5e9f1efaaae8"
+        url: "my-neato-image-wow"
+
+      h5 Response
+      p Responds with the moved image name
+      :code(javascript)
+        my-neato-image-wow
+
+      h3 Step 3: Submit the post
+      h4 <span>POST</span> https://api.non.io/post/create
+      h5 Payload
+      :code(javascript)
+        {
+          "title": "My Cool Image!",
+          "url": "my-neato-image-wow",
+          "content": "{\"ops\":[{\"insert\":\"Some content\\n\"}]}",
+          "link": null,
+          "type": "image",
+          "tags": ["tag1","tag2"],
+          "width": 1236,
+          "height": 942
+        }
+
+      h5 Response
+      p Responds with the temporary name of the image after encoding. This can be accessed via https://image.non.io/${tempName}.webp or via other file extensions. 
+      :code(javascript)
+        {
+          "ID": 28,
+          "title": "My Cool Image!",
+          "user": "lapubell",
+          "time": 1717534937000,
+          "url": "my-neto-image-wow",
+          "link": "",
+          "content":"{\"ops\":[{\"insert\":\"Some content\\n\"}]}",
+          "type": "image",
+          "score": 1,
+          "commentCount": 0,
+          "tags": ["tag1","tag2"],
+          "width": 1236,
+          "height": 942
+        }
+    
+    +endpoint#video_post_creation_example
+      h2 Example video post creation flow 
+      p This will walk through the steps needed to create an video post. This is similar to the image post creation flow, but because videos take a long time to encode, there's an additional websocket connection to get the progress of the encoding for each resolution.
+
+      h3 Step 1: Upload the video
+      h4 <span>POST</span> https://video.non.io/upload
+
+      h5 Payload
+      :code(javascript)
+        //form data
+        files: (binary)
+
+      h5 Response
+      p Responds with the temporary name of the video before encoding. You will need to encode the video first before viewing it.
+      :code(javascript)
+        video-1234567890.mp4
+
+      h3 Step 2: Encode the video
+      p You will need to connect to a websocket to get the progress of the encoding. This will return the temporary name of the video after encoding.
+      h4 <span>GET</span> wss://video.non.io/encode?file=video-1234567890.mp4
+
+      h5 Payload
+      :code(javascript)
+        //query string parameters
+        file: video-1234567890.mp4
+      
+      h5 Response
+      p The response will be a series of messages from the websocket that will give you the progress of the encoding, for each resolution it's encoding to.
+      p Resolutions supported are 480p, 720p, 1080p, 1440p, 2160p, and 4320p. The native resolution will simply be named source, and encodings will be made of resolutions lower than that. 
+      :code(javascript)
+        // The first message will be the detected resolution of the source file
+        resolution:1376x802
+
+        // The next messages will be progress of encoding for each resolution. Encoding will begin with the lowest resolution first, and work its way up to the source resolution.
+        480p:0.0 // 0% complete
+        480p:55.3
+        480p:77.2
+        480p:100
+
+        720p:0.0
+        720p:13.8
+        ...etc
+
+        // The largest resolution is always named `source`, and is the original resolution of the video.
+        source:0.0
+        source:7.2
+        source:100
+
+      p The final message will be source:100, after that the file will be available for viewing. At the following url:
+      :code(javascript)
+        https://video.non.io/video-1234567890.mp4
+
+      h3 Step 3: Move the video
+      h4 <span>POST</span> https://video.non.io/move
+      h5 Payload
+      :code(javascript)
+        //form data
+        oldUrl: "video-1234567890"
+        url: "my-neato-video-wow"
+
+      h5 Response
+      p Responds with the moved image name
+      :code(javascript)
+        my-neato-post-wow
+
+      h3 Step 3: Submit the post
+      h4 <span>POST</span> https://api.non.io/post/create
+      h5 Payload
+      :code(javascript)
+        {
+          "title": "My Cool Video!",
+          "url": "my-neato-video-wow",
+          "content": "{\"ops\":[{\"insert\":\"Some content\\n\"}]}",
+          "link": null,
+          "type": "video",
+          "tags": ["tag1","tag2"],
+          "width": 1236,
+          "height": 942
+        }
+
+      h5 Response
+      :code(javascript)
+        {
+          "ID": 29,
+          "title": "My Cool Video!",
+          "user": "lapubell",
+          "time": 1717534937000,
+          "url": "my-neto-video-wow",
+          "link": "",
+          "content":"{\"ops\":[{\"insert\":\"Some content\\n\"}]}",
+          "type": "video",
+          "score": 1,
+          "commentCount": 0,
+          "tags": ["tag1","tag2"],
+          "width": 1236,
+          "height": 942
+        }
+
+    +endpoint#post_post_create
+      h2 <span>POST</span> /post/create
+      p.
+        Accepts a JSON payload to create a new post in the database
+
+      h3 Requirements
+      ul
+        li
+          h4 Authentication
+          div With no auth, should return
+          :code(javascript)
+            401 Unauthorized
+
+      h3 Example payload
+      :code(javascript)
+        {
+          "title": "My Cool Post!",
+          "url": "my-neato-post-wow",
+          "content": "This is the long form content for this post...",
+          "type": "blog"
+        }
+
+      h3 Example response
+      :code(javascript)
+        {
+            "title": "My Cool Post!",
+            "user": "lapubell",
+            "time": "1577171754000",
+            "url": "my-neto-post-wow",
+            "tags": []
+        }
+
+
+    +endpoint#get_post_url_is_available
+      h2 <span>GET</span> /post/url-is-available/:url
+      p.
+        Returns a boolean based on if the requested URL is available.
+        Use ?community=slug to check within a community.
+      h3 Requirements
+      p None. Should be available publicly
+      h3 Example response
+      :code(javascript)
+        true
+
+    +endpoint#post_encoding_complete
+      h2 <span>POST</span> /post/encoding-complete
+      p.
+        Called by the video CDN when encoding is complete. Internal use.
+
+    +endpoint#post_post_delete
+      h2 <span>POST</span> /post/delete
+      p.
+        Deletes a post. Requires authentication. Author or moderator only.
+
+      +auth
+      h3 Example payload
+      :code(javascript)
+        { "url": "my-post-url", "community": "@myslug" }
+      h3 Example response
+      :code(javascript)
+        true
+
+    +endpoint#post_post_parse_external_url
+      h2 <span>POST</span> /post/parse-external-url
+      p.
+        Returns a summary of the opengraph data for a given URL, used for populating the image, title and description of link post submissions.
+
+      +auth
+
+      h3 Example payload
+      :code(javascript)
+        {
+          "url": "https://youtube.com"
+        }
+
+      h3 Example response
+      :code(javascript)
+        {
+            "title": "YouTube",
+            "description": "Enjoy the videos and music you love, upload original content, and share it all with friends, family, and the world on YouTube.",
+            "image": "https://www.youtube.com/img/desktop/yt_1200.png"
+        }

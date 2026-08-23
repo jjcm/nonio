@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>How to talk to the API</title>
+
+    <script src="//cdnjs.cloudflare.com/ajax/libs/vue/2.6.10/vue.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/axios/0.19.0/axios.min.js"></script>
+<style>
+label {
+    display: inline-block;
+    width: 130px;
+    padding-right: 5px;
+    text-align: right;
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+    <div style="display: flex;">
+
+        <div class="left" style="flex: 2; padding: 15px;">
+            <p>If you want to authenticate with the standard DB username/password, you'll need to have a user in your system. Here is a registration form:</p>
+            <div style="background-color: #eee; padding: 5px;">
+                <h2>Register:</h2>
+                <label for="email">Email</label>
+                <input type="email" id="email" v-model="registerEmail" /><br />
+                <label for="password">Password</label>
+                <input type="password" id="password" v-model="registerPassword" /><br />
+                <label for="nothing">&nbsp;</label>
+                <button @click="register">Sign up</button>
+            </div>
+            <p>Here is a login form:</p>
+            <div style="background-color: #eee; padding: 5px;">
+                <h2>Login:</h2>
+                <label for="email">Email</label>
+                <input type="email" id="email" v-model="loginEmail" /><br />
+                <label for="password">Password</label>
+                <input type="password" id="password" v-model="loginPassword" /><br />
+                <label for="nothing">&nbsp;</label>
+                <button @click="login">Sign in</button>
+            </div>
+
+            <p>Here's 3 buttons to make 3 different ajax requests. The first button should show info in the output box no matter if you are authenticated or not. The second button also shows data in the output box, but there isn't a specific route for that behavior in the go app. See the note in the Vue instance below. The last button should only work once you've either registered or logged in (aka, have a valid token in the "Current App State" box on the right).</p>
+            <button @click="getInfo">Get Info</button>
+            <button @click="getDataFromMissingAPIRoute">Get Data</button>
+            <button @click="getEmail">Get Email</button>
+        </div>
+
+        <div class="right" style="background-color: black; color: white; flex: 1; padding: 15px; max-width: 33%; overflow: hidden;">
+            <h3>Current App State</h3>
+            <ul>
+                <li>Authenticated: {{ authStatus }}</li>
+                <li>Bearer Token: {{ this.token }}</li>
+            </ul>
+        </div>
+    </div>
+
+    <p>Output:</p>
+    <div id="output" style="border: 1px solid black; width: 100%; height: 150px;" v-html="output"></div>
+</div>
+
+
+<script>
+var vm = new Vue({
+    el: "#app",
+    data: {
+        token: "",
+        output: "",
+        registerEmail: "",
+        registerPassword: "",
+        loginEmail: "",
+        loginPassword: "",
+    },
+    computed: {
+        authStatus: function() {
+            return this.token !== "";
+        }
+    },
+    methods: {
+        register: function() {
+            var self = this;
+            var payload = {
+                email: self.registerEmail,
+                password: self.registerPassword
+            };
+
+            axios.post("http://localhost:9000/register", payload).then( function(response) {
+                self.token = response.data;
+                self.output = response.data;
+                self.resetForms();
+            }).catch( function(error) {
+                self.output = error;
+                self.resetForms();
+            });
+        },
+        login: function() {
+            var self = this;
+            var payload = {
+                email: self.loginEmail,
+                password: self.loginPassword
+            };
+
+            axios.post("http://localhost:9000/login", payload).then( function(response) {
+                self.token = response.data;
+                self.output = response.data;
+                self.resetForms();
+            }).catch( function(error) {
+                self.output = error;
+                self.resetForms();
+            });
+        },
+        getInfo: function() {
+            var self = this;
+            axios.get("http://localhost:9000/info").then( function(response) {
+                self.output = response.data;
+            });
+        },
+        getEmail: function() {
+            var self = this;
+            axios.get("http://localhost:9000/protected", {
+                headers: {
+                    "Authorization": "Bearer "+this.token
+                }
+            }).then( function(response) {
+                self.output = response.data;
+            }).catch( function(error) {
+                self.output = error;
+            });
+        },
+        getDataFromMissingAPIRoute: function() {
+            var self = this;
+            // notice how /data isn't a real route according to the go server
+            // so, instead of a 404, the "/" route acts as a wildcard and catches
+            // pretty much everything. if we don't want this behavior, we should
+            // get rid of that route
+            axios.get("http://localhost:9000/data").then( function(response) {
+                self.output = response.data;
+            }).catch( function(error) {
+                self.output = error;
+            });
+        },
+        resetForms: function() {
+            this.registerPassword = "";
+            this.registerEmail = "";
+            this.loginPassword = "";
+            this.loginEmail = "";
+        }
+    }
+});
+</script>
+
+</body>
+</html>

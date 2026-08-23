@@ -1,0 +1,31 @@
+mixin endpoint
+  .endpoint&attributes(attributes)
+    .content
+      if block
+        block
+
+mixin auth
+  h3 Requirements
+  ul
+    li
+      h4 Authentication
+      div With no auth, should return
+      :code(javascript)
+        401 Unauthorized
+
+block content
+  h1 Subscriptions API
+  p Tag/creator subscriptions (distinct from Stripe). Scoped to communities.
+  .endpoints
+    +endpoint#get_subscriptions
+      h2 <span>GET</span> /subscriptions?community=:slug
+      p Returns user's subscriptions for a community.
+      +auth
+    +endpoint#post_subscription_create
+      h2 <span>POST</span> /subscription/create
+      p Create a subscription (e.g. to a tag).
+      +auth
+    +endpoint#post_subscription_delete
+      h2 <span>POST</span> /subscription/delete
+      p Delete a subscription.
+      +auth

@@ -1,0 +1,1 @@
+Thumbnails end up here.

@@ -1,0 +1,8 @@
+[Unit]
+Description=Application soci-image-cdn
+
+[Service]
+Environment=APP_PORT=4203
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,82 @@
+mixin endpoint
+  .endpoint&attributes(attributes)
+    .content
+      if block
+        block
+
+mixin auth
+  h3 Requirements
+  ul 
+    li 
+      h4 Authentication
+      div With no auth, should return
+      :code(javascript)
+        401 Unauthorized
+
+block content
+  h1 Tags API
+  +endpoint#get_tags
+    h2 <span>GET</span> /tags
+    p.
+      Returns up to 100 tags for a community. Tags are scoped to communities. Use ?community=slug to scope.
+    
+    h3 Parameters
+    .parameter
+      .param ?community=<span>SLUG</span>
+      p Community slug (with or without @). Required for community-scoped tags.
+    
+    //
+      +auth
+      h3 Parameters
+      .param ?offset=<span>NUMBER</span>
+      p Offsets the responses by a set number.
+
+      .parameter
+        .param ?sort=<span class="default">top</span>|<span>new</span>
+        p Returns tags sorted by a particular algorithm.
+        ul 
+          li 
+            h4 top <span>default</span>
+            p Tags are sorted by count.
+          li 
+            h4 new
+            p Tags are sorted by date. Newest first.
+
+      .parameter
+        .param ?time=<span class="default">all</span>|<span>day</span>|<span>week</span>|<span>month</span>|<span>year</span>
+        p Only returns tags that were created within a specific time period.
+        ul 
+          li 
+            h4 all <span>default</span>
+            p No time constraints.
+          li 
+            h4 day
+            p Only returns tags created in the last day.
+          li 
+            h4 week
+            p Only returns tags created in the last week.
+          li 
+            h4 month
+            p Only returns tags created in the last month.
+          li 
+            h4 year
+            p Only returns tags created in the last year.
+
+    h3 Example response
+    :code(javascript)
+      {
+        "tags": [
+            { "tag": "art", "count": 4849 },
+            { "tag": "funny", "count": 382 }
+        ]
+      }
+
+  +endpoint#get_tags_by_prefix
+    h2 <span>GET</span> /tags/:prefix
+    p.
+      Returns tags that start with the given prefix. Use ?community=slug to scope.
+
+    h3 Parameters
+    .parameter
+      .param ?community=<span>SLUG</span>
+      p Community slug (with or without @).

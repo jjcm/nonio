@@ -1,0 +1,86 @@
+mixin endpoint
+  .endpoint&attributes(attributes)
+    .content
+      if block
+        block
+
+mixin auth
+  h3 Requirements
+  ul
+    li
+      h4 Authentication
+      div With no auth, should return
+      :code(javascript)
+        401 Unauthorized
+
+block content
+  h1 Communities API
+  .endpoints
+    +endpoint#get_communities
+      h2 <span>GET</span> /communities
+      p Returns list of communities. Public.
+    +endpoint#get_community
+      h2 <span>GET</span> /communities/:slug
+      p Returns a single community by slug. Optional auth (more data when authenticated).
+    +endpoint#post_community_create
+      h2 <span>POST</span> /community/create
+      p Creates a new community.
+      +auth
+      h3 Example payload
+      :code(javascript)
+        { "url": "myslug", "name": "My Community", "description": "..." }
+    +endpoint#post_community_subscribe
+      h2 <span>POST</span> /community/subscribe
+      p Subscribe to a community.
+      +auth
+      h3 Example payload
+      :code(javascript)
+        { "community": "@myslug" }
+    +endpoint#post_community_unsubscribe
+      h2 <span>POST</span> /community/unsubscribe
+      p Unsubscribe from a community.
+      +auth
+    +endpoint#get_communities_subscribed
+      h2 <span>GET</span> /communities/subscribed
+      p Returns communities the user is subscribed to.
+      +auth
+    +endpoint#post_community_add_moderator
+      h2 <span>POST</span> /community/add-moderator
+      p Add a moderator. Creator/moderator only.
+      +auth
+    +endpoint#post_community_remove_moderator
+      h2 <span>POST</span> /community/remove-moderator
+      p Remove a moderator. Creator/moderator only.
+      +auth
+    +endpoint#post_community_add_member
+      h2 <span>POST</span> /community/add-member
+      p Add a member. Moderator only.
+      +auth
+    +endpoint#post_community_remove_member
+      h2 <span>POST</span> /community/remove-member
+      p Remove a member. Moderator only.
+      +auth
+    +endpoint#get_community_moderators
+      h2 <span>GET</span> /community/moderators?community=:slug
+      p Get moderators for a community.
+      +auth
+    +endpoint#post_community_update
+      h2 <span>POST</span> /community/update
+      p Update community settings. Moderator only.
+      +auth
+    +endpoint#post_community_ban
+      h2 <span>POST</span> /community/ban
+      p Ban a user from the community. Moderator only.
+      +auth
+    +endpoint#post_community_unban
+      h2 <span>POST</span> /community/unban
+      p Unban a user. Moderator only.
+      +auth
+    +endpoint#get_community_users
+      h2 <span>GET</span> /community/users?community=:slug
+      p Get community members.
+      +auth
+    +endpoint#get_community_financials
+      h2 <span>GET</span> /community/financials?community=:slug
+      p Get community financial summary. Creator/moderator only.
+      +auth

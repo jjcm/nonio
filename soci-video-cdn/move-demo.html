@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <body>
+    <form
+      action="http://localhost:8081/move"
+      method="post"
+    >
+      <label>tempName</label>
+      <input type="text" name="tempName"/>
+
+      <label>url</label>
+      <input type="text" name="url"/>
+
+      <input type="submit" value="upload"/>
+    </form>
+    <label>bearer token</label>
+    <input id="auth" type="text" name="auth"/>
+  </body>
+  <script>
+    document.addEventListener('submit', e => { 
+      const form = e.target
+      const auth = document.getElementById('auth').value
+      e.preventDefault()
+
+
+      fetch(form.action, {
+        method: form.method,
+        body: new FormData(form),
+        headers: {
+          'Authorization': 'Bearer ' + auth
+        }
+      })
+    })
+  </script>
+</html>

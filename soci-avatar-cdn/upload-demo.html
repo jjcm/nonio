@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+  <body>
+    <label>bearer token</label>
+    <input id="auth" type="text" name="auth"/>
+    <form
+      enctype="multipart/form-data"
+      action="http://localhost:8081/upload"
+      method="post"
+    >
+      <label for="size">Size</label>
+      <input id="size" type="text" name="size"/>
+      <br/>
+      <label for="xoffset">x offset</label>
+      <input id="xoffset" type="text" name="xoffset"/>
+      <br/>
+      <label for="yoffset">y offset</label>
+      <input id="yoffset" type="text" name="yoffset"/>
+      <br/>
+      <input type="file" name="files"/>
+      <br/>
+      <input type="submit" value="upload"/>
+    </form>
+  </body>
+  <script>
+    document.addEventListener('submit', e => { 
+      const form = e.target
+      const auth = document.getElementById('auth').value
+      e.preventDefault()
+
+
+      fetch(form.action, {
+        method: form.method,
+        body: new FormData(form),
+        headers: {
+          'Authorization': 'Bearer ' + auth
+        }
+      })
+    })
+  </script>
+</html>

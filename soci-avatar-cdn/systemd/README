@@ -1,0 +1,12 @@
+#### update the values of environment variables
+
+Environment=APP_PORT=4202               # the application port
+
+#### start the application by systemd
+
+$ cp soci-avatar-cdn.service /etc/systemd/system/    # copy the 'soci-avatar-cdn.service' to directory '/etc/systemd/system'
+$ systemctl daemon-reload
+$ systemctl enable soci-avatar-cdn.service
+$ systemctl start soci-avatar-cdn.service
+$ systemctl status soci-avatar-cdn.service
+$ systemctl stop soci-avatar-cdn.service

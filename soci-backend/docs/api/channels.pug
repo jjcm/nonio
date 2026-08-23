@@ -1,0 +1,61 @@
+mixin endpoint
+  .endpoint&attributes(attributes)
+    .content
+      if block
+        block
+
+mixin auth
+  h3 Requirements
+  ul
+    li
+      h4 Authentication
+      div With no auth, should return
+      :code(javascript)
+        401 Unauthorized
+
+block content
+  h1 Channels API
+  .endpoints
+    +endpoint#get_community_channels
+      h2 <span>GET</span> /community/channels?community=:slug
+      p Returns channels for a community. Member-gated.
+      +auth
+    +endpoint#post_community_channel_create
+      h2 <span>POST</span> /community/channel/create
+      p Create a channel. Moderator only. Kind: text or voice.
+      +auth
+      h3 Example payload
+      :code(javascript)
+        { "community": "@myslug", "kind": "text", "slug": "general", "name": "General" }
+    +endpoint#get_community_channel_messages
+      h2 <span>GET</span> /community/channel/messages?community=:slug&channel=:channelSlug&before=:id&limit=50
+      p Returns messages for a text channel. Use before for pagination.
+      +auth
+    +endpoint#post_community_channel_messages
+      h2 <span>POST</span> /community/channel/messages
+      p Create a message in a text channel.
+      +auth
+      h3 Example payload
+      :code(javascript)
+        { "community": "@myslug", "channel": "general", "content": "Hello!" }
+    +endpoint#get_community_channel_ws
+      h2 <span>GET</span> /community/channel/ws?community=:slug&channel=:channelSlug&token=:jwt
+      p WebSocket stream for real-time text-channel message events.
+      +auth
+      h3 Message-created payload
+      :code(javascript)
+        { "type": "channel.message.created", "community": "myslug", "channel": "general", "message": { ... } }
+      h3 Reaction payload
+      :code(javascript)
+        { "type": "channel.message.reaction", "community": "myslug", "channel": "general", "messageID": 123, "emoji": "🔥", "reacted": true, "count": 7 }
+    +endpoint#get_community_channel_thread
+      h2 <span>GET</span> /community/channel/thread?community=:slug&channel=:channelSlug&message=:messageId
+      p Returns a thread (replies) for a message.
+      +auth
+    +endpoint#post_community_channel_message_react
+      h2 <span>POST</span> /community/channel/message/react
+      p Add or update reaction on a message.
+      +auth
+      h3 Example payload
+      :code(javascript)
+        { "community": "@myslug", "channel": "general", "message": 123, "emoji": ":smile:" }

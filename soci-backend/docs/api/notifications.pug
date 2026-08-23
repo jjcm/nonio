@@ -1,0 +1,121 @@
+mixin endpoint
+  .endpoint&attributes(attributes)
+    .content
+      if block
+        block
+
+mixin auth
+  h3 Requirements
+  ul 
+    li 
+      h4 Authentication
+      div With no auth, should return
+      :code(javascript)
+        401 Unauthorized
+
+block content
+  h1 Notifications API
+  .model#model_notification
+    h2 Model
+    :code(javascript)
+        {
+            "id": Number,
+            "comment_id": Number,
+            "date": Number,
+            "post": String, //refers to the post's url
+            "post_title": String,
+            "post_type": String,
+            "content": String, //rich text in Quill format
+            "user": String,
+            "upvotes": Number,
+            "downvotes": Number,
+            "parent": Number,
+            "parent_content": String, //rich text in Quill format
+            "edited": Boolean,
+            "read": Boolean
+        }
+  +endpoint#get_notifications
+    h2 <span>GET</span> /notifications
+    p.
+      Should return 100 notifications, sorted by most recent. 
+    
+    +auth
+    h3 Parameters
+
+    .parameter
+      .param ?unread=<span>true|false</span>
+      p Returns only unread notifications if set to true
+      ul 
+        li 
+          h4 true
+          p Only returns notifications that are unread.
+        li 
+          h4 false <span>default</span>
+          p Returns all notifications.
+
+    h3 Example response
+    :code(javascript)
+      {
+        "notifications": [
+          {
+              "id": 1,
+              "comment_id": 121100,
+              "date": 1691296535000,
+              "post": "nonio-changelog-9",
+              "post_title": "Nonio update - Notifications and guest contributions",
+              "post_type": "blog",
+              "content": "{\"ops\":[{\"insert\":\"Nice work!\\n\"}]}",
+              "user": "avocado",
+              "upvotes": 1,
+              "downvotes": 0,
+              "parent": 0,
+              "parent_content": "",
+              "edited": false,
+              "read": true
+          },
+          {
+              "id": 2,
+              "comment_id": 121101,
+              "date": 1691297044000,
+              "post": "avo-coffeeshop",
+              "post_title": "Avocado the dog",
+              "post_type": "image",
+              "content": "{\"ops\":[{\"insert\":\"Thank you Avo, very cool!\\n\"}]}",
+              "user": "kate",
+              "upvotes": 1,
+              "downvotes": 0,
+              "parent": 0,
+              "parent_content": "",
+              "edited": false,
+              "read": true
+          },
+          // ...etc
+        ]
+      }
+
+  +endpoint#get_notification_count
+    h2 <span>GET</span> /notifications/unread-count
+    p.
+      Gets the count of unread notifications for the user.
+    
+    +auth
+
+    h3 Example response
+    :code(javascript)
+      4
+
+  +endpoint#post_notification_mark_read
+    h2 <span>POST</span> /notification/mark-read
+    p.
+      Marks a specific notification ID as read. 
+    
+    +auth
+
+    h3 Example payload
+    :code(javascript)
+      {
+        "id": 1
+      }
+    h3 Example response
+    :code(javascript)
+      true

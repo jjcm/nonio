@@ -1,0 +1,74 @@
+mixin endpoint
+  .endpoint&attributes(attributes)
+    .content
+      if block
+        block
+
+block content
+  h1 PostTags API
+  +endpoint#post_posttag_create
+    h2 <span>POST</span>/posttag/create
+    p.
+      Adds a tag to a post. 
+
+    +auth
+
+    h3 Example payload
+    :code(javascript)
+      {
+        "post": "a-cool-painting",
+        "tag": "art",
+        "community": "@myslug"
+      }
+
+    h3 Example response
+    :code(javascript)
+      {
+        "post": "a-cool-painting",
+        "tag": "art",
+        "score": 1
+      }
+
+  +endpoint#post_posttag_add_vote
+    h2 <span>POST</span>/posttag/add-vote
+    p.
+      Adds a vote for a posttag.
+
+    +auth
+
+    h3 Example payload
+    :code(javascript)
+      {
+        "post": "a-cool-painting",
+        "tag": "art",
+      }
+
+    h3 Example response
+    :code(javascript)
+      {
+        "post": "a-cool-painting",
+        "tag": "art",
+        "score": 41
+      }
+
+  +endpoint#post_posttag_remove_vote
+    h2 <span>POST</span>/posttag/remove-vote
+    p.
+      Removes an existing vote for a posttag. If it is the only vote for it, this action also removes the posttag.
+
+    +auth
+
+    h3 Example payload
+    :code(javascript)
+      {
+        "post": "a-cool-painting",
+        "tag": "art",
+      }
+
+    h3 Example response
+    :code(javascript)
+      {
+        "post": "a-cool-painting",
+        "tag": "art",
+        "score": 40
+      }

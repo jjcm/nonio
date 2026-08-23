@@ -1,0 +1,36 @@
+mixin endpoint
+  .endpoint&attributes(attributes)
+    .content
+      if block
+        block
+
+mixin auth
+  h3 Requirements
+  ul
+    li
+      h4 Authentication
+      div With no auth, should return
+      :code(javascript)
+        401 Unauthorized
+
+block content
+  h1 Voice API (LiveKit)
+  p Voice channels use LiveKit. Requires LIVEKIT_* env vars. Member-gated.
+  .endpoints
+    +endpoint#post_voice_join
+      h2 <span>POST</span> /voice/join
+      p Returns a LiveKit token for joining a voice channel.
+      +auth
+      h3 Example payload
+      :code(javascript)
+        { "community": "@myslug", "channel": "voice-channel-slug" }
+    +endpoint#post_voice_presence
+      h2 <span>POST</span> /voice/presence
+      p Returns current voice presence (who is in which channel).
+      +auth
+      h3 Example payload
+      :code(javascript)
+        { "community": "@myslug" }
+    +endpoint#get_voice_presence_ws
+      h2 <span>GET</span> /voice/presence/ws
+      p WebSocket for real-time voice presence. Pass ?community=:slug and auth token.
