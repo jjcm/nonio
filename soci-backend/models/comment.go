@@ -202,6 +202,54 @@ func GetCommentsByParams(params *CommentQueryParams) ([]*Comment, error) {
 	return comments, nil
 }
 
+// HydrateComments fills authors and posts for a page of comments with batch
+// queries. Without this, the lazy loads in Comment.MarshalJSON cost two DB
+// round trips per comment (~200 for a 100-comment thread). When all comments
+// belong to one already-loaded post, pass it to skip the post query entirely.
+func HydrateComments(comments []*Comment, post *Post) error {
+	if len(comments) == 0 {
+		return nil
+	}
+	authorIDs := []int{}
+	postIDs := []int{}
+	seenAuthor := map[int]bool{}
+	seenPost := map[int]bool{}
+	for _, c := range comments {
+		if c.AuthorID.Valid && !seenAuthor[int(c.AuthorID.Int32)] {
+			seenAuthor[int(c.AuthorID.Int32)] = true
+			authorIDs = append(authorIDs, int(c.AuthorID.Int32))
+		}
+		if post == nil && !seenPost[c.PostID] {
+			seenPost[c.PostID] = true
+			postIDs = append(postIDs, c.PostID)
+		}
+	}
+
+	users, err := GetUsersByIDs(authorIDs)
+	if err != nil {
+		return err
+	}
+	posts := map[int]Post{}
+	if post == nil {
+		if posts, err = GetPostsByIDs(postIDs); err != nil {
+			return err
+		}
+	}
+	for _, c := range comments {
+		if c.AuthorID.Valid {
+			if u, ok := users[int(c.AuthorID.Int32)]; ok {
+				c.Author = u
+			}
+		}
+		if post != nil {
+			c.Post = *post
+		} else if p, ok := posts[c.PostID]; ok {
+			c.Post = p
+		}
+	}
+	return nil
+}
+
 /************************************************/
 /******************** UPDATE ********************/
 /************************************************/

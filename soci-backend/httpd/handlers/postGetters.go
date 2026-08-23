@@ -52,18 +52,6 @@ func GetPostByURL(w http.ResponseWriter, r *http.Request) {
 	SendResponse(w, &p, 200)
 }
 
-// fill the tags for those posts
-func fillPostTags(posts []*models.Post) error {
-	for _, post := range posts {
-		tags, err := models.GetPostTags(post.ID)
-		if err != nil {
-			return err
-		}
-		post.Tags = tags
-	}
-	return nil
-}
-
 // GetPosts - get the posts from database with different url parameters
 func GetPosts(w http.ResponseWriter, r *http.Request) {
 
@@ -221,8 +209,8 @@ func GetPosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// fill the tags for the posts
-	if err := fillPostTags(posts); err != nil {
+	// fill the tags and authors for the posts with two batch queries
+	if err := models.HydratePosts(posts); err != nil {
 		sendSystemError(w, fmt.Errorf("query tags by posts: %v", err))
 		return
 	}

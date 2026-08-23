@@ -49,6 +49,7 @@ func GetComments(w http.ResponseWriter, r *http.Request) {
 
 	// ?post=POST
 	// Only returns results that match a specific post url.
+	var postFilter *models.Post
 	post := strings.TrimSpace(r.FormValue("post"))
 	if post != "" {
 		communitySlug := strings.TrimSpace(r.FormValue("community"))
@@ -64,6 +65,7 @@ func GetComments(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		params.PostID = p.ID
+		postFilter = p
 	}
 
 	// ?sort=popular|top|new
@@ -95,6 +97,12 @@ func GetComments(w http.ResponseWriter, r *http.Request) {
 	comments, err := models.GetCommentsByParams(params)
 	if err != nil {
 		sendSystemError(w, fmt.Errorf("query comments by parameters: %v", err))
+		return
+	}
+
+	// fill authors (and posts, when not already scoped to one) in batch
+	if err := models.HydrateComments(comments, postFilter); err != nil {
+		sendSystemError(w, fmt.Errorf("hydrate comments: %v", err))
 		return
 	}
 

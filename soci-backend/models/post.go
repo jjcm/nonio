@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/jmoiron/sqlx"
 )
 
 // Post - struct representation of a single post
@@ -48,8 +50,10 @@ type PostQueryParams struct {
 
 // MarshalJSON custom JSON builder for Post structs
 func (p *Post) MarshalJSON() ([]byte, error) {
-	// build tag array for JS if the tag list is currently empty
-	if len(p.Tags) < 1 {
+	// build tag array for JS if it was never loaded (nil, not just empty:
+	// batch hydration leaves tagless posts with an empty non-nil slice so
+	// they don't fall back to one query per post here)
+	if p.Tags == nil {
 		p.getPostTags()
 	}
 
@@ -325,6 +329,64 @@ func GetPostsByParams(params *PostQueryParams) ([]*Post, error) {
 
 	Log.Infof("number of posts: %d", len(posts))
 	return posts, nil
+}
+
+// GetPostsByIDs - fetch many posts in one query, keyed by id
+func GetPostsByIDs(ids []int) (map[int]Post, error) {
+	posts := map[int]Post{}
+	if len(ids) == 0 {
+		return posts, nil
+	}
+	query, args, err := sqlx.In("SELECT * FROM posts WHERE id IN (?)", ids)
+	if err != nil {
+		return nil, err
+	}
+	rows := []Post{}
+	if err := DBConn.Select(&rows, DBConn.Rebind(query), args...); err != nil {
+		return nil, err
+	}
+	for _, p := range rows {
+		posts[p.ID] = p
+	}
+	return posts, nil
+}
+
+// HydratePosts fills tags and authors for a page of posts with two batch
+// queries. Without this, the lazy per-post loads in Post.MarshalJSON cost
+// two DB round trips per post (~200 for a 100-post feed page).
+func HydratePosts(posts []*Post) error {
+	if len(posts) == 0 {
+		return nil
+	}
+	ids := make([]int, len(posts))
+	authorIDs := []int{}
+	seen := map[int]bool{}
+	for i, post := range posts {
+		ids[i] = post.ID
+		if !seen[post.AuthorID] {
+			seen[post.AuthorID] = true
+			authorIDs = append(authorIDs, post.AuthorID)
+		}
+	}
+
+	tags, err := GetPostTagsForPosts(ids)
+	if err != nil {
+		return err
+	}
+	users, err := GetUsersByIDs(authorIDs)
+	if err != nil {
+		return err
+	}
+	for _, post := range posts {
+		post.Tags = tags[post.ID]
+		if post.Tags == nil {
+			post.Tags = []PostTag{}
+		}
+		if u, ok := users[post.AuthorID]; ok {
+			post.Author = u
+		}
+	}
+	return nil
 }
 
 // GetPosts will return all Posts that were authored by this user.

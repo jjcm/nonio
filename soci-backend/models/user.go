@@ -105,6 +105,27 @@ func (u *User) FindByID(id int) error {
 	return nil
 }
 
+// GetUsersByIDs - fetch many users in one query, keyed by id. Used to
+// hydrate list responses without one query per row.
+func GetUsersByIDs(ids []int) (map[int]User, error) {
+	users := map[int]User{}
+	if len(ids) == 0 {
+		return users, nil
+	}
+	query, args, err := sqlx.In("SELECT * FROM users WHERE id IN (?)", ids)
+	if err != nil {
+		return nil, err
+	}
+	rows := []User{}
+	if err := DBConn.Select(&rows, DBConn.Rebind(query), args...); err != nil {
+		return nil, err
+	}
+	for _, u := range rows {
+		users[u.ID] = u
+	}
+	return users, nil
+}
+
 // FindByEmail find a user by searching the DB
 func (u *User) FindByEmail(email string) error {
 	dbUser := User{}

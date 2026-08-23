@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
+
+	"github.com/jmoiron/sqlx"
 )
 
 // PostTag - struct representation of a single post-tag
@@ -195,6 +197,39 @@ func GetPostTags(id int) ([]PostTag, error) {
 	}
 
 	return tags, err
+}
+
+// GetPostTagsForPosts - fetch tags for many posts in one query, keyed by
+// post id. Feed responses use this instead of one GetPostTags per post.
+func GetPostTagsForPosts(ids []int) (map[int][]PostTag, error) {
+	byPost := map[int][]PostTag{}
+	if len(ids) == 0 {
+		return byPost, nil
+	}
+	query, args, err := sqlx.In(`
+		SELECT
+			pt.id,
+			pt.post_id,
+			pt.tag_id,
+			pt.score,
+			pt.created_at,
+			t.name AS tag_name
+		FROM posts_tags pt
+		JOIN tags t ON t.id = pt.tag_id
+		WHERE pt.post_id IN (?) AND pt.tag_id <> 0
+	`, ids)
+	if err != nil {
+		return nil, err
+	}
+	tags := []PostTag{}
+	if err := DBConn.Select(&tags, DBConn.Rebind(query), args...); err != nil {
+		Log.Errorf("Error getting post tags: %v", err)
+		return nil, err
+	}
+	for _, t := range tags {
+		byPost[t.PostID] = append(byPost[t.PostID], t)
+	}
+	return byPost, nil
 }
 
 /************************************************/
