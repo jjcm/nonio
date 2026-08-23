@@ -1,3 +1,19 @@
+## 2026-08-23 — Monorepo unification (no more submodules)
+
+- Vendored all five former submodules (`soci-frontend`, `soci-backend`,
+  `soci-avatar-cdn`, `soci-image-cdn`, `soci-video-cdn`) into this repo as real
+  directories, byte-exact at the SHAs the superrepo pinned. `.gitmodules` and
+  the gitlinks are gone; a plain `git clone` is a complete checkout.
+- `quickStart.sh` is now the single start path: it verifies go/node/screen/goose,
+  reuses any MySQL already on 3306 or starts a `mariadb:11` docker container
+  (`soci-db`, database `socidb`, user `dbuser`/`password`), then launches
+  frontend + API + all four CDNs in one screen session.
+- README.md rewritten for the one-repo checkout with a directory/port table
+  (4200 frontend, 4201 api, 4202 avatar, 4203 image, 4204 video, 4205 html,
+  3306 mysql). AGENTS.md notes the repo layout.
+- No product behavior changed in this step; history of the old standalone
+  repos stays in those repos.
+
 ## 2026-08-21 — Speed: feed load + in-app transitions
 
 Measured on a local stack (MariaDB, goose, Go API, CDNs, frontend) with a

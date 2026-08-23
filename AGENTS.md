@@ -1,5 +1,8 @@
 # Project Instructions
 
+## Repo layout
+This is a single-tree monorepo. `soci-frontend`, `soci-backend`, and the four CDNs (`soci-avatar-cdn`, `soci-image-cdn`, `soci-video-cdn`, `soci-html-cdn`) are ordinary directories — there are no git submodules and no extra remotes. One `git clone` plus `./quickStart.sh` brings up the full stack (ports documented in README.md).
+
 ## Code Style
 For the frontend (soci-frontend), whenever possible be terse and concise. Don't overuse try/catch flows. Don't define variables that are only used once. The frontend package size is extremely important - don't be wasteful. 
 DRY practices are a must - if a similar function is in place somewhere else, consolidate it into a shared function. If a similar UI pattern is reused in multiple places, consider creating a new webcomponent for it. 
