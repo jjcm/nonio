@@ -1,6 +1,7 @@
 import SociComponent from './soci-component.js'
 import config from '../config.js'
 import sociModalManager from './modals/soci-modal-manager.js'
+import { ensure } from './soci-loader.js'
 
 export default class SociSidebar extends SociComponent {
   constructor() {
@@ -299,6 +300,8 @@ export default class SociSidebar extends SociComponent {
       const res = await window.api.channels.list(community)
       const channels = res?.channels || []
       list.innerHTML = ''
+      // Channel rows are lazy; they upgrade in place once these land.
+      if(channels.length) ensure(['soci-text-channel-li', 'soci-voice-channel-li'])
       channels.forEach(ch => {
         if(ch.kind === 'voice') {
           const li = document.createElement('soci-voice-channel-li')
