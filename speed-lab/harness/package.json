@@ -10,7 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "lighthouse": "^12.8.2",
+    "lighthouse": "^13.4.1",
     "playwright": "^1.62.1"
   }
 }
