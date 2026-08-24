@@ -73,4 +73,15 @@ func CommentOnPost(w http.ResponseWriter, r *http.Request) {
 
 	// Nuke the cache
 	PostCache = make(map[string]PostQueryResponse)
+
+	// CreateComment wrote a notification for the parent comment's author (or
+	// the post's author); push their new unread count over the notification
+	// websocket. Mirrors the recipient logic inside CreateComment.
+	recipientID := post.AuthorID
+	if parentComment.ID > 0 {
+		recipientID = int(parentComment.AuthorID.Int32)
+	}
+	if recipientID != u.ID {
+		notifyNotificationCount(recipientID)
+	}
 }

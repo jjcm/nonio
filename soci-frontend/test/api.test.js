@@ -50,6 +50,9 @@ test('websocket urls derive ws:// from the API host and escape params', () => {
   const channel = api.channelMessages.wsUrl('comm', 'general', 'tok')
   assert.match(channel, /^wss?:\/\//)
   assert.match(channel, /channel=general/)
+
+  const notifications = api.notifications.wsUrl('t/k')
+  assert.match(notifications, /^wss?:\/\/.+\/notifications\/ws\?token=t%2Fk$/)
 })
 
 test('channel message listing builds paging params only when given', async () => {

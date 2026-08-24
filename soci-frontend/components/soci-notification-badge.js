@@ -65,44 +65,97 @@ export default class SociNotificationBadge extends SociComponent {
     }
   }
 
-  async connectedCallback(){
-    // Start checking every 10s
+  connectedCallback(){
+    // Polling cadence, only used while the websocket is down
     this.exponentialBackoff = 10000
+    this._wsBackoff = 1000
 
-    if(this.authToken) {
-      await this.checkNotifications()
-      setTimeout(() => {
-        this.toggleAttribute('loaded', true)
-      }, 100)
-    }
+    if(this.authToken) this._connect()
 
-    // Triggers when you switch tabs back to nonio 
+    // Triggers when you switch tabs back to nonio. The socket may have been
+    // killed while backgrounded; while it's open the server pushes counts.
     document.addEventListener('visibilitychange', () => {
-      if(document.visibilityState == 'visible'){
-        this.checkNotifications()
-        this.exponentialBackoff = 10000
-      }
+      if(document.visibilityState != 'visible' || this._wsOpen()) return
+      this.exponentialBackoff = 10000
+      this._connect()
     })
 
     // Creating posts and comments triggers this
     document.addEventListener('activitychange', () => {
-      this.checkNotifications()
+      if(this._wsOpen()) return
       this.exponentialBackoff = 10000
+      this.checkNotifications()
     })
 
     document.addEventListener('login', () => {
-      this.checkNotifications()
       this.exponentialBackoff = 10000
+      this._wsBackoff = 1000
+      // Reconnect with the new token
+      if(this._ws){
+        this._ws.onclose = null
+        this._ws.close()
+        this._ws = null
+      }
+      this._connect()
     })
+  }
+
+  _wsOpen(){
+    return this._ws?.readyState === WebSocket.OPEN
+  }
+
+  // Live count over websocket. The server sends {type: 'notification.count'}
+  // on connect and whenever this user's unread count changes, so polling
+  // pauses entirely while the socket is open. Any failure falls back to the
+  // original polling loop and retries the socket with backoff.
+  _connect(){
+    if(!this.authToken) return
+    if(this._ws && this._ws.readyState <= WebSocket.OPEN) return
+    clearTimeout(this._wsRetry)
+
+    let ws
+    try { ws = new WebSocket(window.api.notifications.wsUrl(this.authToken)) }
+    catch { return this._fallback() }
+    this._ws = ws
+
+    ws.onopen = () => {
+      this._wsBackoff = 1000
+      clearTimeout(this.nextCheck)
+    }
+    ws.onmessage = e => {
+      let msg
+      try { msg = JSON.parse(e.data) } catch { return }
+      if(msg.type == 'notification.count') this._setCount(msg.count)
+    }
+    ws.onclose = () => {
+      if(this._ws != ws) return
+      this._ws = null
+      this._fallback()
+    }
+  }
+
+  _fallback(){
+    if(!this.authToken) return
+    this.checkNotifications()
+    clearTimeout(this._wsRetry)
+    this._wsRetry = setTimeout(() => this._connect(), this._wsBackoff)
+    this._wsBackoff = Math.min(this._wsBackoff * 2, 60000)
+  }
+
+  _setCount(count){
+    soci.notificationCount = count
+    if(count == 0) this.removeAttribute('count')
+    else this.setAttribute('count', count)
+    if(!this.hasAttribute('loaded')) setTimeout(() => this.toggleAttribute('loaded', true), 100)
   }
 
   async checkNotifications(){
     if(this.nextCheck) clearTimeout(this.nextCheck)
     let count = await this.getData('/notifications/unread-count', this.authToken)
     if(count == "Authorization required") return null
-    soci.notificationCount = count
-    if(count == 0) this.removeAttribute('count')
-    else this.setAttribute('count', count)
+    this._setCount(count)
+    // The socket reclaims ownership of updates the moment it reopens
+    if(this._wsOpen()) return
     this.nextCheck = setTimeout(this.checkNotifications.bind(this), this.exponentialBackoff)
     this.exponentialBackoff = Math.min(this.exponentialBackoff * 1.3, 1800000 /* 30 minutes */)
   }
