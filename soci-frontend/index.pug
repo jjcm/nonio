@@ -7,9 +7,10 @@ html(lang="en")
   //- The stylesheet comes before any synchronous script: markdown.js used to
   //- block the parser here, delaying CSS discovery and first paint.
   link(rel="stylesheet" href="/soci.css")
-  each m in (preloadModules || [])
-    link(rel="modulepreload" href=m)
-  script(src="/lib/markdown-wasm/markdown.js")
+  //- defer: this classic script still executes before the module scripts
+  //- (document order), so window.markdown exists before any component code
+  //- runs, but it no longer blocks the parser while it downloads.
+  script(src="/lib/markdown-wasm/markdown.js" defer)
   script(src="/soci.js" type="module")
   script(src="/components/soci-components.js" type="module")
   script.
