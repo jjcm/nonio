@@ -66,6 +66,14 @@ export default class SociComponent extends HTMLElement {
       Authorization: 'Bearer ' + auth
     }
 
+    // The shell may have started this exact anonymous GET before any module
+    // loaded (index.pug __preFetch); consuming it saves a round trip.
+    const pre = !auth && window.__preFetch?.[url]
+    if(pre){
+      delete window.__preFetch[url]
+      return pre.catch(() => fetch(config.API_HOST + url, options).then(r => r.json()))
+    }
+
     const response = await fetch(config.API_HOST + url, options)
     return await response.json()
   }

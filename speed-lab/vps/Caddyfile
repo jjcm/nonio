@@ -6,6 +6,17 @@
 }
 
 (routes) {
+	# Static frontend assets straight from disk with precompressed brotli
+	# (deploy.sh runs brotli/gzip -k after rsync). The pug shell and anything
+	# dynamic still comes from the node server below.
+	@static path /components/* /lib/* /pages/* /soci.css /soci.js /config.js /api.js
+	handle @static {
+		root * /home/fable/nonio/soci-frontend
+		file_server {
+			precompressed br gzip
+		}
+		header Cache-Control "public, max-age=300"
+	}
 	handle /api/* {
 		uri strip_prefix /api
 		reverse_proxy 127.0.0.1:4201

@@ -15,27 +15,33 @@ html(lang="en")
   script.
     ;(a => {
       if(localStorage.getItem('accessToken')) return
-      let p = location.pathname, q = [], go
+      let pf = window.__preFetch = {}
+      let add = u => { let f = fetch(a + u).then(r => r.json()); f.catch(() => {}); pf[u] = f }
+      let p = location.pathname, q = []
       let s = localStorage.getItem('soci-column-sort')
       if(s == 'new') q.push('sort=new')
       else if(['day', 'week', 'month', 'year'].includes(s)) q.push('sort=top', 'time=' + s)
+      let feed = tail => {
+        let f = localStorage.getItem('soci-column-filter')
+        if(f && f != 'all') {
+          let m = { images: 'image', videos: 'video', blogs: 'blog', links: 'link', audio: 'audio' }
+          tail.push('type=' + encodeURIComponent(m[f] || f))
+        }
+        add('/posts' + (q.concat(tail).length ? '?' + q.concat(tail).join('&') : ''))
+      }
       if(p == '/') {
         let t = decodeURIComponent(location.hash.slice(1).split('+')[0] || '')
-        if(t && t != 'all') q.push('tag=' + encodeURIComponent(t))
-        go = 1
+        feed(t && t != 'all' ? ['tag=' + encodeURIComponent(t)] : [])
       }
-      else if(p.startsWith('/user/') && p.length > 6 && location.hash != '#comments') {
-        q.push('user=' + encodeURIComponent(p.slice(6)))
-        go = 1
+      else if(p.startsWith('/user/') && p.length > 6 && location.hash != '#comments')
+        feed(['user=' + encodeURIComponent(p.slice(6))])
+      else {
+        let m = p.match(/^\/(?:@([\w-]+)\/)?([\w-]+)$/)
+        if(m && !['about', 'submit', 'notifications'].includes(m[2])) {
+          add(m[1] ? `/posts/@${m[1]}/${m[2]}` : `/posts/${m[2]}`)
+          add(`/comments?post=${m[2]}` + (m[1] ? `&community=${m[1]}` : ''))
+        }
       }
-      if(!go) return
-      let f = localStorage.getItem('soci-column-filter')
-      if(f && f != 'all') {
-        let m = { images: 'image', videos: 'video', blogs: 'blog', links: 'link', audio: 'audio' }
-        q.push('type=' + encodeURIComponent(m[f] || f))
-      }
-      let u = '/posts' + (q.length ? '?' + q.join('&') : '')
-      ;(window.__preFetch = {})[u] = fetch(a + u).then(r => r.json())
     })('#{apiHost || ""}')
   //- defer: this classic script still executes before the module scripts
   //- (document order), so window.markdown exists before any component code

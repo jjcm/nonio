@@ -45,6 +45,9 @@ sudo cp ~/nonio/speed-lab/vps/units/*.service /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable nonio-api nonio-frontend nonio-avatar-cdn nonio-image-cdn nonio-video-cdn nonio-html-cdn
 
+echo "== perms (caddy file_server needs to traverse into ~/nonio) =="
+chmod o+x "$HOME" "$HOME/nonio" 2>/dev/null || true
+
 echo "== firewall =="
 if command -v ufw >/dev/null && sudo ufw status | grep -q 'Status: active'; then
   for p in 80 443 4201 4202 4203 4204 4205; do sudo ufw allow "$p"/tcp; done
