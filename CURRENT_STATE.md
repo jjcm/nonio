@@ -1,3 +1,58 @@
+## 2026-08-24 — Lazy component graph + websocket notifications + edge playbook (branch `cursor/lazy-graph-ws-notifications-663d`)
+
+Follow-up to the VPS loop below: the two items it ditched as feature-sized,
+plus the meatspace instructions it couldn't execute from one box.
+
+- **Lazy per-route component graph.** `soci-components.js` no longer imports
+  all ~65 modules (502 KB raw / 140 KB gz) before first paint; it eagerly
+  defines only the 17-module shell (routing, sidebar, icon/link/button/user/
+  select/tag-li/badge/modal + modal manager). New `components/soci-loader.js`
+  holds an element→module registry plus per-route packs (`PACKS`, keyed by
+  `soci-route` id) and modal packs; `soci-route.activate()` awaits
+  `routeReady(id)` before dispatching `routeactivate`, so page scripts never
+  race `customElements.define` (elements upgrade in place; observed
+  attributes replay at upgrade). Modals load through the manager's existing
+  `load` hook; sidebar channel rows load on first render; everything else
+  warms after `load` + idle so SPA navs stay instant (skipped under
+  `saveData`). `#pages :not(:defined) { display: none }` in `soci.css` guards
+  light-DOM flashes (e.g. submit's tab contents) pre-upgrade. Measured on the
+  seeded local stack, slow4g lane, medians of 7: home cold FCP 2656→1348 ms
+  (−49%), LCP 2716→1800 (−34%), feedPaint 3234→2266 (−30%); post deep link
+  FCP 2512→1332 (−47%), LCP 2804→2056 (−27%); 31 modules at feed paint
+  instead of 68; warm loads and SPA transitions unchanged. Tests:
+  `soci-frontend/test/loader.test.js` (registry completeness against every
+  template/script, packs name real modules, every route id has a pack, core
+  never statically imports a lazy module) and
+  `speed-lab/harness/probe-lazy.mjs` (browser phase assertions).
+- **Notifications over websocket.** `GET /notifications/ws?token=` (open
+  route, same in-handler JWT auth as the other ws routes) pushes
+  `{type: "notification.count", count}` on connect and whenever the user's
+  count changes: `CommentOnPost` notifies the recipient (mirrors
+  `CreateComment`'s recipient logic, skips self-replies) and
+  `MarkNotificationRead` notifies the owner so other tabs sync. Per-user hub
+  in `httpd/handlers/notification_ws.go` mirrors the channel-ws pattern; the
+  COUNT query only runs when the user has a socket open.
+  `soci-notification-badge` subscribes instead of polling
+  `/notifications/unread-count` every 10 s, and falls back to the exact old
+  polling loop (with socket retry + backoff) if the websocket fails. api.js
+  ws-url builders consolidated into one `api.wsUrl`. Tests: Go end-to-end ws
+  tests (push on comment, mark-read sync, client isolation, self-reply
+  suppression, auth rejection, hub bookkeeping) and
+  `speed-lab/harness/probe-notifications-ws.mjs` (real-browser two-user flow,
+  asserts zero polling while the socket is open).
+- **Edge playbook.** `speed-lab/EDGE_PLAYBOOK.md`: Jacob-facing instructions
+  for everything the VPS loop wanted but couldn't do from 108.61.219.46 —
+  Cloudflare zone + DNS cutover, edge HTML/anonymous-API caching via Cache
+  Rules (with the `private, max-age=30` → `s-maxage` origin change spelled
+  out), anycast TLS/h3, edge image resizing, RUM, read replicas, exact
+  tokens to hand back and what lands in each follow-up PR.
+- **quickStart.sh fix:** CDN builds now compile the whole package
+  (`go build -o X .`), not just `main.go` — the cache-control helpers added
+  in the perf pass live in sibling files, so the old command no longer built.
+- Docs: `/notifications/ws` added to `soci-backend/docs` (notifications pug +
+  sidebar + LLM.md). SPEED_LAB.md gained the local A/B scorecard for the lazy
+  graph.
+
 ## 2026-08-24 — VPS speed lab: live deploy + measured perf loop (branch `cursor/speed-vps-loop-27f0`)
 
 Deployed the monorepo to a live 1-vCPU/1 GB Vultr box (108.61.219.46) with a

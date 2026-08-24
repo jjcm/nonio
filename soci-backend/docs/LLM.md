@@ -228,6 +228,12 @@ Returns unread count. Auth required.
 ### POST /notification/mark-read
 Mark notification read. Auth required. JSON: id.
 
+### GET /notifications/ws?token=:jwt
+WebSocket for the user's unread notification count. Emits
+`{ "type": "notification.count", "count": n }` on connect and whenever the
+count changes (reply received, notification marked read). Replaces polling
+/notifications/unread-count.
+
 ---
 
 ## Communities

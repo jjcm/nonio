@@ -304,3 +304,43 @@ Concrete next steps that need infrastructure this single Vultr box cannot provid
 6. **Real RUM.** Every number here is synthetic Chromium from one vantage point. A
    `PerformanceObserver` beacon (LCP/INP/TTFB percentiles by route) would validate the lab
    deltas against real users before productionizing the keepers onto non.io.
+
+The meatspace instructions for all of the above now live in
+`speed-lab/EDGE_PLAYBOOK.md`.
+
+---
+
+## Follow-up (2026-08-24): lazy component graph — the "invasive against flat evidence" item, done and measured
+
+The loop's stop condition called shell splitting invasive; branch
+`cursor/lazy-graph-ws-notifications-663d` did the re-plumbing.
+`soci-components.js` statically imported all ~65 modules (502 KB raw /
+140 KB gz) and, because a module executes only after its whole static import
+graph arrives, every route's first paint waited for all of it. Now 17 shell
+modules load eagerly; the rest define on demand from `soci-loader.js`
+(per-route packs awaited by `soci-route` before `routeactivate`, modal packs
+on open, idle warmup afterwards).
+
+Measured on a local seeded stack (same 2,600-post seed, production-geometry
+thumbnails, slow4g CDP lane pinned per this file's harness rules, medians of
+n=7, master vs branch on the same running backend/CDNs):
+
+| metric (slow4g, cold) | master | lazy graph | change |
+|---|---|---|---|
+| home FCP | 2656 | **1348** | −49% |
+| home LCP | 2716 | **1800** | −34% |
+| home feedPaint | 3234 | **2266** | −30% |
+| post deep-link FCP | 2512 | **1332** | −47% |
+| post deep-link LCP | 2804 | **2056** | −27% |
+| modules before feed paint | 68 | **31** | −54% |
+
+Warm loads and SPA transitions (tag/user/post usable 220–308 ms) unchanged —
+the idle warmup has every pack local before the first click. `allDone` grows
+by ~0.9 s because the deferred modules now download after `load`; every
+user-felt milestone improved. `speed-lab/harness/probe-lazy.mjs` asserts the
+phase separation; `probe-notifications-ws.mjs` covers the new websocket
+notification badge (`/notifications/ws`) that replaced unread-count polling.
+
+Note for local A/B reruns: iter03's caveat still holds — don't modulepreload
+the lazy graph. The win here comes from *not* fetching modules before first
+paint, and warmup deliberately waits for `load` + idle.

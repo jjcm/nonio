@@ -60,6 +60,7 @@ mixin endpoint(type, path, id, todo)
   +endpoint('GET', '/notifications', '#get_notifications')
   +endpoint('GET', '/notifications/unread-count', '#get_notification_count')
   +endpoint('POST', '/notification/mark-read', '#post_notification_mark_read')
+  +endpoint('GET', '/notifications/ws', '#get_notifications_ws')
   .category Communities
   +endpoint('GET', '/communities', '#get_communities')
   +endpoint('GET', '/communities/:slug', '#get_community')
