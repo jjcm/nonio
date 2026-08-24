@@ -1,0 +1,255 @@
+mixin endpoint
+  .endpoint&attributes(attributes)
+    .content
+      if block
+        block
+
+mixin auth
+  h3 Requirements
+  ul 
+    li 
+      h4 Authentication
+      div With no auth, should return
+      :code(javascript)
+        401 Unauthorized
+
+mixin offset
+  h3 Parameters
+  .param ?offset=<span>NUMBER</span>
+  p Offsets the responses by a set number.
+
+block content
+  h1 Comments API
+  +endpoint#get_post_comments
+    h2 <span>GET</span> /comments?post=:postUrl&community=:slug
+    p.
+      Returns 100 comments for a specific post. Use query params: post (post url), community (optional, for community-scoped posts).
+
+    h3 Parameters
+    .parameter
+      .param ?post=<span>POST_URL</span>
+      p Post URL to fetch comments for. Required for post-scoped results.
+    .parameter
+      .param ?community=<span>SLUG</span>
+      p Community slug (with or without @) when post is in a community.
+    .parameter
+      .param ?offset=<span>NUMBER</span>
+      p Offsets the responses by a set number.
+    .parameter
+      .param ?sort=<span class="default">top</span>|<span>new</span>
+      p Returns comments sorted by a particular algorithm.
+      ul 
+        li 
+          h4 popular <span>default</span>
+          p Comments are sorted by threadUpvotes. Highest first. 
+        li 
+          h4 new
+          p Comments are sorted by date. Newest first.
+
+    h3 Example response
+    :code(javascript)
+      {
+        "comments": [
+          {
+            "id": "YPGpbT",
+            "time": "1577171754000",
+            "post": "this_is_crazy", 
+            "parent": null,
+            "childCount": 4,
+            "content": "I really like this",
+            "user": "bojackson",
+            "upvotes": 144,
+            "downvotes": 38,
+            "threadUpvotes": 188,
+            "threadDownvotes": 22
+          },
+          {
+            "id": "qc33cG",
+            "time": "1577171754000",
+            "post": "this_is_crazy", 
+            "parent": null,
+            "childCount": 0,
+            "content": "How neat!",
+            "user": "mamadisco",
+            "upvotes": 42,
+            "downvotes": 7,
+            "threadUpvotes": 42,
+            "threadDownvotes": 7
+          },
+
+          ...etc
+
+        ]
+      }
+  +endpoint#get_user_comments
+    h2 <span>GET</span> /comments?user=:username
+    p.
+      Returns 100 comments for a specific user. Use query param: user (username).
+
+    h3 Parameters
+    .parameter
+      .param ?user=<span>USERNAME</span>
+      p Username to fetch comments for.
+    .parameter
+      .param ?offset=<span>NUMBER</span>
+      p Offsets the responses by a set number.
+    .parameter
+      .param ?sort=<span class="default">top</span>|<span>new</span>
+      p Returns comments sorted by a particular algorithm.
+      ul 
+        li 
+          h4 popular <span>default</span>
+          p Comments are sorted by (upvotes - downvotes). Highest first. 
+        li 
+          h4 new
+          p Comments are sorted by date. Newest first.
+
+    h3 Example response
+    :code(javascript)
+      {
+        "comments": [
+          {
+            "id": "YPGpbT",
+            "time": "1577171754000",
+            "post": "this_is_crazy", 
+            "parent": null,
+            "childCount": 4,
+            "content": "I really like this",
+            "user": "jjcm",
+            "upvotes": 144,
+            "downvotes": 38,
+            "threadUpvotes": 188,
+            "threadDownvotes": 22
+          },
+          {
+            "id": "qc33cG",
+            "time": "1577171754000",
+            "post": "rickroll", 
+            "parent": null,
+            "childCount": 0,
+            "content": "my fav song",
+            "user": "jjcm",
+            "upvotes": 42,
+            "downvotes": 7,
+            "threadUpvotes": 42,
+            "threadDownvotes": 7
+          },
+
+          ...etc
+
+        ]
+      }
+
+  +endpoint#get_comment_comments
+    h2 <span>GET</span> /comments (thread replies)
+    p.
+      Replies are included in the main comments response via the parent field. Filter by post to get a thread; replies have parent set to the parent comment id.
+
+    h3 Parameters
+    .parameter
+      .param ?offset=<span>NUMBER</span>
+      p Offsets the responses by a set number.
+    .parameter
+      .param ?sort=<span class="default">popular</span>|<span>new</span>
+      p Returns comments sorted by a particular algorithm.
+      ul 
+        li 
+          h4 popular <span>default</span>
+          p Comments are sorted by threadUpvotes. Highest first. 
+        li 
+          h4 new
+          p Comments are sorted by date. Newest first.
+
+    h3 Example response
+    :code(javascript)
+      {
+        "comments": [
+          {
+            "id": "YPGpbT",
+            "time": "1577171754000",
+            "post": "this_is_crazy", 
+            "parent": "GhB83c",
+            "childCount": 4,
+            "content": "I really like this",
+            "user": "bojackson",
+            "upvotes": 144,
+            "downvotes": 38,
+            "threadUpvotes": 188,
+            "threadDownvotes": 22
+          },
+          {
+            "id": "qc33cG",
+            "time": "1577171754000",
+            "post": "this_is_crazy", 
+            "parent": "GhB83c",
+            "childCount": 0,
+            "content": "How neat!",
+            "user": "mamadisco",
+            "upvotes": 42,
+            "downvotes": 7,
+            "threadUpvotes": 42,
+            "threadDownvotes": 7
+          },
+
+          ...etc
+
+        ]
+      }
+
+  +endpoint#post_comment_create
+    h2 <span>POST</span> /comment/create
+    p.
+      Allows the creation of a comment on a specific post. Can either be a top level comment or a reply to an existing comment.
+
+    h3 Example payload
+    :code(javascript)
+      {
+        "post": "this_is_crazy",
+        "community": "@myslug",
+        "parent": null,
+        "content": "Hey this is a comment!"
+      }
+
+    h3 Example response
+    :code(javascript)
+      {
+        "id": "qc33cG",
+        "time": "1577171754000",
+        "post": "this_is_crazy", 
+        "parent": null,
+        "childCount": 0,
+        "content": "How neat!",
+        "user": "jjcm",
+        "upvotes": 0,
+        "downvotes": 0,
+        "threadUpvotes": 0,
+        "threadDownvotes": 0
+      }
+
+  +endpoint#post_comment_edit
+    h2 <span>POST</span> /comment/edit
+    p.
+      Updates a comment. Comment must be made by the user. Requires auth.
+
+    +auth
+    h3 Example payload
+    :code(javascript)
+      { "id": 121100, "content": "Hey this is a *cool* comment!" }
+
+    h3 Example response
+    :code(javascript)
+      true
+
+  +endpoint#post_comment_delete
+    h2 <span>POST</span> /comment/delete
+    p.
+      Deletes a comment. Comment must be made by the user. Requires auth.
+
+    +auth
+    h3 Example payload
+    :code(javascript)
+      { "id": 121100 }
+
+    h3 Example response
+    :code(javascript)
+      true

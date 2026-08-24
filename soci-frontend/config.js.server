@@ -1,0 +1,11 @@
+export default {
+ "PORT": "4200",
+ "HOST": "http://localhost",
+ "API_HOST": "https://api.non.io",
+ "AVATAR_HOST": "https://avatar.non.io",
+ "IMAGE_HOST": "https://image.non.io",
+ "VIDEO_HOST": "https://video.non.io",
+ "THUMBNAIL_HOST": "https://thumbnail.non.io",
+ "PRERENDER_HOST": "",
+ "STRIPE_PUBLISHABLE_KEY": ""
+}

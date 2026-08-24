@@ -1,0 +1,57 @@
+#submit-container
+  form(action="#")
+    #submit-header.load-group(load-order="primary").centered-container
+      input(type="text" name="title" placeholder="Enter title" required)
+      soci-url-input(name="url" required tabindex=0)
+    
+    .load-group(load-order="secondary")
+      soci-tab-group
+        .centered-container
+          soci-tab(name="Link" default)
+            soci-link-input(name="link")
+
+            .preview
+              h2 Preview 
+              soci-post-li(score="0" time="now")
+                soci-user(self slot="user")
+                soci-tag-group(slot="tags")
+
+            h2 Description
+            soci-input(placeholder="Enter description" name="description")
+
+          soci-tab(name="Image")
+            soci-image-uploader
+            h2 Description
+            soci-input(placeholder="Enter description" name="description")
+
+          soci-tab(name="Video")
+            soci-video-uploader
+            h2 Description
+            soci-input(placeholder="Enter description" name="description")
+              
+          //soci-tab(name="Audio")
+            soci-file-drop(type="audio")
+            h2 Description
+            soci-input(placeholder="Enter description" name="description")
+
+          soci-tab(name="Blog")
+            soci-input(placeholder="Write your best" name="description")
+
+        soci-tab(name="HTML")
+          soci-html-uploader
+          p(style="max-width: 920px; margin: 12px auto;") [alpha] This will allow you to upload html to the site as a post. The content is presented in an iframe. If you want the iframe to be sized according to the frontend page, include this script in your html: <a href="https://html.non.io/nonio-embedded-page.js">https://html.non.io/nonio-embedded-page.js</a>. Feel free to test it, but note that I will be deleting posts that are simple alert tests.
+
+          .centered-container
+            h2 Description
+            soci-input(placeholder="Enter description" name="description")
+    
+
+    #submit-actions.load-group(load-order="tertiary").centered-container
+      soci-button(async) submit
+
+script.
+  lazyload('/pages/submit.js', document.currentScript.closest('soci-route'))
+  
+
+    
+

@@ -1,0 +1,66 @@
+block content
+  h1 Models
+  .models
+    .model#model_post
+      h2 Post
+      :code(javascript)
+        {
+          title: String,
+          url: String,
+          user: 'username',
+          score: Number,
+          date: Number,
+          content: String,
+          type: String,
+          tags: Array('postTag')
+        }
+    .model#model_post_tag
+      h2 PostTag
+      :code(javascript)
+        postTag: {
+          tag: 'tag',
+          post: 'post',
+          score: Number
+        }
+    .model#model_post_tag_vote
+      h2 PostTagVote
+      :code(javascript)
+        postTagVote: {
+          tag: 'tag',
+          post: 'post',
+          user: 'username',
+          score: Number
+        }
+    .model#model_tag
+      h2 Tag
+      :code(javascript)
+        tag: {
+          name: String,
+          count: Number
+        }
+    .model#model_comment
+      h2 Comment
+      :code(javascript)
+        comment: {
+          id: String
+          time: Number,
+          post: 'post',
+          parent: 'comment'
+          childCount: Number,
+          content: String,
+          user: 'username',
+          upvotes: Number,
+          downvotes: Number,
+          threadUpvotes: Number,
+          threadDownvotes: Number
+        }
+    .model#model_comment_vote
+      h2 CommentVote
+      :code(javascript)
+        commentVote: {
+          comment: 'comment',
+          post: 'post',
+          user: 'user',
+          date: Date,
+          positive: Boolean
+        }

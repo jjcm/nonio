@@ -1,0 +1,14 @@
+soci-sidebar(loading)
+  section#user(slot="user")
+    soci-user(self)
+    #user-actions
+      soci-notification-badge
+
+  soci-sidebar-community-panel#community(panel="community")
+  soci-sidebar-user-panel#user-panel(panel="user")
+
+  section#footer(slot="footer")
+    links
+      soci-link(href="/about") About
+      a(href="https://github.com/jjcm/nonio/issues/new") Feedback
+      soci-link#logout(href="/") Logout

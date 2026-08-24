@@ -1,0 +1,128 @@
+/* http://prismjs.com/download.html?themes=prism&languages=markup+css+clike+javascript */
+/**
+ * prism.js default theme for JavaScript, CSS and HTML
+ * Based on dabblet (http://dabblet.com)
+ * @author Lea Verou
+ */
+
+pre[class*="language-"]::-moz-selection, pre[class*="language-"] ::-moz-selection,
+code[class*="language-"]::-moz-selection, code[class*="language-"] ::-moz-selection {
+	text-shadow: none;
+	background: #b3d4fc;
+}
+
+pre[class*="language-"]::selection, pre[class*="language-"] ::selection,
+code[class*="language-"]::selection, code[class*="language-"] ::selection {
+	text-shadow: none;
+	background: #b3d4fc;
+}
+
+@media print {
+	code[class*="language-"],
+	pre[class*="language-"] {
+		text-shadow: none;
+	}
+}
+
+/* Code blocks */
+pre[class*="language-"] {
+	padding: 1em;
+	margin: .5em 0;
+	overflow: auto;
+	border-radius: 4px
+}
+
+:not(pre) > code[class*="language-"],
+pre[class*="language-"] {
+	background: var(--code-bg);
+	border-radius: 4px;
+}
+
+/* Inline code */
+:not(pre) > code[class*="language-"] {
+	padding: .1em;
+	border-radius: 4px
+	white-space: normal;
+}
+
+/*grey*/
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+	color: #A5ADBA;
+}
+
+
+.namespace {
+	opacity: .7;
+}
+
+/* blue */
+.token.property,
+.token.tag,
+.token.constant,
+.token.symbol,
+.token.deleted,
+.token.operator,
+.language-html .token.punctuation,
+.language-javascript .token.string,
+.language-stylus .token.property,
+.language-jade .token.tag,
+.language-jade .token.name.function,
+.token.keyword {
+	color: #4C9AFF; 
+}
+
+/* green */ 
+.token.boolean,
+.token.number{
+	color: #36B37E;
+}
+/* light blue */
+.token.selector,
+.token.attr-name,
+.token.char,
+.token.builtin,
+.token.inserted,
+.token.punctuation,
+.language-javascript .token.operator{
+	color: #B3D4FF;
+}
+
+/* red */
+.token.atrule,
+.token.string,
+.token.attr-value,
+.token.function,
+.language-stylus .token.selector,
+.language-jade .token.attr-name
+{
+	color: #FF5630; 
+}
+
+.token.entity,
+.token.url,
+.language-css .token.string,
+.style .token.string {
+	color: #a67f59;
+}
+
+.token.regex,
+.token.important,
+.token.variable {
+	color: #e90;
+}
+
+.token.important,
+.token.bold {
+	font-weight: bold;
+}
+.token.italic {
+	font-style: italic;
+}
+
+.token.entity {
+	cursor: help;
+}
+

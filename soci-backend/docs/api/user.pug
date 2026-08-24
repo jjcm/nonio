@@ -1,0 +1,136 @@
+mixin endpoint
+  .endpoint&attributes(attributes)
+    .content
+      if block
+        block
+
+block content
+  h1 User API
+  +endpoint#post_user_login
+    h2 <span>POST</span> /user/login
+    p.
+      Logs the user in. Returns a JWT.
+    
+    h3 Example payload
+    :code(javascript)
+      {
+        "email": "jjcm@non.io",
+        "password": "hunter2"
+      }
+
+    h3 Example response
+    :code(javascript)
+      {
+        "accessToken":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFzZGZAYXNkZi5jb20iLCJleHBpcmVzQXQiOjE1ODMxNDc1NDh9.okbK22xZYZFk19K_NwLd7g48mxQZfWR5filMadonSe8",
+        "refreshToken":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImpAampjbS5vcmciLCJleHBpcmVzQXQiOjE3NDQ2NzE2MjksInR5cGUiOiJyZWZyZXNoIn0.wBnYbLB6kGinMRnM1ODqGmV1cv-VYMBzPZUNGsRDGqU",
+        "roles": ["admin"], // typically empty, right now this is only used for admins
+        "username":"jjcm"
+
+      }
+
+  +endpoint#post_user_refresh_access_token
+    h2 <span>POST</span> /user/refresh-access-token
+    p.
+      Refreshes the access token. Returns a new access token and a new refresh token. 
+    
+    h3 Example payload
+    :code(javascript)
+      {
+        "refreshToken":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImpAampjbS5vcmciLCJleHBpcmVzQXQiOjE3NDQ2NzE2MjksInR5cGUiOiJyZWZyZXNoIn0.wBnYbLB6kGinMRnM1ODqGmV1cv-VYMBzPZUNGsRDGqU",
+      }
+
+    h3 Example response
+    :code(javascript)
+      {
+        "accessToken":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImpAampjbS5vcmciLCJleHBpcmVzQXQiOjE3MDg5ODg2NzIsInR5cGUiOiJhY2Nlc3MifQ.m1vCcqE41C11us1WZnn2suxCMmRh5kcrzd200BaCips",
+        "refreshToken":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImpAampjbS5vcmciLCJleHBpcmVzQXQiOjE3NDQ2NzE4NzIsInR5cGUiOiJyZWZyZXNoIn0.D_NunlFZBMR73ryqlcKBzLZaZnGyP3LyzW6m0JQy0nM",
+      }
+
+  +endpoint#post_user_register
+    h2 <span>POST</span> /user/register
+    p.
+      Creates a new user. Returns the registered info along with an access token and a refresh token.
+
+    h3 Example payload
+    :code(javascript)
+      {
+        "username": "jjcm",
+        "email": "jjcm@non.io",
+        "password": "hunter2",
+      }
+    
+    h3 Example response
+    :code(javascript)
+      {
+        "accessToken":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFzZGZAYXNkZi5jb20iLCJleHBpcmVzQXQiOjE1ODMxNDc1NDh9.okbK22xZYZFk19K_NwLd7g48mxQZfWR5filMadonSe8",
+        "refreshToken":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImpAampjbS5vcmciLCJleHBpcmVzQXQiOjE3NDQ2NzE2MjksInR5cGUiOiJyZWZyZXNoIn0.wBnYbLB6kGinMRnM1ODqGmV1cv-VYMBzPZUNGsRDGqU",
+        "username":"jjcm"
+      }
+  
+  +endpoint#get_user_username_is_available
+    h2 <span>GET</span> /user/username-is-available/:username
+    p.
+      Returns a boolean based on if the requested username is available.
+
+    h3 Requirements
+    p None. Should be available publicly
+
+    h3 Example response
+    :code(javascript)
+      true
+
+  +endpoint#get_user
+    h2 <span>GET</span> /users/:username
+    p.
+      Returns public profile for a user by username.
+
+    h3 Requirements
+    p None. Public.
+
+  +endpoint#post_forgot_password_request
+    h2 <span>POST</span> /user/forgot-password-request
+    p.
+      Sends a password reset email to the user.
+
+    h3 Example payload
+    :code(javascript)
+      { "email": "jjcm@non.io" }
+
+  +endpoint#post_change_forgotten_password
+    h2 <span>POST</span> /user/change-forgotten-password
+    p.
+      Resets password using token from forgot-password email.
+
+    h3 Example payload
+    :code(javascript)
+      { "token": "...", "newPassword": "...", "confirmPassword": "..." }
+
+  +endpoint#post_user_change_password
+    h2 <span>POST</span> /user/change-password
+    p.
+      Changes password for authenticated user. Requires auth.
+
+  +endpoint#post_user_update_description
+    h2 <span>POST</span> /user/update-description
+    p.
+      Updates user description. Requires auth.
+
+  +endpoint#get_user_financials
+    h2 <span>GET</span> /user/get-financials
+    p.
+      Returns financial summary for authenticated user. Requires auth.
+
+  +endpoint#get_user_financial_ledger
+    h2 <span>GET</span> /user/get-financial-ledger
+    p.
+      Returns financial ledger for authenticated user. Requires auth.
+
+  +endpoint#get_users_search
+    h2 <span>GET</span> /users/search?q=:query
+    p.
+      Search users by username. Requires auth.
+
+  +endpoint#post_user_choose_free_account
+    h2 <span>POST</span> /user/choose-free-account
+    p.
+      Switches user to free account type. Requires auth.

@@ -1,19 +1,44 @@
-# Getting Started
+# Nonio
 
-First, clone this repo. This is the master repo that holds all of the microservices. To do this issue this command:
+This is the whole system in one repo — no submodules, no extra remotes. A plain
+`git clone` gives you everything needed to build and run.
 
-```git clone --recursive git@github.com:jjcm/soci.git```
+## Layout
 
-Next you'll want to update the repos:
+| Directory         | What it is                                        | Port |
+|-------------------|---------------------------------------------------|------|
+| `soci-frontend`   | Web frontend (vanilla JS webcomponents, node server) | 4200 |
+| `soci-backend`    | Go API (`socid`), MySQL via goose migrations      | 4201 |
+| `soci-avatar-cdn` | Go CDN for avatars + emojis                       | 4202 |
+| `soci-image-cdn`  | Go CDN for post images + thumbnails               | 4203 |
+| `soci-video-cdn`  | Go CDN for video upload/encode/serve              | 4204 |
+| `soci-html-cdn`   | Go CDN for sanitized HTML embeds                  | 4205 |
+| `nonio-simulator` | Synthetic user/activity simulator (dev tool)      | —    |
+| `nonio-tui`       | Terminal client                                   | —    |
 
-```git submodule update --recursive --remote```
+MySQL/MariaDB listens on 3306 (database `socidb`, user `dbuser`/`password` for
+local dev — see `soci-backend/localRun.sh`).
 
-Next you'll want to set up your DB. Ensure that you have mysql or mariadb running, with connection details filled into the `localrun.sh` files or `config.json` files that are in each of the repos. 
+## Quick start
 
-After that, you'll want to start the servers:
+```
+git clone git@github.com:jjcm/nonio.git
+cd nonio
+./quickStart.sh
+```
 
-```./quickstart.sh```
+Requirements: `go`, `node`/`npm`, GNU `screen`, and
+[`goose`](https://github.com/pressly/goose) for DB migrations
+(`go install github.com/pressly/goose/cmd/goose@latest`).
 
-This will open a GNU Screen session with each microservice running in a different screen window. To switch between screen windows use this key sequence:
+If nothing is listening on 3306, `quickStart.sh` starts a `mariadb:11` docker
+container (named `soci-db`) with the dev credentials above; if you already run
+MySQL/MariaDB locally it is reused as-is. Each service copies its
+`config.json.example` / `config.js.example` on first launch, so there is
+nothing to configure for local dev.
 
-```ctrl+a -> n```
+The script opens one GNU screen session with a window per service. Switch
+windows with `ctrl+a n` (next) / `ctrl+a p` (previous), detach with `ctrl+a d`,
+reattach with `screen -r soci`.
+
+Once up: [http://localhost:4200](http://localhost:4200).

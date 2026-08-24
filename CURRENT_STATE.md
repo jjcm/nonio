@@ -1,3 +1,110 @@
+## 2026-08-24 — VPS speed lab: live deploy + measured perf loop (branch `cursor/speed-vps-loop-27f0`)
+
+Deployed the monorepo to a live 1-vCPU/1 GB Vultr box (108.61.219.46) with a
+deterministic 2,600-post seed and ran a makefaster-style loop against it over a
+real 53 ms WAN hop. Everything logged in `SPEED_LAB.md` + `speed-lab/results/`;
+infra in `speed-lab/vps/` (systemd units, Caddyfile, deploy.sh, provision.sh),
+seed generator in `speed-lab/seed/`.
+
+**Keepers (measured, medians):**
+- Single TLS origin via Caddy (h2+h3): `/api|/image|/avatar|/video|/htmlcdn/*`
+  strip-prefix proxied; cold home LCP 1240→752 ms WAN, slow4g allDone 31.3 s→4.1 s.
+- Lazy offscreen media (`loading=lazy` beyond first 12 rows + all avatars):
+  cold transfer −67%, LCP −36 ms WAN.
+- `defer` on markdown-wasm loader: slow4g cold FCP/LCP/feed −140…−156 ms.
+- Shell-level API prefetch (`window.__preFetch` in index.pug, consumed by
+  `soci-post-list._loadPosts` + `soci-component.getData`): home/tag/user feeds
+  and post+comments deep links; slow4g home LCP −42%, post LCP −14…−18%.
+- Anonymous browser cache on read APIs (`private, max-age=30` +
+  `Vary: Authorization` on /posts, /posts/:url, /comments, /tags): warm
+  feedPaint 412→219 ms slow4g.
+
+**Reverted after measurement (see SPEED_LAB.md for numbers):** modulepreload of
+the 65-file module graph (LCP regression from preload contention), Caddy
+file_server + precompressed brotli for statics (h2 fair-multiplexing starved
+the first thumbnail bimodally), node-side brotli (byte win too small, seesaw),
+kernel TCP tuning (−8 ms, below threshold), markdown.wasm preload (−12 ms).
+
+**Harness hardening (speed-lab/harness):** TBT/bytes/requests collection in
+measure.mjs; Chromium pinned with `--disable-quic` on throttled lanes (QUIC
+bypasses CDP throttling) and fixed lazy-image margins via `--blink-settings`
+(Chrome's connection estimate flips them bimodally); transitions probe treats
+empty-`src` template imgs as decoded. Seed thumbnails regenerated at
+production geometry (`-resize 192x144^` per soci-image-cdn) after discovering
+the lab was serving 4-6× production weight.
+
+All suites green at wrap: backend `go test ./...`, frontend `npm test` (12/12),
+avatar/html CDN tests. Not merged to master.
+
+## 2026-08-23 — Condensed migrations, test coverage, architecture perf pass
+
+Follow-on to the monorepo unification below, same branch/PR.
+
+- **Migrations condensed to one file** (`soci-backend/migrations/00001_initial_schema.sql`).
+  Reproduces the old 55-migration chain exactly — verified by diffing
+  `mysqldump --no-data` of a fresh DB built each way (byte-identical). The old
+  chain's UPDATEs were all mid-chain backfills (no-ops on empty DBs), so no
+  seed script is needed. Note: old `00037_add_admin_users.sql.sql` was a silent
+  no-op under goose (double extension), so `admin_users` never existed on
+  fresh DBs and is referenced nowhere — intentionally absent. Deployed DBs at
+  goose v55 treat version 1 as applied; they pick up the new indexes via the
+  one-shot `soci-backend/scripts/2026-08-23-add-hot-path-indexes.sql`.
+- **Backend perf (measured on a seeded local stack: 3000 posts, 30000
+  comments, 300 users; medians of 9; responses byte-identical before/after):**
+  - Batch hydration: `GET /posts` was 201 queries per uncached page (1 list +
+    100 per-post tags + 100 per-post authors via lazy `MarshalJSON`); now 3.
+    `GET /comments` was 202 (author + post per comment); now 3. Latency
+    24.6→5.7 ms and 19.4→5.4 ms respectively.
+  - Five hot-path indexes in the initial schema: `comments(post_id)`,
+    `posts(community_id, created_at)`, `posts(user_id)`,
+    `posts_tags_votes(voter_id)`, `notifications(user_id)`. EXPLAIN
+    comments-by-post went ALL/29967 rows → ref/120; `/comments` 5.4→2.0 ms.
+  - Feed query now selects `LEFT(content, 4096)` instead of full bodies;
+    `PostCache` capped at 1024 entries (was unbounded, keyed by raw URL);
+    `FixUserSubs` no longer blocks startup (was ~1 min per restart with a few
+    hundred unpatched users).
+- **CDN perf:** all four CDNs served files with no Cache-Control at all
+  (browser heuristic caching). Now: avatars/emojis `max-age=300` (mutable,
+  username-keyed paths), image/video media `max-age=86400` (write-once but not
+  content-hashed, so no immutable), html-cdn pages `max-age=3600` +
+  temp previews `no-store` + gzip on its HTML/CSS/JS (~10x on markup).
+  video-cdn uploads stream to disk via `io.Copy` instead of buffering whole
+  files in memory.
+- **Frontend perf:** back-navigation to the same feed reattaches the previous
+  `soci-post-list` (5-minute bound) instead of remounting — verified live:
+  1 `/posts` on initial load, 0 on back-navs (was 1 each), 1 on tag change.
+  Fresh routes no longer leak every detached child forever
+  (`soci-route.currentDom` cleared on fresh activation). `soci-post-list`
+  no longer fires a doomed fetch from attributes set before insertion.
+  `/votes` arriving after paint now re-marks upvote chrome in place
+  (`votesloaded` event, additive-only). Stylesheet moved above the
+  synchronous markdown script in `index.pug` head.
+- **Tests added** (all green): backend hydration + first-ever
+  `httpd/handlers` HTTP tests + gzip middleware tests (handlers use their own
+  `socidb_handlers_testing` DB so `go test ./...` can run packages in
+  parallel); CDN tests (fake-API auth utils, avatar upload guards, emoji name
+  sanitization, config parsing, video session/url-mapping state, cache/gzip
+  wrappers); frontend `npm test` via node's built-in runner (server ETag/304/
+  gzip behavior + api client logic), no new framework. Also fixed two
+  pre-existing breaks that Go 1.24 vet turned into compile failures
+  (`models/user_test.go`, `soci-image-cdn/route/move.go`).
+
+## 2026-08-23 — Monorepo unification (no more submodules)
+
+- Vendored all five former submodules (`soci-frontend`, `soci-backend`,
+  `soci-avatar-cdn`, `soci-image-cdn`, `soci-video-cdn`) into this repo as real
+  directories, byte-exact at the SHAs the superrepo pinned. `.gitmodules` and
+  the gitlinks are gone; a plain `git clone` is a complete checkout.
+- `quickStart.sh` is now the single start path: it verifies go/node/screen/goose,
+  reuses any MySQL already on 3306 or starts a `mariadb:11` docker container
+  (`soci-db`, database `socidb`, user `dbuser`/`password`), then launches
+  frontend + API + all four CDNs in one screen session.
+- README.md rewritten for the one-repo checkout with a directory/port table
+  (4200 frontend, 4201 api, 4202 avatar, 4203 image, 4204 video, 4205 html,
+  3306 mysql). AGENTS.md notes the repo layout.
+- No product behavior changed in this step; history of the old standalone
+  repos stays in those repos.
+
 ## 2026-08-21 — Speed: feed load + in-app transitions
 
 Measured on a local stack (MariaDB, goose, Go API, CDNs, frontend) with a

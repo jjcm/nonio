@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+  <title>Nonio</title>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <link rel="icon" type="image/svg+xml" href="/lib/favicon.svg">
+  <link rel="stylesheet" href="/soci.css">
+  <script src="/lib/markdown-wasm/markdown.js"></script>
+  <script src="/soci.js" type="module"></script>
+  <script src="/components/soci-components.js" type="module"></script>
+  <script>
+    let lazyload = (path, parent) => {
+      document.addEventListener('DOMContentLoaded', ()=>{
+        let resource = document.createElement('script')
+        resource.async = 'true'
+        resource.src = path
+        let root = parent ? parent : document.head
+        root.appendChild(resource)
+      })
+    }
+    
+  </script>
+  <soci-sidebar loading>
+    <section id="user" slot="user">
+      <soci-user self></soci-user>
+      <div id="user-actions">
+        <soci-notification-badge></soci-notification-badge>
+      </div>
+    </section>
+    <soci-sidebar-community-panel id="community" panel="community"></soci-sidebar-community-panel>
+    <soci-sidebar-user-panel id="user-panel" panel="user"></soci-sidebar-user-panel>
+    <section id="footer" slot="footer">
+      <links>
+        <soci-link href="/about">About</soci-link><a href="https://github.com/jjcm/nonio/issues/new">Feedback</a>
+        <soci-link id="logout" href="/">Logout</soci-link>
+      </links>
+    </section>
+  </soci-sidebar>
+  <div id="pages">
+    <soci-route id="text-channel" path="^/@[\w-]+:[^/#?]+$" fresh>
+      <script>lazyload('/pages/text-channel.js', document.currentScript.closest('soci-route'))</script>
+    </soci-route>
+    <soci-route id="tags" test="both" path="^(/@[\w-]+)?/?(#.*)?$" fresh>
+      <script>lazyload('/pages/tags.js', document.currentScript.closest('soci-route'))</script>
+    </soci-route>
+    <soci-route class="admin-page" id="admin-create" path="/admin/create-account">
+      <div class="content">
+        <div class="loading-block" load-order="primary">
+          <h1>Thanks for choosing to sign up</h1>
+          <p>By being a part of nonio, you're choosing to support artists, musicians, writers, and creators of all types. We're excited to have you, and we look forward to seeing what you create as well.</p>
+        </div>
+        <div class="loading-block" load-order="secondary">
+          <h2>A couple things you should know</h2>
+          <p>It's too early on to have an EULA, but the basics of what we stand for are as follows:</p>
+          <h3>We wont track you or sell your data to advertisers</h3>
+          <p>Nonio is funded by you, not by ad supported revenue. That's what $1 of your subscription goes to - to providing a high quality service that we don't have to support by selling your info. Our aim is to provide a high quality user experience. We don't believe adding trackers or slowing down our site with ads is the way to do that.</p>
+          <h3>You own your content </h3>
+          <p>We aren't allowed to use it without permission. However we reserve the right to feature thumbnails of your content in screenshots / promotions. </p>
+          <h3>We're in beta, we aren't responsible if everything blows up</h3>
+          <p>By we I mean me. It's just myself, jjcm, running things. As a solo project I can't guarantee the servers wont explode tomorrow. There are no uptime guarantees here.</p>
+          <h3>Your financials are handled by Stripe</h3>
+          <p>While nonio is in beta, Stripe definitely isn't. Your payment info is never stored on nonio's servers. It's secure in the hands of Stripe. </p>
+        </div>
+        <div class="loading-block" load-order="tertiary">
+          <h2>FAQs</h2>
+          <h3>Why aren't there free accounts like reddit/instagram/etc? </h3>
+          <p>I have to pay for bandwidth and servers somehow. The choices are either subscription services or ad supported funding. Personally I believe that a subscription services is the lesser of two evils, for a few reasons. The first is around knowing who my customer is. With a subscription service, you are my customer. I tailor all of my experiences to the demands of the user. With an ad supported service you aren't the customer, you are the product. Ad providers are the customer and you have to build a platform to their demands. We see major issues with this model in Youtube, where videos are demonetized because they don't meet the demands of the advertisers. I want nonio to be built with you in mind, not with advertisers demands taking priority.</p>
+          <h3>Why do I have to contribute to creators? Can I just pay the $1? </h3>
+          <p>Nonio would be nothing without creators. The point of the platform is to fund their creativity. In addition, it means that your vote is worth something. When you're choosing to upvote a post, you're saying that this item is deserving of a slice of your pool of contribution. This means other things you've voted on will get a smaller percentage of your pool as well, so you have to vote with a conscience. A picture of a cat may not be worthy of a percentage of your pool when you've previously voted up a high quality piece of investigative journalism. The hope is that this leads to higher quality content that gets surfaced, rather than surfacing wide-appeal-but-low-effort content like r/all on reddit.</p>
+        </div>
+      </div>
+    </soci-route>
+    <soci-route class="admin-page" id="admin-subscribe" path="/admin/subscribe" fresh>
+      <div class="content">
+        <style>
+          #admin-subscribe {
+            background: var(--bg-bold);
+            height: 100%;
+            overflow-y: auto;
+          }
+          
+          #admin-subscribe[active] {
+            display: block;
+          }
+          
+          #admin-subscribe .columns {
+            display: flex;
+            margin: 40px -20px 0;
+            width: calc(100% + 40px);
+            align-items: flex-start;
+          }
+          
+          #admin-subscribe .column {
+            border: 1px solid var(--bg-secondary);
+            border-radius: 4px;
+            width: 100%;
+            box-shadow: 0 2px 8px var(--shadow);
+            background: var(--bg);
+            position: relative;
+            overflow: hidden;
+            transition: height 0.2s var(--soci-ease);
+          }
+          
+          #admin-subscribe .column:first-child {
+            margin-right: 10px;
+          }
+          
+          #admin-subscribe .column.supporter[active] .features {
+            opacity: 0;
+            transition: all var(--anim-duration-med) var(--soci-ease);
+            pointer-events: none;
+          }
+          
+          #admin-subscribe .column.supporter[active] .payment {
+            opacity: 1;
+            pointer-events: all;
+            user-select: all;
+            transform: translateY(0px);
+          }
+          
+          #admin-subscribe h3 {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1.4px;
+            font-weight: normal;
+            margin-top: 20px;
+          }
+          
+          #admin-subscribe .features {
+            opacity: 1;
+          }
+          
+          #admin-subscribe .payment {
+            box-sizing: border-box;
+            overflow: hidden;
+            position: absolute;
+            transition: all var(--anim-duration-med) var(--soci-ease) var(--anim-duration-short);
+            padding: 10px 20px;
+            opacity: 0;
+            user-select: none;
+            pointer-events: none;
+            width: 100%;
+            transform: translateY(10px);
+          }
+          
+          #admin-subscribe #card-element {
+            border-bottom: 2px solid var(--bg-secondary);
+            height: 38px;
+            margin-bottom: 10px;
+          }
+          
+          #admin-subscribe .price-container {
+            position: relative;
+            padding: 0 20px 10px;
+            border-bottom: 1px solid var(--bg-secondary);
+          }
+          
+          #admin-subscribe .price-container soci-button {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+          }
+          
+          #admin-subscribe .title {
+            padding: 10px 20px 0;
+          }
+          
+          #admin-subscribe .title p {
+            color: var(--text-secondary);
+            height: 80px;
+          }
+          
+          #admin-subscribe h2 {
+            color: var(--text-bold);
+            margin-bottom: 4px;
+          }
+          
+          #admin-subscribe .price {
+            font-size: 44px;
+            font-weight: bold;
+            color: var(--text-brand);
+          }
+          
+          #admin-subscribe .price span {
+            font-size: 14px;
+            font-weight: normal;
+            color: var(--text-secondary);
+          }
+          
+          #admin-subscribe ul {
+            list-style: none;
+            padding: 0 20px;
+          }
+          
+          #admin-subscribe li {
+            position: relative;
+            line-height: 24px;
+            padding-left: 20px;
+          }
+          
+          #admin-subscribe li.cant {
+            color: var(--text-secondary);
+            text-decoration: line-through;
+          }
+          
+          #admin-subscribe li.cant:after,
+          #admin-subscribe li.cant:before {
+            content: '';
+            display: block;
+            position: absolute;
+            width: 10px;
+            height: 2px;
+            left: 0;
+            top: calc(50% - 1px);
+            background: var(--text-danger);
+          }
+          
+          #admin-subscribe li.cant:after {
+            transform: rotate(45deg);
+          }
+          
+          #admin-subscribe li.cant:before {
+            transform: rotate(-45deg);
+          }
+          
+          #admin-subscribe li.can:after,
+          #admin-subscribe li.can:before {
+            content: '';
+            display: block;
+            position: absolute;
+            width: 2px;
+            background: var(--text-success);
+            height: 5px;
+            top: calc(50% - 2px);
+            left: 0;
+            transform: rotate(-45deg);
+          }
+          
+          #admin-subscribe li.can:after {
+            height: 9px;
+            top: calc(50% - 5px);
+            left: 4px;
+            transform: rotate(45deg);
+          }
+          
+          #admin-subscribe form soci-button {
+            margin: 24px 0 8px;
+          }
+          
+        </style>
+        <script src="/pages/admin/subscribe.js"></script>
+        <div class="loading-block" load-order="primary">
+          <h1>Subscription</h1>
+          <p>Please pick your account type:</p>
+        </div>
+        <div class="columns" load-order="secondary">
+          <div class="column supporter">
+            <div class="title">
+              <h2>Supporter</h2>
+              <p>This allows you to contribute back to the creators. You choose your subscription price, and your subscription pool is divided evenly between everything you upvote that month.</p>
+            </div>
+            <div class="payment">
+              <form id="payment-form" style="user-select: none;">
+                <h3>Contribution</h3>
+                <soci-contribution-slider name="subscriptionAmount"></soci-contribution-slider>
+                <h3>Payment Info</h3>
+                <input name="name" placeholder="Name">
+                <div id="card-element"></div>
+                <div id="card-element-errors" role="alert"></div>
+                <soci-button class="subscribe-button" async onclick="adminSubscribe.subscribe()">Subscribe</soci-button>
+              </form>
+            </div>
+            <div class="features">
+              <div class="price-container">
+                <div class="price">$2-10<span>/mo</span></div>
+                <soci-button class="supporter-button" async onclick="adminSubscribe.chooseSupporter()">Choose supporter</soci-button>
+              </div>
+              <ul>
+                <li class="can">Submit posts</li>
+                <li class="can">Upvote and fund posts</li>
+                <li class="can">Browse and view posts</li>
+                <li class="can">Comment on posts</li>
+                <li class="can">Upvote and downvote comments</li>
+              </ul>
+            </div>
+          </div>
+          <div class="column"> 
+            <div class="title">
+              <h2>Free</h2>
+              <p>Everyone starts somewhere. Even if you don't contribute monetarily, you can still shower the creators with praise in the comments!</p>
+            </div>
+            <div class="features">
+              <div class="price-container">
+                <div class="price">$0<span>/mo</span></div>
+                <soci-button class="free-button" async subtle onclick="adminSubscribe.chooseFree()">Choose free</soci-button>
+              </div>
+              <ul>
+                <li class="cant">Submit posts</li>
+                <li class="cant">Upvote and fund posts</li>
+                <li class="can">Browse and view posts</li>
+                <li class="can">Comment on posts</li>
+                <li class="can">Upvote and downvote comments</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </soci-route>
+    <soci-route class="admin-page" id="admin-forgot-password" path="/admin/forgot-password">
+      <div class="content">
+        <div class="loading-block" load-order="primary">
+          <h1>We all forget sometimes &lt;3</h1>
+          <p>Enter your email below. If it exists, we'll send you an email with a password reset link.</p><br>
+        </div>
+        <div class="loading-block" load-order="secondary">
+          <input type="text" placeholder="email">
+          <soci-button async>submit</soci-button>
+        </div>
+      </div>
+      <script>lazyload('/pages/admin/forgot-password.js', document.currentScript.closest('soci-route'))</script>
+    </soci-route>
+    <soci-route class="admin-page" id="admin-change-forgotten-password" path="/admin/change-forgotten-password">
+      <div class="content">
+        <div class="loading-block" load-order="primary">
+          <h1>Change forgotten password</h1>
+          <p>Enter your new password below. This link expires one hour after generation.</p><br>
+        </div>
+        <div class="loading-block" load-order="secondary">
+          <form>
+            <soci-password name="newPassword" placeholder="New password"></soci-password>
+            <soci-password name="confirmPassword" match="newPassword" placeholder="Confirm new password"></soci-password>
+            <soci-button async>submit</soci-button>
+          </form>
+        </div>
+        <div class="success" load-order="primary">
+          <h1>Password changed successfully</h1>
+          <p>Please use the sidebar to log in.</p>
+        </div>
+      </div>
+      <script>lazyload('/pages/admin/change-forgotten-password.js', document.currentScript.closest('soci-route'))</script>
+    </soci-route>
+    <soci-route class="admin-page" id="admin-settings" path="/admin/settings">
+      <div class="container" id="admin-settings-container">
+        <script src="/pages/admin/settings.js"></script>
+        <soci-modal title="Image too small" id="avatar-size-modal">
+          <div class="modal-body">
+            <p>Avatars must be a minimum of 240px on both sides.</p>
+          </div>
+        </soci-modal>
+        <div class="blocks">
+          <div class="block avatar" load-order="primary">
+            <h2>Avatar</h2>
+            <soci-avatar-uploader></soci-avatar-uploader>
+          </div>
+          <div class="block description" load-order="secondary">
+            <h2>Description</h2>
+            <soci-input placeholder="Enter description"></soci-input>
+            <div class="actions">
+              <soci-button async>submit</soci-button>
+              <soci-button subtle>cancel</soci-button>
+            </div>
+          </div>
+          <div class="block password" load-order="tertiary">
+            <h2>Change Password</h2>
+            <form>
+              <soci-password name="oldPassword" placeholder="Old password"></soci-password>
+              <soci-password name="newPassword" placeholder="New password"></soci-password>
+              <soci-password name="confirmPassword" match="newPassword" placeholder="Confirm new password"></soci-password>
+              <div class="actions">
+                <soci-button async>submit</soci-button>
+                <soci-button subtle>cancel</soci-button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </soci-route>
+    <soci-route id="notifications" path="/notifications">
+      <div class="content">
+        <header load-order="primary">
+          <div class="types">
+            <div class="type">Unread</div>
+            <div class="type" selected>All notifications</div>
+          </div>
+        </header>
+        <div class="inner-content" load-order="secondary"></div>
+      </div>
+      <script src="/pages/notifications.js"></script>
+    </soci-route>
+    <soci-route id="user" test="both" path="^/user/" fresh>
+      <div class="content" load-order="secondary">
+        <div class="inner-content"></div>
+      </div>
+      <script src="/pages/user.js"></script>
+    </soci-route>
+    <soci-route id="submit" path="^(/@[\w-]+)?/submit$" fresh>
+      <div id="submit-container">
+        <form action="#">
+          <div class="load-group centered-container" id="submit-header" load-order="primary">
+            <input type="text" name="title" placeholder="Enter title" required>
+            <soci-url-input name="url" required tabindex="0"></soci-url-input>
+          </div>
+          <div class="load-group" load-order="secondary">
+            <soci-tab-group>
+              <div class="centered-container">
+                <soci-tab name="Link" default>
+                  <soci-link-input name="link"></soci-link-input>
+                  <div class="preview">
+                    <h2>Preview </h2>
+                    <soci-post-li score="0" time="now">
+                      <soci-user self slot="user"></soci-user>
+                      <soci-tag-group slot="tags"></soci-tag-group>
+                    </soci-post-li>
+                  </div>
+                  <h2>Description</h2>
+                  <soci-input placeholder="Enter description" name="description"></soci-input>
+                </soci-tab>
+                <soci-tab name="Image">
+                  <soci-image-uploader></soci-image-uploader>
+                  <h2>Description</h2>
+                  <soci-input placeholder="Enter description" name="description"></soci-input>
+                </soci-tab>
+                <soci-tab name="Video">
+                  <soci-video-uploader></soci-video-uploader>
+                  <h2>Description</h2>
+                  <soci-input placeholder="Enter description" name="description"></soci-input>
+                </soci-tab>
+                <!--soci-tab(name="Audio")
+                soci-file-drop(type="audio")
+                h2 Description
+                soci-input(placeholder="Enter description" name="description")
+                
+                -->
+                <soci-tab name="Blog">
+                  <soci-input placeholder="Write your best" name="description"></soci-input>
+                </soci-tab>
+              </div>
+              <soci-tab name="HTML">
+                <soci-html-uploader></soci-html-uploader>
+                <p style="max-width: 920px; margin: 12px auto;">[alpha] This will allow you to upload html to the site as a post. The content is presented in an iframe. If you want the iframe to be sized according to the frontend page, include this script in your html: <a href="https://html.non.io/nonio-embedded-page.js">https://html.non.io/nonio-embedded-page.js</a>. Feel free to test it, but note that I will be deleting posts that are simple alert tests.</p>
+                <div class="centered-container">
+                  <h2>Description</h2>
+                  <soci-input placeholder="Enter description" name="description"></soci-input>
+                </div>
+              </soci-tab>
+            </soci-tab-group>
+          </div>
+          <div class="load-group centered-container" id="submit-actions" load-order="tertiary">
+            <soci-button async>submit</soci-button>
+          </div>
+        </form>
+      </div>
+      <script>
+        lazyload('/pages/submit.js', document.currentScript.closest('soci-route'))
+        
+        
+          
+      </script>
+    </soci-route>
+    <soci-route class="admin-page" id="admin-financials" path="/admin/financials">
+      <div class="container" id="admin-financials-container">
+        <script src="/pages/admin/financials.js"></script>
+        <div class="header" load-order="primary">
+          <h1>Your Financials </h1>
+          <soci-banner type="info" title="Auto-withdrawal enabled" style="display: none;">
+             Funds in your wallet will auto-deposit into your Stripe Connect account at the end of each month. </soci-banner>
+          <p>There are currently two ways to withdrawal money from your wallet. You can set up Stripe Connect to automatically deposit funds into your bank account at the end of each month, or you can email me at j@jjcm.org to manually withdrawal funds. I'll try and support whatever platforms I can to send money. </p>
+          <!--a(href="#" target="_blank")soci-button.dashboard-link View Stripe Dashboard <svg style="margin-left: 2px" width="9" height="9" viewBox="0 0 9 9" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.5 1.5H0.5V8.5H7.5V5.5M4 5L8.5 0.5M8.5 0.5H5.5M8.5 0.5V3.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          -->
+        </div>
+        <div class="amounts" load-order="secondary">
+          <div class="blocks">
+            <div class="block" id="financial-wallet">
+              <h2>Wallet</h2>
+              <h1 class="cash">$</h1>
+              <div class="button-group"><a href="#" target="_blank">
+                  <soci-button>View Stripe Dashboard <svg style="margin-left: 2px" width="9" height="9" viewBox="0 0 9 9" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.5 1.5H0.5V8.5H7.5V5.5M4 5L8.5 0.5M8.5 0.5H5.5M8.5 0.5V3.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg></soci-button></a>
+                <!-- soci-button(subtle onclick="adminFinancials.openWithdrawalModal()") Withdrawal-->
+                <!-- soci-button(danger onclick="adminFinancials.showChangeSubscription()") Disable auto-withdrawal-->
+              </div>
+            </div>
+            <div class="block" id="financial-subscription">
+              <h2>Monthly Subscription</h2>
+              <h1 class="cash">$ <span>/mo</span></h1>
+              <div class="button-group">
+                <!-- soci-button(subtle onclick="adminFinancials.showChangeSubscription()") Change Subscription Amount-->
+                <!--soci-button.cancel-sub-button(danger onclick="adminFinancials.cancelSubscription()") Cancel Subscription-->
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="ledger" load-order="tertiary">
+          <hr>
+          <soci-ledger></soci-ledger>
+        </div>
+        <soci-modal title="Manual Withdrawal" id="withdrawal-modal">
+          <div class="modal-body">
+            <p>This is a manual process right now and may take up to 5 business days to complete. The good news is I ( <soci-user name="jjcm"></soci-user> ) will aim to support pretty much any type of withdrawal you need. List the platform you'd prefer and the details of how to send the cash below.</p>
+            <p>Here are some of the ways I can transfer:</p>
+            <table>
+              <tr>
+                <th>USA</th>
+                <th>AUS</th>
+                <th>International</th>
+              </tr>
+              <tr>
+                <td>Venmo<br>Cash App<br>Paypal</td>
+                <td>PayID</td>
+                <td>
+                   Bitcoin<br>Ethereum</td>
+              </tr>
+            </table>
+            <p>If you need another way, just ask and I'll see what we can do.</p>
+            <soci-input placeholder="Enter platform and details here"></soci-input>
+            <soci-button async onclick="adminFinancials.requestManualWithdrawal()">Request Withdrawal</soci-button>
+          </div>
+        </soci-modal>
+      </div>
+    </soci-route>
+    <soci-route class="admin-page" id="admin-emojis" path="/admin/emojis">
+      <style>
+        #admin-emojis {
+          .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+          form { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+          input[type="text"] { min-width: 180px; }
+          .emoji-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; }
+          .emoji-card { border: 1px solid var(--bg-secondary); border-radius: 8px; padding: 8px; text-align: center; }
+          .emoji-card img, .emoji-card soci-emoji { width: 24px; height: 24px; display: block; margin: 0 auto 6px; }
+          .emoji-name { font-size: 12px; color: var(--text-secondary); }
+        }
+      </style>
+      <div class="container" id="admin-emojis">
+        <h1>Personal Emojis</h1>
+        <form id="emoji-form">
+          <input id="emoji-name" type="text" placeholder="emoji_name" required pattern="^[a-z0-9_]{2,32}$">
+          <input id="emoji-file" type="file" accept="image/*" required>
+          <soci-button id="emoji-upload" async>Upload</soci-button>
+        </form>
+        <div class="emoji-grid" id="emoji-grid"></div>
+      </div>
+      <script>lazyload('/pages/admin/emojis.js', document.currentScript.closest('soci-route'))</script>
+    </soci-route>
+    <soci-route id="about" path="/about">
+      <div class="content info-page">
+        <div class="loading-block" load-order="primary">
+          <h1>About Non.io</h1>
+          <p>Non.io is a personal project of Jacob Miller (aka jjcm or @pwnies on Twitter). The purpose is to distribute a portion of your subscription to every post you upvote (split evenly between upvotes at the end of each month).</p>
+          <h2>Open Source </h2>
+          <p>The site is currently open source. You can find the repos at <a href="https://github.com/jjcm/nonio">github.com/jjcm/nonio</a>. Bug reports can be sent to the issue tracker in that project. </p>
+          <h2>Other Info</h2>
+          <soci-link href="about/privacy-policy"><a>Privacy policy</a></soci-link><br/>
+          <soci-link href="about/contact"><a>Contact us</a></soci-link>
+        </div>
+      </div>
+    </soci-route>
+    <soci-route id="privacy-policy" path="/about/privacy-policy">
+      <div class="content info-page">
+        <div class="loading-block" load-order="primary">
+          <h1>Privacy Policy</h1>
+          <p>Non.io collects and stores the information provided upon signup. We also store standard nginx logs, which include IP address and browser information. We also store avatars and user submitted content. None of this information is sold or shared with third parties.</p>
+          <h2>Billing Information</h2>
+          <p>All billing information is stored by Stripe. Nonio stores cryptogrpahic hashes of your Stripe subscription and your Stripe account ID. Nonio does not store any credit card information or addresses on file. For personalized payouts not using Stripe, additional contact information may be stored. </p>
+          <h2>Passwords</h2>
+          <p>Nonio stores a cryptographic hash of your password using the bcrypt algorithm. We do not store passwords in plain text.</p>
+          <h2>Tracking</h2>
+          <p>Nonio uses server side logging. We currently do not use frontend tracking, nor is any of your information sent to third parties (with the exception of Stripe for financial data). We don't sell user data, nor do we use ad targetting or tracking.</p>
+          <h2>Account Deletion</h2>
+          <p>Curently there's no account deletion, not by design, I just haven't gotten to it yet. If you want to delete your account, ping me at j@jjcm.org or at @pwnies on Twiter. Account deletion will be best effort when done manually, with this as a goal: </p>
+          <h3>What will be removed:</h3>
+          <ul>
+            <li>User info (email, password, etc)</li>
+            <li>Avatar</li>
+            <li>Submitted posts and related media</li>
+            <li>Stripe metadata</li>
+          </ul>
+          <h3>What won't be removed </h3>
+          <ul> 
+            <li>Server logs</li>
+            <li>Comment content. Comments will be set to "abandoned" and will be disassociated from your username, but the content will remain to preserve discussion.</li>
+          </ul>
+          <h2>Location of Data </h2>
+          <p>Main servers are currently located in the United States. Elements of the site may be cached by edge servers around the world. </p>
+          <h2>Guarantees</h2>
+          <p>Non.io makes no guarantees regarding uptime, payouts, accuracy of monetary transfers, or timeliness. We are very much in startup phase. </p>
+          <h2>Point of Contact</h2>
+          <p>If you need to contact us for any reason, ping Jacob at j@jjcm.org or at @pwnies on Twitter.</p>
+        </div>
+      </div>
+    </soci-route>
+    <soci-route id="contact" path="/about/contact">
+      <div class="content info-page">
+        <div class="loading-block" load-order="primary">
+          <h1>Contact</h1>
+          <p>You can get ahold of Jacob (the site owner) the following ways:</p>
+          <ul> 
+            <li>Email: <a href="mailto:j@jjcm.org">j@jjcm.org</a></li>
+            <li>Twiter: <a href="https://twitter.com/pwnies">@pwnies</a></li>
+            <li>Nonio: <soci-link href="/user/jjcm"><a>jjcm</a></soci-link></li>
+          </ul>
+        </div>
+      </div>
+    </soci-route>
+    <soci-route id="community-settings" path="^(/@[\w-]+)/admin$" fresh>
+      <div class="community-settings" id="community-settings">
+        <header>
+          <soci-link class="nav-item active" href="/@community/admin"><span>Settings</span></soci-link>
+          <soci-link class="nav-item" href="/@community/admin/users"><span>Users</span></soci-link>
+          <soci-link class="nav-item" href="/@community/admin/financials"><span>Financials</span></soci-link>
+          <soci-link class="nav-item" href="/@community/admin/emojis"><span>Emojis</span></soci-link>
+        </header>
+        <div class="container">
+          <form>
+            <div class="load-group" load-order="primary">
+              <h1>Community Settings</h1>
+              <label>Banner</label>
+              <soci-avatar-uploader type="banner"></soci-avatar-uploader>
+            </div>
+            <div class="load-group" load-order="secondary">
+              <div class="columns">
+                <div class="column basic-info">
+                  <h2>Basic Info</h2>
+                  <label for="name">Display name</label>
+                  <input name="name" placeholder="Community Name" required>
+                  <label for="description">Description</label>
+                  <soci-input name="description" placeholder="Add a short description of your community"></soci-input>
+                  <div style="margin-top: 8px; text-align: right;">
+                    <soci-button>Save Changes</soci-button>
+                  </div>
+                </div>
+                <div class="column">
+                  <h2>Privacy & Permissions</h2>
+                  <label>Privacy</label>
+                  <soci-radio-button-group class="radio-group" name="privacy" value="public">
+                    <soci-radio-button value="public">Public</soci-radio-button>
+                    <soci-radio-button value="invite-only">Invite Only</soci-radio-button>
+                  </soci-radio-button-group>
+                  <label>Who can post?</label>
+                  <soci-radio-button-group class="radio-group" name="post_permission" value="all">
+                    <soci-radio-button value="all">All Users</soci-radio-button>
+                    <soci-radio-button value="paid">Paid Users Only</soci-radio-button>
+                    <soci-radio-button value="admin">Admins Only</soci-radio-button>
+                  </soci-radio-button-group>
+                  <label>Who can comment?</label>
+                  <soci-radio-button-group class="radio-group" name="comment_permission" value="all">
+                    <soci-radio-button value="all">All Users</soci-radio-button>
+                    <soci-radio-button value="paid">Paid Users Only</soci-radio-button>
+                    <soci-radio-button value="admin">Admins Only</soci-radio-button>
+                  </soci-radio-button-group>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+      <script>lazyload('/pages/community-settings.js', document.currentScript.closest('soci-route'))</script>
+    </soci-route>
+    <soci-route id="community-users" path="^(/@[\w-]+)/admin/users$" fresh>
+      <div class="community-settings" id="community-users">
+        <header>
+          <soci-link class="nav-item" href="/@community/admin"><span>Settings</span></soci-link>
+          <soci-link class="nav-item active" href="/@community/admin/users"><span>Users</span></soci-link>
+          <soci-link class="nav-item" href="/@community/admin/financials"><span>Financials</span></soci-link>
+          <soci-link class="nav-item" href="/@community/admin/emojis"><span>Emojis</span></soci-link>
+        </header>
+        <div class="container">
+          <div class="load-group" load-order="primary">
+            <h1>Community Users</h1>
+            <p>Manage moderators, members, and bans in one place.</p>
+          </div>
+          <div class="load-group" load-order="secondary">
+            <div class="grid">
+              <div class="card">
+                <div class="card-header" data-role="moderators">
+                  <h2>Moderators</h2>
+                  <soci-button class="add-btn" subtle data-role="moderators" aria-label="Add moderator">
+                    <soci-icon glyph="create"></soci-icon><span>add</span>
+                  </soci-button>
+                  <soci-user-picker data-role="moderators" placeholder="Add moderator" action-label="Add"></soci-user-picker>
+                </div>
+                <div class="list" data-list="moderators"></div>
+              </div>
+              <div class="card">
+                <div class="card-header" data-role="members">
+                  <h2>Members</h2>
+                  <soci-button class="add-btn" subtle data-role="members" aria-label="Add member">
+                    <soci-icon glyph="create"></soci-icon><span>add</span>
+                  </soci-button>
+                  <soci-user-picker data-role="members" placeholder="Add member" action-label="Add"></soci-user-picker>
+                </div>
+                <div class="list" data-list="members"></div>
+              </div>
+              <div class="card">
+                <div class="card-header" data-role="banned">
+                  <h2>Banned Users</h2>
+                  <soci-button class="add-btn" subtle data-role="banned" aria-label="Ban user">
+                    <soci-icon glyph="create"></soci-icon><span>add</span>
+                  </soci-button>
+                  <soci-user-picker data-role="banned" placeholder="Ban user" action-label="Ban"></soci-user-picker>
+                </div>
+                <div class="list" data-list="banned"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <script>lazyload('/pages/community-users.js', document.currentScript.closest('soci-route'))</script>
+    </soci-route>
+    <soci-route id="community-financials" path="^(/@[\w-]+)/admin/financials$" fresh>
+      <div class="community-settings" id="community-financials">
+        <header>
+          <soci-link class="nav-item" href="/@community/admin"><span>Settings</span></soci-link>
+          <soci-link class="nav-item" href="/@community/admin/users"><span>Users</span></soci-link>
+          <soci-link class="nav-item active" href="/@community/admin/financials"><span>Financials</span></soci-link>
+          <soci-link class="nav-item" href="/@community/admin/emojis"><span>Emojis</span></soci-link>
+        </header>
+        <div class="container">
+          <div class="load-group" load-order="primary">
+            <h1>Community Financials</h1>
+          </div>
+          <div class="load-group" load-order="secondary">
+            <h2>Earnings this month</h2>
+            <div class="cards">
+              <div class="card">
+                <h2>Overview</h2>
+                <p class="stat js-total-earned">$0.00</p>
+              </div>
+              <div class="card">
+                <h2>Admin payouts</h2>
+                <p class="stat js-admin-payout">$0.00</p>
+              </div>
+            </div>
+          </div>
+          <div class="load-group" load-order="tertiary">
+            <h2>User payouts</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Amount Earned</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <script>lazyload('/pages/community-financials.js', document.currentScript.closest('soci-route'))</script>
+    </soci-route>
+    <soci-route id="community-emojis" path="^(/@[\w-]+)/admin/emojis$" fresh>
+      <div class="community-settings" id="community-emojis">
+        <header>
+          <soci-link class="nav-item" href="/@community/admin"><span>Settings</span></soci-link>
+          <soci-link class="nav-item" href="/@community/admin/users"><span>Users</span></soci-link>
+          <soci-link class="nav-item" href="/@community/admin/financials"><span>Financials</span></soci-link>
+          <soci-link class="nav-item active" href="/@community/admin/emojis"><span>Emojis</span></soci-link>
+        </header>
+        <div class="container">
+          <h1>Community Emojis</h1>
+          <form id="emoji-form">
+            <input id="emoji-name" type="text" placeholder="emoji_name" required pattern="^[a-z0-9_]{2,32}$">
+            <input id="emoji-file" type="file" accept="image/*" required>
+            <soci-button id="emoji-upload" async>Upload</soci-button>
+          </form>
+          <div class="emoji-grid" id="emoji-grid"></div>
+        </div>
+      </div>
+      <script>lazyload('/pages/community-emojis.js', document.currentScript.closest('soci-route'))</script>
+    </soci-route>
+    <soci-route id="post" default fresh>
+      <soci-post>
+        <soci-tag-group slot="tags" size="large"></soci-tag-group>
+        <soci-comment-list slot="comments"></soci-comment-list>
+      </soci-post>
+    </soci-route>
+  </div>
+  <script src="/pages/post.js"></script>
+</html>

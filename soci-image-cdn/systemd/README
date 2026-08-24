@@ -1,0 +1,12 @@
+#### update the values of environment variables
+
+Environment=APP_PORT=4203               # the application port
+
+#### start the application by systemd
+
+$ cp soci-image-cdn.service /etc/systemd/system/    # copy the 'soci-image-cdn.service' to directory '/etc/systemd/system'
+$ systemctl daemon-reload
+$ systemctl enable soci-image-cdn.service
+$ systemctl start soci-image-cdn.service
+$ systemctl status soci-image-cdn.service
+$ systemctl stop soci-image-cdn.service

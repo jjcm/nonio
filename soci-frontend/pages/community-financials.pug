@@ -1,0 +1,31 @@
+#community-financials.community-settings
+  header
+    soci-link(href=`/@community/admin` class="nav-item") <span>Settings</span>
+    soci-link(href=`/@community/admin/users` class="nav-item") <span>Users</span>
+    soci-link(href=`/@community/admin/financials` class="nav-item active") <span>Financials</span>
+    soci-link(href=`/@community/admin/emojis` class="nav-item") <span>Emojis</span>
+  .container
+    .load-group(load-order="primary")
+      h1 Community Financials
+    .load-group(load-order="secondary")
+      h2 Earnings this month
+      .cards
+        .card
+          h2 Overview
+          p.stat.js-total-earned $0.00
+
+        .card
+          h2 Admin payouts
+          p.stat.js-admin-payout $0.00
+
+    .load-group(load-order="tertiary")
+      h2 User payouts
+      table
+        thead
+          tr
+            th User
+            th Amount Earned
+        tbody
+
+script.
+  lazyload('/pages/community-financials.js', document.currentScript.closest('soci-route'))
