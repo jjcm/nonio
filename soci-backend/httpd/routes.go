@@ -35,6 +35,9 @@ func OpenRoutes() map[string]func(http.ResponseWriter, *http.Request) {
 		"/voice/presence/ws":    handlers.VoicePresenceWS,
 		"/community/channel/ws": handlers.ChannelMessagesWS,
 
+		// NOTIFICATIONS (websocket; token auth happens in the handler)
+		"/notifications/ws": handlers.NotificationsWS,
+
 		"/stripe/webhooks": handlers.StripeWebhook,
 	}
 

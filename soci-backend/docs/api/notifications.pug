@@ -119,3 +119,15 @@ block content
     h3 Example response
     :code(javascript)
       true
+
+  +endpoint#get_notifications_ws
+    h2 <span>GET</span> /notifications/ws?token=:jwt
+    p.
+      WebSocket stream for the authenticated user's unread notification count.
+      Sends a snapshot on connect and pushes again whenever the count changes
+      (a reply is received, or a notification is marked read from any client).
+      Replaces polling /notifications/unread-count.
+    +auth
+    h3 Count payload
+    :code(javascript)
+      { "type": "notification.count", "count": 4 }

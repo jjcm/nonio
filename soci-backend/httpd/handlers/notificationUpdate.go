@@ -48,4 +48,7 @@ func MarkNotificationRead(w http.ResponseWriter, r *http.Request) {
 	}
 
 	SendResponse(w, true, 200)
+
+	// Keep other tabs/devices in sync over the notification websocket
+	notifyNotificationCount(userID)
 }

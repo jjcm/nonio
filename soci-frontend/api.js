@@ -35,6 +35,12 @@ const api = {
       headers: this.headers()
     })
     return await response.json()
+  },
+
+  wsUrl(path, params) {
+    const base = config.API_HOST.replace(/^http/, 'ws').replace(/\/$/, '')
+    const query = Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&')
+    return `${base}${path}?${query}`
   }
 }
 
@@ -77,13 +83,11 @@ api.votes = {
 api.voice = {
   join: (community, channel) => api.postData('voice/join', { community, channel }),
   presence: (community) => api.postData('voice/presence', { community }),
-  presenceWsUrl: (community, token) => {
-    const wsBase = config.API_HOST
-      .replace(/^https:\/\//, 'wss://')
-      .replace(/^http:\/\//, 'ws://')
-      .replace(/\/$/, '')
-    return `${wsBase}/voice/presence/ws?community=${encodeURIComponent(community)}&token=${encodeURIComponent(token)}`
-  }
+  presenceWsUrl: (community, token) => api.wsUrl('/voice/presence/ws', { community, token })
+}
+
+api.notifications = {
+  wsUrl: (token) => api.wsUrl('/notifications/ws', { token })
 }
 
 api.channels = {
@@ -98,13 +102,7 @@ api.channelMessages = {
     if (limit) path += `&limit=${limit}`
     return api.getData(path)
   },
-  wsUrl: (community, channel, token) => {
-    const wsBase = config.API_HOST
-      .replace(/^https:\/\//, 'wss://')
-      .replace(/^http:\/\//, 'ws://')
-      .replace(/\/$/, '')
-    return `${wsBase}/community/channel/ws?community=${encodeURIComponent(community)}&channel=${encodeURIComponent(channel)}&token=${encodeURIComponent(token)}`
-  },
+  wsUrl: (community, channel, token) => api.wsUrl('/community/channel/ws', { community, channel, token }),
   send: (data) => api.postData('community/channel/messages', data),
   thread: (community, channel, parentID) => {
     const path = `community/channel/thread?community=${encodeURIComponent(community)}&channel=${encodeURIComponent(channel)}&parentID=${encodeURIComponent(parentID)}`
