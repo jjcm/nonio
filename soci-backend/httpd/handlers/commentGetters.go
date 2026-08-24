@@ -13,6 +13,7 @@ import (
 
 // GetComments - get the comments from database with different url parameters
 func GetComments(w http.ResponseWriter, r *http.Request) {
+	allowAnonymousBrowserCache(w, r)
 	Log.Info(r.URL)
 	params := &models.CommentQueryParams{}
 	// parse the url parameters

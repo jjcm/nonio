@@ -118,7 +118,10 @@ feedPaint +115 ms — 65 high-priority JS preloads contend with the LCP thumbnai
 forbids. ES module semantics also cap the upside: `soci-components.js` cannot execute until
 its slowest import arrives, so partial preloading cannot help either.
 
-**Decision: REVERT.**
+**Decision: REVERT.** (Also surfaced a deploy bug worth recording: a failing `find` in
+`deploy.sh`'s remote block aborted deploys *after* rsync but *before* service restarts, so two
+measurement passes ran against half-deployed states until the canary caught it. `deploy.sh`
+now verifies the Caddyfile is in sync and prints service status for every unit.)
 
 ### iter04 — defer markdown-wasm loader — **KEEP**
 
@@ -173,6 +176,131 @@ gzip for the 65-file module graph.
 Result: WAN flat; slow4g FCP/LCP −112 ms **but** feedPaint bimodal — 2 of 5 runs at **8.5 s**
 (vs 3.5 s reference): with Caddy fair-multiplexing 65 static streams alongside the proxied
 thumbnails on a 1.6 Mbps pipe, the first row's image can starve. Node's single-loop
-serialization avoided exactly that. Byte win kept via iter08 instead.
+serialization avoided exactly that.
 
 **Decision: REVERT.**
+
+### iter08 — brotli in the node server (memoized, q7) — **REVERT** (miss 2)
+
+Same byte-savings idea as iter07 but keeping node's serving order: prefer `br` over gzip in
+`send()` with a memoized compression cache. Clean measurement (after fixing the partial-deploy
+bug): slow4g FCP −108 ms but LCP +188 / feedPaint +256; WAN uniformly ~+15 ms. The recurring
+slow4g seesaw: on a saturated pipe, shrinking JS bytes just reorders which milestone lands
+first, and brotli's win over gzip (~10 KB across the graph) is too small to matter here.
+
+**Decision: REVERT.**
+
+### seed realism fix (not an iteration)
+
+`soci-image-cdn` produces thumbnails with imagemagick `-resize 192x144^`; the lab seed had
+generated 640 px / ~40 KB thumbnails — 4-6× production weight. Regenerated at production
+geometry (256x144 / 192x144 / 192x342 cover, ~6-14 KB) and re-referenced every lane (refD).
+slow4g cold feedPaint dropped 3572 → 2471 from data realism alone; all keep/revert decisions
+above compared like-for-like within their own seed era, so none flip.
+
+### iter09 — kernel TCP tuning (BBR + fq, `tcp_slow_start_after_idle=0`, notsent_lowat) — **REVERT** (miss 3)
+
+WAN cold/warm consistently −8 ms on every metric, slow4g flat: real but below both keep
+thresholds (≥5% / ≥20 ms). Reverted to keep the box explainable; recommended as a harmless
+server default outside lab rules.
+
+### iter10 — browser cache for anonymous read APIs — **KEEP**
+
+**Hypothesis:** `/posts`, `/posts/:url`, `/comments`, `/tags` ship no `Cache-Control`, so a
+warm reload pays a full RTT re-fetching JSON the server-side PostCache would serve unchanged
+anyway.
+
+**Change:** `allowAnonymousBrowserCache` in the backend: requests without `Authorization` get
+`Cache-Control: private, max-age=30` + `Vary: Authorization` on the four read endpoints.
+Logged-in requests stay uncached, so submit-then-reload is always fresh; anonymous staleness
+is bounded at 30 s (no worse than the server cache's own invalidation-based semantics).
+
+Results: warm feedPaint 412→**219 ms** slow4g (−47%), 166→**138 ms** WAN. Cold untouched
+mechanically (WAN medians wobbled +40 ms with overlapping spreads and no causal path — noise).
+Backend tests green.
+
+**Decision: KEEP.**
+
+### iter11 — preload markdown.wasm on post routes — revert (miss, −12 ms)
+
+The wasm fetch already overlaps the module graph; it was never the serialized gate. Below
+threshold everywhere. Reverted.
+
+### Stop condition
+
+Remaining candidates were all shaving <20 ms (eager-count tuning, sidebar /tags, unix
+sockets, GOGC) or invasive against flat evidence (shell splitting). Plateau declared after
+iter11; server-side CPU was never the constraint (API 3 ms warm on-box, TBT 0 in every run).
+
+---
+
+## Final scorecard (medians, n=7 home / n=5 post+transitions)
+
+| metric | baseline | final | change |
+|---|---|---|---|
+| home cold FCP, wan | 884 | **528** | −40% |
+| home cold LCP, wan | 1240 | **576** | −54% |
+| home cold feedPaint, wan | 1224 | **618** | −50% |
+| home cold FCP, slow4g | 2720 | **2036** | −25% |
+| home cold LCP, slow4g | 6824 | **2128** | −69% |
+| home cold feedPaint, slow4g | 6816 | **2512** | −63% |
+| home cold allDone, slow4g | 31325 | **4599** | −85% |
+| home warm feedPaint, wan | 158 | **141** | −11% |
+| home warm feedPaint, slow4g | 419 | **239** | −43% |
+| post cold LCP, wan | 672* | **520** | −23% |
+| post cold LCP, slow4g | 2332* | **1984** | −15% |
+| transitions (usable) | 110-292 | 104-298 | at network floor, unchanged |
+
+\* post baselines measured at refC (post pages were not in the iter00 pass).
+Warm FCP on wan is 104→156: the TLS handshake tax on the shell revalidation — accepted
+when it bought h2/h3 and −54% cold LCP; warm *content* metrics all improved.
+
+Capacity context (not a lab metric): the 1-core box sustains ~2,400 req/s on
+`GET /posts` at 20 ms mean under 50 concurrent connections (autocannon, on-box,
+gzip responses from PostCache).
+
+## Keep / ditch recap
+
+**Kept (in this branch + on the VPS):**
+1. iter01 — Caddy single TLS origin, h2+h3, path-prefix proxying (`speed-lab/vps/Caddyfile`)
+2. iter02 — lazy offscreen media (post-list `eager` window, lazy avatars)
+3. iter04 — `defer` on the markdown-wasm loader
+4. iter05 — shell-level feed prefetch (`__preFetch` → `soci-post-list`)
+5. iter06 — deep-link prefetch for post + comments (`__preFetch` → `getData`)
+6. iter10 — anonymous read-API browser cache (30 s, `Vary: Authorization`)
+7. Harness/lab infra: `speed-lab/vps/*`, `speed-lab/seed/*`, harness pins + TBT
+
+**Ditched (tried, measured, reverted):**
+1. iter03 — modulepreload of the full ES module graph (preload contention regressed LCP on slow links)
+2. iter07 — Caddy file_server + precompressed brotli statics (h2 fair-multiplexing starved the LCP thumbnail bimodally)
+3. iter08 — node-side brotli (win too small, milestone seesaw)
+4. iter09 — BBR/fq + `tcp_slow_start_after_idle=0` (real but −8 ms, below threshold; fine server default outside lab rules)
+5. iter11 — markdown.wasm preload on post routes (−12 ms, below threshold)
+
+## Wanted but can't from this VPS
+
+Concrete next steps that need infrastructure this single Vultr box cannot provide:
+
+1. **Edge HTML + API cache (Cloudflare/Fastly).** The anonymous shell and
+   `/posts` are cache-safe for 30 s (iter10 proved the semantics); serving both from an edge
+   PoP removes the 53-300 ms origin RTT from FCP/LCP entirely for the anonymous majority.
+   The shell is origin-agnostic after iter01 (relative hosts), so this is a config change,
+   not an app change.
+2. **Anycast / multi-PoP TLS termination.** Cold TLS+TCP setup to a single Vultr region is
+   the dominant fixed cost in cold WAN loads (~2 RTT before byte one). Terminating at the
+   nearest edge and keeping a warm h2 connection to origin cuts it to ~0-1 local RTT.
+3. **Image resizing at the edge.** Thumbnails are fixed at 192x144^ by the upload pipeline;
+   feed cards and lanes view could use DPR-matched variants (1x/2x) via an edge resizer
+   (`/image/thumbnail/<slug>.webp?w=256&dpr=2`) without re-encoding the archive or changing
+   upload code. The lab box lacks a webp encoder path fast enough to do this per-request on
+   one core.
+4. **HTTP/3 you can actually measure.** h3 is enabled (Caddy) but this lab's throttled lanes
+   must pin h2 because QUIC bypasses Chrome's devtools throttling; a real multi-region RUM
+   (or a second measurement host with `tc netem` on the path) is needed to quantify h3's
+   loss-recovery advantage on bad links.
+5. **MySQL read replicas / multi-region.** Irrelevant at this dataset (3 ms queries) but the
+   moment PostCache is bypassed (logged-in feeds, per-user votes), replica reads near the
+   edge are the only way to keep TTFB flat for non-US users.
+6. **Real RUM.** Every number here is synthetic Chromium from one vantage point. A
+   `PerformanceObserver` beacon (LCP/INP/TTFB percentiles by route) would validate the lab
+   deltas against real users before productionizing the keepers onto non.io.

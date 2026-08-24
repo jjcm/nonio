@@ -10,6 +10,7 @@ import (
 
 // GetTags - get tags out of the database, 100 at a time, optional offset
 func GetTags(w http.ResponseWriter, r *http.Request) {
+	allowAnonymousBrowserCache(w, r)
 	communitySlug := strings.TrimSpace(r.FormValue("community"))
 	communityID := 0
 	if communitySlug != "" {

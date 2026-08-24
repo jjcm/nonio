@@ -24,6 +24,7 @@ var postCacheMu sync.RWMutex
 // GetPostByURL find a specific post in the database and send back a JSON
 // representation of it
 func GetPostByURL(w http.ResponseWriter, r *http.Request) {
+	allowAnonymousBrowserCache(w, r)
 	communitySlug, url := parseCommunityAndSlug(r.URL.Path, "/posts/")
 	if communitySlug == "" {
 		communitySlug = strings.TrimSpace(r.URL.Query().Get("community"))
@@ -54,6 +55,7 @@ func GetPostByURL(w http.ResponseWriter, r *http.Request) {
 
 // GetPosts - get the posts from database with different url parameters
 func GetPosts(w http.ResponseWriter, r *http.Request) {
+	allowAnonymousBrowserCache(w, r)
 
 	// check our cache first
 	var cacheResponse PostQueryResponse
