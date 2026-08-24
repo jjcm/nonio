@@ -71,6 +71,32 @@ function send(req, res, body, mimetype, etag, cacheControl){
 // recompile, and unlike a filesystem watcher it cannot silently miss a change.
 var pugCache = new Map()
 
+// The ES module graph is ~68 files at depth 2-3: the browser discovers
+// components only after soci-components.js arrives, and lib helpers one hop
+// later. Emitting <link rel="modulepreload"> for the whole graph lets the
+// first response fetch everything in parallel over h2 instead of paying one
+// RTT per depth level. Crawled once per process; deploys restart the server.
+var moduleGraph = (function(){
+  var seen = new Set()
+  var IMPORT_RE = /(?:import|export)\s[^'"`]*?from\s*['"]([^'"]+)['"]|import\s*['"]([^'"]+)['"]/g
+  function crawl(url){
+    if(seen.has(url)) return
+    seen.add(url)
+    var src
+    try { src = fs.readFileSync('.' + url, 'utf-8') } catch(e) { return }
+    var m
+    while((m = IMPORT_RE.exec(src))){
+      var spec = m[1] || m[2]
+      if(!spec) continue
+      if(spec.startsWith('.')) crawl(path.posix.normalize(path.posix.join(path.posix.dirname(url), spec)))
+      else if(spec.startsWith('/')) crawl(spec)
+    }
+  }
+  crawl('/soci.js')
+  crawl('/components/soci-components.js')
+  return Array.from(seen)
+})()
+
 function newestMtime(files){
   var newest = 0
   for(var i = 0; i < files.length; i++){
@@ -91,7 +117,7 @@ function renderPug(file){
 
   var fn = pug.compileFile(file)
   var files = [file].concat(fn.dependencies || [])
-  var html = fn()
+  var html = fn({ preloadModules: moduleGraph })
   var entry = {
     body: Buffer.from(html, 'utf-8'),
     etag: '"' + crypto.createHash('md5').update(html).digest('hex') + '"',

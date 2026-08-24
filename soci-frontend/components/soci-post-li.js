@@ -508,6 +508,8 @@ export default class SociPostLi extends SociComponent {
 
   _setImageSource(container, host){
     let img = container.querySelector('img')
+    img.loading = this.hasAttribute('eager') ? 'eager' : 'lazy'
+    img.decoding = 'async'
     img.src = `${host}/${this.url}.webp`
     img.onerror = () => {
       this.classList.toggle('no-image', true)

@@ -104,8 +104,13 @@ async function throttlePage(page) {
   })
 }
 
+// QUIC bypasses CDP network throttling (Alt-Svc upgrades mid-page make
+// throttled lanes meaningless), so pin measurements to h1/h2 unless a lane
+// explicitly wants h3 (H3=1, only sane unthrottled).
+const LAUNCH = process.env.H3 === '1' ? {} : { args: ['--disable-quic'] }
+
 async function oneRun() {
-  const browser = await chromium.launch()
+  const browser = await chromium.launch(LAUNCH)
   const page = await browser.newPage()
   await page.addInitScript(initScript)
   await throttlePage(page)

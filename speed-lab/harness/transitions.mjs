@@ -285,8 +285,11 @@ async function applyLane(page, lane) {
 
 const HREF = { tag: () => `/#${TAG}`, user: () => `/user/${USER}`, post: () => `/${POST}` }
 
+// See measure.mjs: QUIC bypasses CDP throttling, pin to h1/h2.
+const LAUNCH = process.env.H3 === '1' ? {} : { args: ['--disable-quic'] }
+
 async function oneRun(kind, lane) {
-  const browser = await chromium.launch()
+  const browser = await chromium.launch(LAUNCH)
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
   await page.addInitScript(initScript)
   const errs = []
