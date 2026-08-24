@@ -49,10 +49,6 @@ for d in avatar image video html; do
   printf '{\n  "port": "%s",\n  "api_host": "http://127.0.0.1:4201"\n}\n' "$port" > "soci-$d-cdn/config.json"
 done
 cd soci-frontend && npm i --omit=dev --no-audit --no-fund --silent 2>&1 | tail -1 || true
-# Precompress static text assets for caddy file_server (precompressed br gzip).
-find . \( -path ./node_modules -o -path ./test \) -prune -o \
-  -type f \( -name '*.js' -o -name '*.css' -o -name '*.svg' -o -name '*.json' \) -print0 |
-  xargs -0 -P2 -I{} sh -c 'brotli -f -k -q 9 "{}" && gzip -9 -f -k "{}"'
 REMOTE
 
 if [[ $MIGRATE == 1 ]]; then
@@ -66,6 +62,6 @@ if [[ $SEED == 1 ]]; then
 fi
 
 echo "== restart =="
-$SSH_CMD $VPS 'sudo cp ~/nonio/speed-lab/vps/units/*.service /etc/systemd/system/ && sudo systemctl daemon-reload; if command -v caddy >/dev/null; then sudo cp ~/nonio/speed-lab/vps/Caddyfile /etc/caddy/Caddyfile && sudo systemctl reload caddy 2>/dev/null || sudo systemctl restart caddy; fi; sudo systemctl restart nonio-api nonio-frontend nonio-avatar-cdn nonio-image-cdn nonio-video-cdn nonio-html-cdn && sleep 1 && systemctl is-active nonio-api nonio-frontend nonio-avatar-cdn nonio-image-cdn nonio-video-cdn nonio-html-cdn'
+$SSH_CMD $VPS 'sudo cp ~/nonio/speed-lab/vps/units/*.service /etc/systemd/system/ && sudo systemctl daemon-reload; if command -v caddy >/dev/null; then if ! sudo cmp -s ~/nonio/speed-lab/vps/Caddyfile /etc/caddy/Caddyfile; then sudo cp ~/nonio/speed-lab/vps/Caddyfile /etc/caddy/Caddyfile && sudo systemctl restart caddy; fi; fi; sudo systemctl restart nonio-api nonio-frontend nonio-avatar-cdn nonio-image-cdn nonio-video-cdn nonio-html-cdn && sleep 1 && systemctl is-active caddy nonio-api nonio-frontend nonio-avatar-cdn nonio-image-cdn nonio-video-cdn nonio-html-cdn && sudo cmp -s ~/nonio/speed-lab/vps/Caddyfile /etc/caddy/Caddyfile && echo CADDYFILE_SYNCED'
 
 echo "deploy done"

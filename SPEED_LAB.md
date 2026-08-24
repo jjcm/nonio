@@ -119,3 +119,60 @@ forbids. ES module semantics also cap the upside: `soci-components.js` cannot ex
 its slowest import arrives, so partial preloading cannot help either.
 
 **Decision: REVERT.**
+
+### iter04 — defer markdown-wasm loader — **KEEP**
+
+**Hypothesis:** `lib/markdown-wasm/markdown.js` is a parser-blocking classic script in `<head>`;
+`defer` keeps its execution before the module scripts (document order) so `window.markdown`
+still exists before any component runs, but stops blocking the parse.
+
+First measured together with the lane instability above; after pinning the lazy margins a
+clean A/B gave: slow4g cold FCP 2008→**1852**, LCP 3736→**3592**, feedPaint 3725→**3580**;
+WAN cold LCP 724→**696**, feedPaint −25 ms. (The earlier "+LCP" read was the unpinned lane's
+bimodal artifact, visible as 114 vs 145 request flips in i2b's own runs.)
+
+**Decision: KEEP.**
+
+### iter05 — shell-level feed prefetch — **KEEP**
+
+**Hypothesis:** the `/posts` fetch waits for the whole module graph to load and execute; an
+inline script in the shell can start the identical request at byte-one of the HTML and let
+`soci-post-list` consume the in-flight promise.
+
+**Change:** inline script in `index.pug` mirrors `_buildPostsUrl` (sort/filter from
+localStorage, tag from hash, user from path — param order identical) for anonymous sessions,
+stores the promise in `window.__preFetch`; `_loadPosts` consumes it and falls back to a
+normal fetch on any miss. `index.js` passes `API_HOST` into the template.
+
+Results (on top of iter04): slow4g cold **LCP 3592 → 2096 (−42%)** — the feed's text content
+now paints as the largest element well before thumbnails finish; feedPaint (first row with
+decoded image) neutral at 3572; FCP +188 ms (the early JSON + first thumbnails share the
+throttled pipe with CSS) — accepted: LCP and every content metric dominate. WAN cold
+LCP 696→**576**, feedPaint 688→**634**. Warm feedPaint 542→408 (slow4g) / 181→159 (WAN).
+`loadEventEnd` grows because eager row images now start before the load event — cosmetic,
+`allDone`/LCP/feedPaint are the real signals.
+
+**Decision: KEEP.**
+
+### iter06 — prefetch post + comments on deep links — **KEEP**
+
+Same mechanism extended to the default (post) route: the shell starts `/posts/<slug>` and
+`/comments?post=<slug>` (community-aware) and `soci-component.getData` consumes matching
+anonymous prefetches, so `soci-post` and `soci-comment-list` both skip a round trip.
+
+Results: post deep link slow4g cold LCP 2332→**1996** (−14%), WAN 672→**552** (−18%).
+FCP unchanged. Comments still render (24/24) with no page errors.
+
+**Decision: KEEP.**
+
+### iter07 — statics via Caddy file_server + precompressed brotli — **REVERT** (miss 2)
+
+**Hypothesis:** brotli (−15% on JS/CSS) plus kernel-served files should beat node's runtime
+gzip for the 65-file module graph.
+
+Result: WAN flat; slow4g FCP/LCP −112 ms **but** feedPaint bimodal — 2 of 5 runs at **8.5 s**
+(vs 3.5 s reference): with Caddy fair-multiplexing 65 static streams alongside the proxied
+thumbnails on a 1.6 Mbps pipe, the first row's image can starve. Node's single-loop
+serialization avoided exactly that. Byte win kept via iter08 instead.
+
+**Decision: REVERT.**
