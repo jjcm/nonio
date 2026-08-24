@@ -1,0 +1,14 @@
+[Unit]
+Description=Nonio video CDN
+After=network.target
+
+[Service]
+User=fable
+WorkingDirectory=/home/fable/nonio/soci-video-cdn
+ExecStart=/home/fable/nonio/soci-video-cdn/video-cdn
+Restart=always
+RestartSec=2
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

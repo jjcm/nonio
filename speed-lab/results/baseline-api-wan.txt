@@ -1,0 +1,7 @@
+/posts                                     ttfb   107.9ms total   108.2ms gzip   8450B
+/posts?tag=photography                     ttfb   105.9ms total   106.0ms gzip   6960B
+/posts?sort=new                            ttfb   107.7ms total   107.8ms gzip   8136B
+/posts?user=speedlab                       ttfb   107.7ms total   107.7ms gzip   5648B
+/posts/speed-lab-measured-post             ttfb   106.6ms total   106.7ms gzip    759B
+/comments?post=speed-lab-measured-post     ttfb   106.7ms total   106.8ms gzip   1307B
+/tags                                      ttfb   107.3ms total   107.3ms gzip    355B

@@ -1,0 +1,17 @@
+[Unit]
+Description=Nonio frontend (node)
+After=network.target
+
+[Service]
+User=fable
+WorkingDirectory=/home/fable/nonio/soci-frontend
+Environment=PORT=80
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node index.js
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+Restart=always
+RestartSec=2
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
