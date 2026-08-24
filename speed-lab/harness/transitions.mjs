@@ -285,8 +285,11 @@ async function applyLane(page, lane) {
 
 const HREF = { tag: () => `/#${TAG}`, user: () => `/user/${USER}`, post: () => `/${POST}` }
 
-// See measure.mjs: QUIC bypasses CDP throttling, pin to h1/h2.
-const LAUNCH = process.env.H3 === '1' ? {} : { args: ['--disable-quic'] }
+// See measure.mjs: QUIC bypasses CDP throttling, pin to h1/h2; lazy-image
+// margins pinned so Chrome's connection estimate can't change what loads.
+const LAZY_PIN = '--blink-settings=' + ['Unknown', 'Offline', 'Slow2G', '2G', '3G', '4G']
+  .map(t => `lazyImageLoadingDistanceThresholdPx${t}=1250`).join(',')
+const LAUNCH = { args: process.env.H3 === '1' ? [LAZY_PIN] : ['--disable-quic', LAZY_PIN] }
 
 async function oneRun(kind, lane) {
   const browser = await chromium.launch(LAUNCH)

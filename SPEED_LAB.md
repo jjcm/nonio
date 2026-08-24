@@ -73,3 +73,49 @@ rAF-probed metric; watching in later iters). Warm +20 ms from TLS on the first c
 accepted, cold wins dominate.
 
 **Decision: KEEP.** Largest single change available to this stack.
+
+### iter02 — lazy-load offscreen media — **KEEP**
+
+**Hypothesis:** 100 post thumbnails + 100 avatars fetch eagerly for a feed where ~9 rows are
+visible; `loading=lazy` on below-fold media cuts cold-network work without touching LCP if the
+first screen stays eager.
+
+**Change:** `soci-post-list.renderPostLi` marks the first 12 rows `eager`;
+`soci-post-li._setImageSource` sets `loading=lazy decoding=async` on non-eager rows;
+`soci-user` avatars always lazy (never LCP candidates).
+
+Results (vs iter01): WAN cold LCP 752 → **716**, feedPaint 733 → **701**, transfer
+**6.1 MB → 2.0 MB (−67%)**, requests 244 → 193. Warm neutral. slow4g (h2-pinned reference
+after the fix below): 116 requests / 517 KB cold. Transitions neutral-to-better
+(slow4g tag/user −31 ms).
+
+**Decision: KEEP.** Biggest transfer cut available; LCP unharmed.
+
+### Measurement integrity fixes (harness, not site)
+
+1. **QUIC bypasses CDP throttling.** After iter01 added TLS, Chrome upgraded to h3 mid-page
+   and the slow4g lane silently stopped throttling those connections (6 MB "transferred" in
+   4 s at 1.6 Mbps). All throttled lanes now launch Chromium with `--disable-quic`
+   (h3 measurable separately, unthrottled). slow4g numbers from iter01/iter02 are superseded
+   by the re-referenced `iter02b` run.
+2. **Chrome's lazy-image margin is connection-estimate dependent** and flips bimodally under
+   CDP throttle (114 vs 145 requests across identical runs). All lanes now pin
+   `lazyImageLoadingDistanceThresholdPx*` to the 4G default (1250 px) via `--blink-settings`,
+   so what loads is deterministic. `allDone`/`reqs` on throttled lanes before this pin are
+   descriptive only; decisions use FCP/LCP/feedPaint + transitions.
+
+### iter03 — modulepreload the whole ES module graph — **REVERT** (miss 1)
+
+**Hypothesis:** 65 modules discovered at depth 2-3 cost one RTT per level; emitting
+`<link rel="modulepreload">` for the crawled graph flattens discovery.
+
+**Change:** import-graph crawler in `soci-frontend/index.js`, links injected in `index.pug`.
+
+Results: WAN cold neutral (FCP 556→552, LCP 716→708 — discovery already overlaps other work
+on h2). Warm slightly better (−20 ms FCP). slow4g cold: FCP −188 ms but **LCP +112 ms** and
+feedPaint +115 ms — 65 high-priority JS preloads contend with the LCP thumbnails on a
+1.6 Mbps pipe. Classic FCP-up/LCP-down preload contention, exactly what the decision rule
+forbids. ES module semantics also cap the upside: `soci-components.js` cannot execute until
+its slowest import arrives, so partial preloading cannot help either.
+
+**Decision: REVERT.**

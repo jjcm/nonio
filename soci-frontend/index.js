@@ -91,7 +91,7 @@ function renderPug(file){
 
   var fn = pug.compileFile(file)
   var files = [file].concat(fn.dependencies || [])
-  var html = fn()
+  var html = fn({ apiHost: config.API_HOST })
   var entry = {
     body: Buffer.from(html, 'utf-8'),
     etag: '"' + crypto.createHash('md5').update(html).digest('hex') + '"',

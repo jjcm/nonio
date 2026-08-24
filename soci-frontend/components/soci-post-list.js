@@ -598,8 +598,14 @@ export default class SociPostList extends SociComponent {
       const options = { signal }
       if(this.authToken) options.headers = { Authorization: 'Bearer ' + this.authToken }
 
-      const res = await fetch(config.API_HOST + url, options)
-      const data = await res.json()
+      // The shell may have started this exact request before any module
+      // loaded (index.pug __preFetch); consuming it saves a network round
+      // trip on cold loads. Anonymous only, so responses are identical.
+      const pre = !this.authToken && window.__preFetch?.[url]
+      if(pre) delete window.__preFetch[url]
+      const data = await (pre
+        ? pre.catch(() => fetch(config.API_HOST + url, options).then(r => r.json()))
+        : fetch(config.API_HOST + url, options).then(r => r.json()))
       if(signal.aborted) return
 
       this._postsData = data.posts || []

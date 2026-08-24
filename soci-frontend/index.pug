@@ -7,6 +7,36 @@ html(lang="en")
   //- The stylesheet comes before any synchronous script: markdown.js used to
   //- block the parser here, delaying CSS discovery and first paint.
   link(rel="stylesheet" href="/soci.css")
+  //- Start the feed API request in parallel with the JS module graph: by the
+  //- time soci-post-list connects, the response is usually already in flight
+  //- or done (window.__preFetch, consumed by soci-post-list._loadPosts).
+  //- Mirrors _buildPostsUrl exactly (param order matters) for the anonymous
+  //- home/tag/user cold loads; anything else falls through to a normal fetch.
+  script.
+    ;(a => {
+      if(localStorage.getItem('accessToken')) return
+      let p = location.pathname, q = [], go
+      let s = localStorage.getItem('soci-column-sort')
+      if(s == 'new') q.push('sort=new')
+      else if(['day', 'week', 'month', 'year'].includes(s)) q.push('sort=top', 'time=' + s)
+      if(p == '/') {
+        let t = decodeURIComponent(location.hash.slice(1).split('+')[0] || '')
+        if(t && t != 'all') q.push('tag=' + encodeURIComponent(t))
+        go = 1
+      }
+      else if(p.startsWith('/user/') && p.length > 6 && location.hash != '#comments') {
+        q.push('user=' + encodeURIComponent(p.slice(6)))
+        go = 1
+      }
+      if(!go) return
+      let f = localStorage.getItem('soci-column-filter')
+      if(f && f != 'all') {
+        let m = { images: 'image', videos: 'video', blogs: 'blog', links: 'link', audio: 'audio' }
+        q.push('type=' + encodeURIComponent(m[f] || f))
+      }
+      let u = '/posts' + (q.length ? '?' + q.join('&') : '')
+      ;(window.__preFetch = {})[u] = fetch(a + u).then(r => r.json())
+    })('#{apiHost || ""}')
   //- defer: this classic script still executes before the module scripts
   //- (document order), so window.markdown exists before any component code
   //- runs, but it no longer blocks the parser while it downloads.

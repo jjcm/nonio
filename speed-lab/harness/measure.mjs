@@ -106,8 +106,13 @@ async function throttlePage(page) {
 
 // QUIC bypasses CDP network throttling (Alt-Svc upgrades mid-page make
 // throttled lanes meaningless), so pin measurements to h1/h2 unless a lane
-// explicitly wants h3 (H3=1, only sane unthrottled).
-const LAUNCH = process.env.H3 === '1' ? {} : { args: ['--disable-quic'] }
+// explicitly wants h3 (H3=1, only sane unthrottled). Chrome also scales its
+// lazy-image prefetch margin with its own effective-connection estimate,
+// which drifts under CDP throttle and bimodally flips how many below-fold
+// images load; pin every margin to the 4G default so runs are comparable.
+const LAZY_PIN = '--blink-settings=' + ['Unknown', 'Offline', 'Slow2G', '2G', '3G', '4G']
+  .map(t => `lazyImageLoadingDistanceThresholdPx${t}=1250`).join(',')
+const LAUNCH = { args: process.env.H3 === '1' ? [LAZY_PIN] : ['--disable-quic', LAZY_PIN] }
 
 async function oneRun() {
   const browser = await chromium.launch(LAUNCH)
