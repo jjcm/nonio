@@ -42,7 +42,7 @@ const ROUTES = arg('routes', 'tag,user,post').split(',')
 const LANES = arg('lanes', 'slow4g,wifi').split(',')
 const TAG = arg('tag', 'photography')
 const USER = arg('user', 'speedlab')
-const POST = arg('post', 'sl-txt-01')
+const POST = arg('post', 'speed-lab-measured-post')
 const HOME_SETTLE = parseInt(arg('settle', '1200'))
 const BUDGET = parseInt(arg('budget', '20000'))
 const TRACE = process.argv.includes('--trace')
@@ -142,8 +142,11 @@ const initScript = () => {
 
   T.mediaReady = row => {
     if (!row) return false
-    const img = row.shadowRoot?.querySelector('img') || row.querySelector('img')
-    if (!img) return true // text row: nothing to decode
+    const img = row.shadowRoot?.querySelector('#thumbnail img') ||
+      row.shadowRoot?.querySelector('img') || row.querySelector('img')
+    // No img, or an img the row never sourced (text rows keep an empty <img>
+    // in their template): nothing to decode.
+    if (!img || !img.src) return true
     return img.complete && img.naturalWidth > 0
   }
 

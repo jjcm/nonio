@@ -62,6 +62,6 @@ if [[ $SEED == 1 ]]; then
 fi
 
 echo "== restart =="
-$SSH_CMD $VPS 'sudo systemctl restart nonio-api nonio-frontend nonio-avatar-cdn nonio-image-cdn nonio-video-cdn nonio-html-cdn && sleep 1 && systemctl is-active nonio-api nonio-frontend nonio-avatar-cdn nonio-image-cdn nonio-video-cdn nonio-html-cdn'
+$SSH_CMD $VPS 'sudo cp ~/nonio/speed-lab/vps/units/*.service /etc/systemd/system/ && sudo systemctl daemon-reload; if command -v caddy >/dev/null; then sudo cp ~/nonio/speed-lab/vps/Caddyfile /etc/caddy/Caddyfile && sudo systemctl reload caddy 2>/dev/null || sudo systemctl restart caddy; fi; sudo systemctl restart nonio-api nonio-frontend nonio-avatar-cdn nonio-image-cdn nonio-video-cdn nonio-html-cdn && sleep 1 && systemctl is-active nonio-api nonio-frontend nonio-avatar-cdn nonio-image-cdn nonio-video-cdn nonio-html-cdn'
 
 echo "deploy done"
