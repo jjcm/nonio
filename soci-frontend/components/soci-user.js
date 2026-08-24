@@ -158,6 +158,8 @@ export default class SociUser extends SociComponent {
     let cacheBuster = force ? `?${Date.now()}` : ''
     let basePath = this.getAttribute('size') == 'large' ? path : `thumbnail/${path}`
     let formats = ['webp', 'heic'].map(format => `<source srcset="${config.AVATAR_HOST}/${basePath}.${format}${cacheBuster}" />`).join('')
-    return (path == 'Anonymous coward' ? '' : formats) + `<img src="${config.AVATAR_HOST}/thumbnail/default.png"/>`
+    // Avatars are never the LCP element; lazy keeps offscreen feed rows from
+    // fetching a hundred of them during initial load.
+    return (path == 'Anonymous coward' ? '' : formats) + `<img loading="lazy" decoding="async" src="${config.AVATAR_HOST}/thumbnail/default.png"/>`
   }
 }

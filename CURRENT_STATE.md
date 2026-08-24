@@ -1,3 +1,41 @@
+## 2026-08-24 — VPS speed lab: live deploy + measured perf loop (branch `cursor/speed-vps-loop-27f0`)
+
+Deployed the monorepo to a live 1-vCPU/1 GB Vultr box (108.61.219.46) with a
+deterministic 2,600-post seed and ran a makefaster-style loop against it over a
+real 53 ms WAN hop. Everything logged in `SPEED_LAB.md` + `speed-lab/results/`;
+infra in `speed-lab/vps/` (systemd units, Caddyfile, deploy.sh, provision.sh),
+seed generator in `speed-lab/seed/`.
+
+**Keepers (measured, medians):**
+- Single TLS origin via Caddy (h2+h3): `/api|/image|/avatar|/video|/htmlcdn/*`
+  strip-prefix proxied; cold home LCP 1240→752 ms WAN, slow4g allDone 31.3 s→4.1 s.
+- Lazy offscreen media (`loading=lazy` beyond first 12 rows + all avatars):
+  cold transfer −67%, LCP −36 ms WAN.
+- `defer` on markdown-wasm loader: slow4g cold FCP/LCP/feed −140…−156 ms.
+- Shell-level API prefetch (`window.__preFetch` in index.pug, consumed by
+  `soci-post-list._loadPosts` + `soci-component.getData`): home/tag/user feeds
+  and post+comments deep links; slow4g home LCP −42%, post LCP −14…−18%.
+- Anonymous browser cache on read APIs (`private, max-age=30` +
+  `Vary: Authorization` on /posts, /posts/:url, /comments, /tags): warm
+  feedPaint 412→219 ms slow4g.
+
+**Reverted after measurement (see SPEED_LAB.md for numbers):** modulepreload of
+the 65-file module graph (LCP regression from preload contention), Caddy
+file_server + precompressed brotli for statics (h2 fair-multiplexing starved
+the first thumbnail bimodally), node-side brotli (byte win too small, seesaw),
+kernel TCP tuning (−8 ms, below threshold), markdown.wasm preload (−12 ms).
+
+**Harness hardening (speed-lab/harness):** TBT/bytes/requests collection in
+measure.mjs; Chromium pinned with `--disable-quic` on throttled lanes (QUIC
+bypasses CDP throttling) and fixed lazy-image margins via `--blink-settings`
+(Chrome's connection estimate flips them bimodally); transitions probe treats
+empty-`src` template imgs as decoded. Seed thumbnails regenerated at
+production geometry (`-resize 192x144^` per soci-image-cdn) after discovering
+the lab was serving 4-6× production weight.
+
+All suites green at wrap: backend `go test ./...`, frontend `npm test` (12/12),
+avatar/html CDN tests. Not merged to master.
+
 ## 2026-08-23 — Condensed migrations, test coverage, architecture perf pass
 
 Follow-on to the monorepo unification below, same branch/PR.

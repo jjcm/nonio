@@ -7,7 +7,46 @@ html(lang="en")
   //- The stylesheet comes before any synchronous script: markdown.js used to
   //- block the parser here, delaying CSS discovery and first paint.
   link(rel="stylesheet" href="/soci.css")
-  script(src="/lib/markdown-wasm/markdown.js")
+  //- Start the feed API request in parallel with the JS module graph: by the
+  //- time soci-post-list connects, the response is usually already in flight
+  //- or done (window.__preFetch, consumed by soci-post-list._loadPosts).
+  //- Mirrors _buildPostsUrl exactly (param order matters) for the anonymous
+  //- home/tag/user cold loads; anything else falls through to a normal fetch.
+  script.
+    ;(a => {
+      if(localStorage.getItem('accessToken')) return
+      let pf = window.__preFetch = {}
+      let add = u => { let f = fetch(a + u).then(r => r.json()); f.catch(() => {}); pf[u] = f }
+      let p = location.pathname, q = []
+      let s = localStorage.getItem('soci-column-sort')
+      if(s == 'new') q.push('sort=new')
+      else if(['day', 'week', 'month', 'year'].includes(s)) q.push('sort=top', 'time=' + s)
+      let feed = tail => {
+        let f = localStorage.getItem('soci-column-filter')
+        if(f && f != 'all') {
+          let m = { images: 'image', videos: 'video', blogs: 'blog', links: 'link', audio: 'audio' }
+          tail.push('type=' + encodeURIComponent(m[f] || f))
+        }
+        add('/posts' + (q.concat(tail).length ? '?' + q.concat(tail).join('&') : ''))
+      }
+      if(p == '/') {
+        let t = decodeURIComponent(location.hash.slice(1).split('+')[0] || '')
+        feed(t && t != 'all' ? ['tag=' + encodeURIComponent(t)] : [])
+      }
+      else if(p.startsWith('/user/') && p.length > 6 && location.hash != '#comments')
+        feed(['user=' + encodeURIComponent(p.slice(6))])
+      else {
+        let m = p.match(/^\/(?:@([\w-]+)\/)?([\w-]+)$/)
+        if(m && !['about', 'submit', 'notifications'].includes(m[2])) {
+          add(m[1] ? `/posts/@${m[1]}/${m[2]}` : `/posts/${m[2]}`)
+          add(`/comments?post=${m[2]}` + (m[1] ? `&community=${m[1]}` : ''))
+        }
+      }
+    })('#{apiHost || ""}')
+  //- defer: this classic script still executes before the module scripts
+  //- (document order), so window.markdown exists before any component code
+  //- runs, but it no longer blocks the parser while it downloads.
+  script(src="/lib/markdown-wasm/markdown.js" defer)
   script(src="/soci.js" type="module")
   script(src="/components/soci-components.js" type="module")
   script.

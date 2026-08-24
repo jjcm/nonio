@@ -1,0 +1,40 @@
+# speed-lab: single-origin reverse proxy for the whole stack.
+# TLS via Let's Encrypt on the sslip.io name (h2 + h3); plain HTTP on the bare
+# IP keeps working for humans without a domain.
+{
+	admin off
+}
+
+(routes) {
+	handle /api/* {
+		uri strip_prefix /api
+		reverse_proxy 127.0.0.1:4201
+	}
+	handle /image/* {
+		uri strip_prefix /image
+		reverse_proxy 127.0.0.1:4203
+	}
+	handle /avatar/* {
+		uri strip_prefix /avatar
+		reverse_proxy 127.0.0.1:4202
+	}
+	handle /video/* {
+		uri strip_prefix /video
+		reverse_proxy 127.0.0.1:4204
+	}
+	handle /htmlcdn/* {
+		uri strip_prefix /htmlcdn
+		reverse_proxy 127.0.0.1:4205
+	}
+	handle {
+		reverse_proxy 127.0.0.1:4200
+	}
+}
+
+108-61-219-46.sslip.io {
+	import routes
+}
+
+http://108.61.219.46 {
+	import routes
+}

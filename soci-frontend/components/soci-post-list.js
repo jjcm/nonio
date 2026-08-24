@@ -598,8 +598,14 @@ export default class SociPostList extends SociComponent {
       const options = { signal }
       if(this.authToken) options.headers = { Authorization: 'Bearer ' + this.authToken }
 
-      const res = await fetch(config.API_HOST + url, options)
-      const data = await res.json()
+      // The shell may have started this exact request before any module
+      // loaded (index.pug __preFetch); consuming it saves a network round
+      // trip on cold loads. Anonymous only, so responses are identical.
+      const pre = !this.authToken && window.__preFetch?.[url]
+      if(pre) delete window.__preFetch[url]
+      const data = await (pre
+        ? pre.catch(() => fetch(config.API_HOST + url, options).then(r => r.json()))
+        : fetch(config.API_HOST + url, options).then(r => r.json()))
       if(signal.aborted) return
 
       this._postsData = data.posts || []
@@ -839,9 +845,12 @@ export default class SociPostList extends SociComponent {
     })
   }
 
-  renderPostLi(post){
+  renderPostLi(post, i){
+    // First screen of rows (the initial synchronous batch) loads media
+    // eagerly for LCP; everything rendered later is below the fold and
+    // lazy-loads on scroll.
     return`
-      <soci-post-li post-title="${post.title.replaceAll('"', '&quot;')}" url="${post.url}" post-id="${post.ID}" score=${post.score || 0} comments=${post.commentCount || 0} type=${post.type || 'image'} time=${post.time} ${post.link ? `link=${post.link}` : ''} ${post.community ? `community="${post.community}"` : ''}>
+      <soci-post-li ${i !== undefined && i < 12 ? 'eager ' : ''}post-title="${post.title.replaceAll('"', '&quot;')}" url="${post.url}" post-id="${post.ID}" score=${post.score || 0} comments=${post.commentCount || 0} type=${post.type || 'image'} time=${post.time} ${post.link ? `link=${post.link}` : ''} ${post.community ? `community="${post.community}"` : ''}>
         <soci-user name="${post.user}" slot="user"></soci-user>
         <soci-tag-group slot="tags">
           ${this.sortTags(post.tags).map(tag => `<soci-tag tag="${tag.tag}" score="${tag.score}" tag-id="${tag.tagID}" ${soci.votes[post.ID]?.includes(tag.tagID) ? 'upvoted':''}></soci-tag>`).join('')}
