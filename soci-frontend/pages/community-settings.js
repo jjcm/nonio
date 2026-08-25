@@ -1,11 +1,11 @@
 let communitySettings = {
-  dom: document.currentScript.closest('soci-route'),
+  dom: document.currentScript.closest('nonio-route'),
   _saveTimer: null,
   _saving: false,
   _loading: false,
   _debounceMs: 600,
   init: () => {
-    soci.registerPage(communitySettings)
+    nonio.registerPage(communitySettings)
   },
   onActivate: () => {
     let path = document.location.pathname
@@ -16,36 +16,36 @@ let communitySettings = {
     document.title = `${communityName} - Settings`
     
     // update nav links
-    communitySettings.dom.querySelectorAll('header soci-link').forEach(link => {
+    communitySettings.dom.querySelectorAll('header nonio-link').forEach(link => {
       let href = link.getAttribute('href')
       link.setAttribute('href', href.replace(/@[\w-]+/, `@${communityName}`))
     })
     
     // Set community on avatar and banner uploaders
-    communitySettings.dom.querySelectorAll('soci-avatar-uploader').forEach(el => el.setAttribute('community', communityName))
-    communitySettings.dom.querySelectorAll('soci-avatar-uploader-new').forEach(el => el.setAttribute('community', communityName))
+    communitySettings.dom.querySelectorAll('nonio-avatar-uploader').forEach(el => el.setAttribute('community', communityName))
+    communitySettings.dom.querySelectorAll('nonio-avatar-uploader-new').forEach(el => el.setAttribute('community', communityName))
     
     // Fetch settings
     communitySettings.loadSettings()
 
     // Bind events
-    let saveButton = communitySettings.dom.querySelector('soci-button')
+    let saveButton = communitySettings.dom.querySelector('nonio-button')
     saveButton.addEventListener('click', communitySettings.saveSettings)
     communitySettings.bindAutoSave()
   },
   loadSettings: async () => {
     communitySettings._loading = true
-    let res = await soci.getData(`communities/${communitySettings.communityName}`)
+    let res = await nonio.getData(`communities/${communitySettings.communityName}`)
     if(res.error) {
         console.error(res.error)
         return
     }
     let form = communitySettings.dom.querySelector('form')
     form.querySelector('input[name="name"]').value = res.name
-    let descInput = form.querySelector('soci-input[name="description"]')
+    let descInput = form.querySelector('nonio-input[name="description"]')
     descInput.value = res.description || ''
     const setGroupValue = (name, value) => {
-      const group = form.querySelector(`soci-radio-button-group[name="${name}"]`)
+      const group = form.querySelector(`nonio-radio-button-group[name="${name}"]`)
       if(group && value) group.setAttribute('value', value)
     }
     setGroupValue('privacy', res.privacyType || 'public')
@@ -61,7 +61,7 @@ let communitySettings = {
   bindAutoSave: () => {
     let form = communitySettings.dom.querySelector('form')
     if(!form) return
-    form.querySelectorAll('soci-radio-button-group[name="privacy"], soci-radio-button-group[name="post_permission"], soci-radio-button-group[name="comment_permission"]').forEach(group => {
+    form.querySelectorAll('nonio-radio-button-group[name="privacy"], nonio-radio-button-group[name="post_permission"], nonio-radio-button-group[name="comment_permission"]').forEach(group => {
       group.addEventListener('change', communitySettings.scheduleSave)
     })
   },
@@ -70,19 +70,19 @@ let communitySettings = {
     if(communitySettings._saving) return
     communitySettings._saving = true
     let form = communitySettings.dom.querySelector('form')
-    let button = form.querySelector('soci-button')
+    let button = form.querySelector('nonio-button')
     if(e) button.wait()
     
     let data = {
         community: communitySettings.communityName,
         name: form.querySelector('input[name="name"]').value,
-        description: form.querySelector('soci-input[name="description"]').value,
-        privacyType: form.querySelector('soci-radio-button-group[name="privacy"]')?.getAttribute('value'),
-        postPermission: form.querySelector('soci-radio-button-group[name="post_permission"]')?.getAttribute('value'),
-        commentPermission: form.querySelector('soci-radio-button-group[name="comment_permission"]')?.getAttribute('value')
+        description: form.querySelector('nonio-input[name="description"]').value,
+        privacyType: form.querySelector('nonio-radio-button-group[name="privacy"]')?.getAttribute('value'),
+        postPermission: form.querySelector('nonio-radio-button-group[name="post_permission"]')?.getAttribute('value'),
+        commentPermission: form.querySelector('nonio-radio-button-group[name="comment_permission"]')?.getAttribute('value')
     }
     
-    let res = await soci.postData('community/update', data)
+    let res = await nonio.postData('community/update', data)
     if(res === true) {
         if(e) button.success()
         document.dispatchEvent(new CustomEvent('community-updated', {

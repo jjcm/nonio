@@ -1,7 +1,7 @@
 let community = {
-  dom: document.currentScript.closest('soci-route'),
+  dom: document.currentScript.closest('nonio-route'),
   init: () => {
-    soci.registerPage(community)
+    nonio.registerPage(community)
   },
   onActivate: () => {
     let path = document.location.pathname
@@ -11,7 +11,7 @@ let community = {
     document.title = communityName
 
     // Fetch community details
-    soci.getData(`communities/${communityName}`).then(res => {
+    nonio.getData(`communities/${communityName}`).then(res => {
         if(res.error) {
             console.error(res.error)
             return
@@ -21,7 +21,7 @@ let community = {
         community.dom.querySelector('.description').innerText = res.description || ''
     })
 
-    let postList = community.dom.querySelector('soci-post-list')
+    let postList = community.dom.querySelector('nonio-post-list')
     postList.setAttribute('data', `/posts?community=${communityName}`)
 
     let subscribeButton = community.dom.querySelector('.subscribe-button')
@@ -37,8 +37,8 @@ let community = {
         }
     })
 
-    if(soci.username) {
-        soci.getData('communities/subscribed').then(res => {
+    if(nonio.username) {
+        nonio.getData('communities/subscribed').then(res => {
             if(res.communities && res.communities.find(c => c.url == communityName)) {
                 subscribeButton.setAttribute('subscribed', '')
                 subscribeButton.innerText = 'Unsubscribe'

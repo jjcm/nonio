@@ -1,7 +1,7 @@
 let adminSubscribe = {
-  dom: document.currentScript.closest('soci-route'),
+  dom: document.currentScript.closest('nonio-route'),
   init: () => {
-    soci.registerPage(adminSubscribe)
+    nonio.registerPage(adminSubscribe)
   },
   onActivate: () => {
     document.title = "Nonio - Choose Your Account Type"
@@ -13,7 +13,7 @@ let adminSubscribe = {
   onDeactivate: () => {
   },
   loadStripe: async () => {
-    adminSubscribe.stripe = await soci.stripe
+    adminSubscribe.stripe = await nonio.stripe
     let elements = adminSubscribe.stripe.elements()
     let currentStyles = getComputedStyle(document.documentElement)
     adminSubscribe.card = elements.create('card', {
@@ -53,7 +53,7 @@ let adminSubscribe = {
   },
   chooseFree: () => {
     window.api.user.chooseFreeAccount().then(result => {
-      let button = adminSubscribe.dom.querySelector('soci-button.free-button')
+      let button = adminSubscribe.dom.querySelector('nonio-button.free-button')
       if(result === true){
         button?.success()
         setTimeout(()=>{
@@ -68,7 +68,7 @@ let adminSubscribe = {
   },
   chooseSupporter: () => {
     window.api.stripe.createCustomer().then(result => {
-      let button = adminSubscribe.dom.querySelector('soci-button.supporter-button')
+      let button = adminSubscribe.dom.querySelector('nonio-button.supporter-button')
       if(result === true) {
         button?.success()
         let column = adminSubscribe.dom.querySelector('.column.supporter')
@@ -85,7 +85,7 @@ let adminSubscribe = {
   },
   subscribe: () => {
     let billingName = adminSubscribe.dom.querySelector('form input[name="name"]').value
-    let price = adminSubscribe.dom.querySelector('form soci-contribution-slider').value
+    let price = adminSubscribe.dom.querySelector('form nonio-contribution-slider').value
     adminSubscribe.stripe.createPaymentMethod({
       type: 'card',
       card: adminSubscribe.card,

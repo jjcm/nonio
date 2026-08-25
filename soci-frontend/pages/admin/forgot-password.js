@@ -1,11 +1,11 @@
 let adminForgotPassword = {
-  dom: document.currentScript.closest('soci-route'),
+  dom: document.currentScript.closest('nonio-route'),
   init: () => {
-    soci.registerPage(adminForgotPassword)
+    nonio.registerPage(adminForgotPassword)
   },
   onActivate: () => {
     document.title = 'Forgot password?'
-    adminForgotPassword.submitButton = adminForgotPassword.dom.querySelector('soci-button')
+    adminForgotPassword.submitButton = adminForgotPassword.dom.querySelector('nonio-button')
     adminForgotPassword.submitButton.addEventListener('click', adminForgotPassword.submitRequest)
   },
   onDeactivate: () => {

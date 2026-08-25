@@ -1,19 +1,19 @@
 let notifications = {
-  dom: document.currentScript.closest('soci-route'),
+  dom: document.currentScript.closest('nonio-route'),
   init: () => {
-    soci.registerPage(notifications)
+    nonio.registerPage(notifications)
   },
   onActivate: () => {
     notifications.dom.querySelector('header').addEventListener('click', notifications.tabClick)
     let container = notifications.dom.querySelector('.inner-content')
-    if(soci.notificationCount) {
+    if(nonio.notificationCount) {
       notifications.dom.querySelectorAll('.type').forEach(tab => {
         console.log("unread")
         tab.toggleAttribute('selected', tab.innerHTML == "Unread")
       })
     }
-    console.log(soci.notificationCount)
-    container.innerHTML = `<soci-user-comment-list data="/notifications${soci.notificationCount ? '?unread=true' : ''}"></soci-user-comment-list>`
+    console.log(nonio.notificationCount)
+    container.innerHTML = `<nonio-user-comment-list data="/notifications${nonio.notificationCount ? '?unread=true' : ''}"></nonio-user-comment-list>`
   },
   tabClick: e => {
     if(e.target.className == 'type'){
@@ -22,9 +22,9 @@ let notifications = {
       e.target.toggleAttribute('selected', true)
 
       if(e.target.innerHTML == "Unread")
-        container.innerHTML = `<soci-user-comment-list data="/notifications?unread=true"></soci-user-comment-list>`
+        container.innerHTML = `<nonio-user-comment-list data="/notifications?unread=true"></nonio-user-comment-list>`
       else 
-        container.innerHTML = `<soci-user-comment-list data="/notifications"></soci-user-comment-list>`
+        container.innerHTML = `<nonio-user-comment-list data="/notifications"></nonio-user-comment-list>`
     }
   }
 }

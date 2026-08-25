@@ -7,8 +7,8 @@ let post = {
   },
   onActivate(e) {
     let route = e.target
-    let postElement = route.querySelector('soci-post')
-    let path = window.soci.routeContext.path
+    let postElement = route.querySelector('nonio-post')
+    let path = window.nonio.routeContext.path
     let url = path.substr(1)
 
     // Check if it's a community post (/@community/post-slug)
@@ -27,11 +27,11 @@ let post = {
       e.preventDefault()
       let data = new FormData(submit.form)
 
-      soci.postData('post/create', {
+      nonio.postData('post/create', {
         title: data.get('title'),
         url: data.get('url'),
         content: data.get('description'),
-        type: document.querySelector('#submit soci-tab[active]').getAttribute('name').toLowerCase()
+        type: document.querySelector('#submit nonio-tab[active]').getAttribute('name').toLowerCase()
       }).then(e=>{
         if(e.url){
           window.history.pushState(null, null, e.url)

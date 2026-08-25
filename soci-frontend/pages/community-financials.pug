@@ -1,9 +1,9 @@
 #community-financials.community-settings
   header
-    soci-link(href=`/@community/admin` class="nav-item") <span>Settings</span>
-    soci-link(href=`/@community/admin/users` class="nav-item") <span>Users</span>
-    soci-link(href=`/@community/admin/financials` class="nav-item active") <span>Financials</span>
-    soci-link(href=`/@community/admin/emojis` class="nav-item") <span>Emojis</span>
+    nonio-link(href=`/@community/admin` class="nav-item") <span>Settings</span>
+    nonio-link(href=`/@community/admin/users` class="nav-item") <span>Users</span>
+    nonio-link(href=`/@community/admin/financials` class="nav-item active") <span>Financials</span>
+    nonio-link(href=`/@community/admin/emojis` class="nav-item") <span>Emojis</span>
   .container
     .load-group(load-order="primary")
       h1 Community Financials
@@ -28,4 +28,4 @@
         tbody
 
 script.
-  lazyload('/pages/community-financials.js', document.currentScript.closest('soci-route'))
+  lazyload('/pages/community-financials.js', document.currentScript.closest('nonio-route'))

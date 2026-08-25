@@ -1,17 +1,17 @@
 let tags = {
-  dom: document.currentScript.closest('soci-route'),
+  dom: document.currentScript.closest('nonio-route'),
   init: () => {
-    soci.registerPage(tags)
+    nonio.registerPage(tags)
   },
   onActivate: () => {
     const hash = window.location.hash || ''
-    const community = window.soci.routeContext.community || ''
+    const community = window.nonio.routeContext.community || ''
     let tag = hash.replace('#', '').split('+')[0]
     if (tag === '') tag = 'all'
     tag = decodeURIComponent(tag)
 
     // Returning to the same feed (e.g. back from a post) reattaches the
-    // previous list: its posts are still in it and soci-post-list dedupes
+    // previous list: its posts are still in it and nonio-post-list dedupes
     // the data URL, so no refetch and no re-render happen. Bounded to five
     // minutes so a long detour still comes back to a fresh feed.
     const key = `${tag}|${community}`
@@ -21,7 +21,7 @@ let tags = {
     }
 
     tags.dom.innerHTML = ''
-    let list = document.createElement('soci-post-list')
+    let list = document.createElement('nonio-post-list')
     list.setAttribute('tag', tag)
     if (community) list.setAttribute('community', community)
     tags._list = list
@@ -30,7 +30,7 @@ let tags = {
     tags.dom.appendChild(list)
   },
   onDeactivate: () => {
-    document.querySelector('soci-sidebar')?.activateTag?.('')
+    document.querySelector('nonio-sidebar')?.activateTag?.('')
   }
 }
 

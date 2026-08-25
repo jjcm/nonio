@@ -1,12 +1,12 @@
 let communityEmojis = {
-  dom: document.currentScript.closest('soci-route'),
-  init: () => soci.registerPage(communityEmojis),
+  dom: document.currentScript.closest('nonio-route'),
+  init: () => nonio.registerPage(communityEmojis),
   onActivate: () => {
     let communityName = (window.location.pathname.match(/^\/@([\w-]+)\/admin\/emojis$/) || [])[1] || ''
     communityEmojis.community = communityName
     
     // update nav links
-    communityEmojis.dom.querySelectorAll('header soci-link').forEach(link => {
+    communityEmojis.dom.querySelectorAll('header nonio-link').forEach(link => {
       let href = link.getAttribute('href')
       link.setAttribute('href', href.replace(/@[\w-]+/, `@${communityName}`))
     })
@@ -29,7 +29,7 @@ let communityEmojis = {
     const emojis = res?.emojis || []
     grid.innerHTML = emojis.map(e => `
       <div class="emoji-card">
-        <soci-emoji name="${e.name}" data-emoji-id="${e.id}" style="height:24px;"></soci-emoji>
+        <nonio-emoji name="${e.name}" data-emoji-id="${e.id}" style="height:24px;"></nonio-emoji>
         <div class="emoji-name">:${e.name}:</div>
       </div>
     `).join('')
@@ -48,7 +48,7 @@ let communityEmojis = {
     fd.append('community', communityEmojis.community)
     const uploadRes = await fetch(window.config.AVATAR_HOST + '/upload', {
       method: 'POST',
-      headers: { Authorization: 'Bearer ' + soci.accessToken },
+      headers: { Authorization: 'Bearer ' + nonio.accessToken },
       body: fd
     }).catch(() => null)
     if (!uploadRes?.ok) { btn?.error?.(); return }

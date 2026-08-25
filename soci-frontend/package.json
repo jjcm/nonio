@@ -1,7 +1,7 @@
 {
-  "name": "soci-frontend-server",
+  "name": "nonio-frontend-server",
   "version": "1.0.0",
-  "description": "Dynamically compiles soci's frontend",
+  "description": "Dynamically compiles nonio's frontend",
   "type": "module",
   "main": "index.js",
   "scripts": {
@@ -11,14 +11,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jjcm/soci-components.git"
+    "url": "git+https://github.com/jjcm/nonio.git"
   },
   "author": "Jake Miller",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/jjcm/soci-components/issues"
+    "url": "https://github.com/jjcm/nonio/issues"
   },
-  "homepage": "https://github.com/jjcm/soci-components#readme",
+  "homepage": "https://github.com/jjcm/nonio#readme",
   "dependencies": {
     "mime-types": "^2.1.24",
     "prerender-node": "^3.2.5",

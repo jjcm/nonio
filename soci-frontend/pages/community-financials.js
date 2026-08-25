@@ -1,7 +1,7 @@
 let communityFinancials = {
-  dom: document.currentScript.closest('soci-route'),
+  dom: document.currentScript.closest('nonio-route'),
   init: () => {
-    soci.registerPage(communityFinancials)
+    nonio.registerPage(communityFinancials)
   },
   onActivate: () => {
     let path = document.location.pathname
@@ -12,7 +12,7 @@ let communityFinancials = {
     document.title = `${communityName} - Financials`
     
     // update nav links
-    communityFinancials.dom.querySelectorAll('header soci-link').forEach(link => {
+    communityFinancials.dom.querySelectorAll('header nonio-link').forEach(link => {
       let href = link.getAttribute('href')
       link.setAttribute('href', href.replace(/@[\w-]+/, `@${communityName}`))
     })
@@ -21,7 +21,7 @@ let communityFinancials = {
   },
   loadFinancials: async () => {
     console.log('loading financials for community:', communityFinancials.communityName)
-    let res = await soci.getData(`/community/financials?community=${communityFinancials.communityName}`)
+    let res = await nonio.getData(`/community/financials?community=${communityFinancials.communityName}`)
     if(res.error) {
       console.error(res.error)
       return

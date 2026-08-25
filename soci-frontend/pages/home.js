@@ -1,15 +1,15 @@
 let home = {
-  dom: document.currentScript.closest('soci-route'),
+  dom: document.currentScript.closest('nonio-route'),
   init: () => {
-    soci.registerPage(home)
+    nonio.registerPage(home)
   },
   onActivate: () => {
     document.title = "Nonio - A platform for creators"
     let accountActions = home.dom.querySelector('.account-actions')
-    if(soci.accessToken){
+    if(nonio.accessToken){
       let expiry = 0
       try {
-        expiry = parseInt(JSON.parse(atob(soci.accessToken.split('.')[1])).expiresAt)
+        expiry = parseInt(JSON.parse(atob(nonio.accessToken.split('.')[1])).expiresAt)
       }
       catch {
       }

@@ -35,7 +35,7 @@
     #why-webcomics .user[payout] {
       color: var(--text-success);
     }
-    #why-webcomics .user soci-user {
+    #why-webcomics .user nonio-user {
       --avatar-size: 32px;
       --font-size: 24px;
       --line-height: 30px;
@@ -67,36 +67,36 @@
     br
   .loading-block(load-order="secondary")
     .posts
-      soci-post-li(score="32" comments="0" title="Space Law!" type="image" time="1612676474000" url="rendezvous")
-        soci-user(name="fakezach" slot="user")
-        soci-tag-group(slot="tags" score="32").prompt
-          soci-tag(score="32") webcomic
-          soci-tag(score="28") space
-          soci-tag(score="11") smbc
-      soci-post-li(score="234" comments="0" title="Emulating France" type="image" time="1612465555550" url="france")
-        soci-user(name="fakekelly" slot="user")
-        soci-tag-group(slot="tags" score="234")
-          soci-tag(score="212") webcomic
-          soci-tag(score="32") smbc
-          soci-tag(score="10") comic
-      soci-post-li(score="148" comments="0" title="Getting computer scientists to make a schedule" type="image" time="1612346474000" url="negative")
-        soci-user(name="adude" slot="user")
-        soci-tag-group(slot="tags" score="148")
-          soci-tag(score="112") programming-humor
-          soci-tag(score="52") webcomic
-          soci-tag(score="10") comic
-          soci-tag(score="0") funny
+      nonio-post-li(score="32" comments="0" title="Space Law!" type="image" time="1612676474000" url="rendezvous")
+        nonio-user(name="fakezach" slot="user")
+        nonio-tag-group(slot="tags" score="32").prompt
+          nonio-tag(score="32") webcomic
+          nonio-tag(score="28") space
+          nonio-tag(score="11") smbc
+      nonio-post-li(score="234" comments="0" title="Emulating France" type="image" time="1612465555550" url="france")
+        nonio-user(name="fakekelly" slot="user")
+        nonio-tag-group(slot="tags" score="234")
+          nonio-tag(score="212") webcomic
+          nonio-tag(score="32") smbc
+          nonio-tag(score="10") comic
+      nonio-post-li(score="148" comments="0" title="Getting computer scientists to make a schedule" type="image" time="1612346474000" url="negative")
+        nonio-user(name="adude" slot="user")
+        nonio-tag-group(slot="tags" score="148")
+          nonio-tag(score="112") programming-humor
+          nonio-tag(score="52") webcomic
+          nonio-tag(score="10") comic
+          nonio-tag(score="0") funny
     .outputs
       h2 Payouts
       .users
         #fakezach.user
-          soci-user(name="fakezach")
+          nonio-user(name="fakezach")
           .amount $0
         #fakekelly.user
-          soci-user(name="fakekelly")
+          nonio-user(name="fakekelly")
           .amount $0
         #adude.user
-          soci-user(name="adude")
+          nonio-user(name="adude")
           .amount $0
   .loading-block(load-order="tertiary")
     h2 Pretty simple right?

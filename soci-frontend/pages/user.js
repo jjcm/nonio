@@ -1,9 +1,9 @@
 let user = {
-  dom: document.currentScript.closest('soci-route'),
+  dom: document.currentScript.closest('nonio-route'),
   type: 'posts',
   username: '',
   init: () => {
-    soci.registerPage(user)
+    nonio.registerPage(user)
   },
   onActivate: () => {
     user.username = document.location.pathname.slice(6)
@@ -20,10 +20,10 @@ let user = {
     if(!container) return
     const u = user.username.replaceAll('"', '&quot;')
     if(user.type === 'posts'){
-      container.innerHTML = `<soci-post-list user="${u}" sort="top"></soci-post-list>`
+      container.innerHTML = `<nonio-post-list user="${u}" sort="top"></nonio-post-list>`
     }
     else {
-      container.innerHTML = `<soci-user-comment-list data="/${user.type}?user=${user.username}&sort=top"></soci-user-comment-list>`
+      container.innerHTML = `<nonio-user-comment-list data="/${user.type}?user=${user.username}&sort=top"></nonio-user-comment-list>`
     }
   },
   onUserTab: (e) => {
@@ -33,7 +33,7 @@ let user = {
     user.renderContent()
   },
   nuke: async () => {
-    let button = document.querySelector('soci-sidebar-user-panel soci-button.nuke-user')
+    let button = document.querySelector('nonio-sidebar-user-panel nonio-button.nuke-user')
     if(confirm('Are you sure you want to nuke this user? This will delete all their posts and comments.')) {
       let username = document.location.pathname.slice(6)
       let response = await window.api.user.nuke(username)

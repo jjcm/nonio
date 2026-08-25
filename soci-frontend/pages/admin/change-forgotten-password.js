@@ -1,11 +1,11 @@
 let adminChangeForgottenPassword = {
-  dom: document.currentScript.closest('soci-route'),
+  dom: document.currentScript.closest('nonio-route'),
   init: () => {
-    soci.registerPage(adminChangeForgottenPassword)
+    nonio.registerPage(adminChangeForgottenPassword)
   },
   onActivate: () => {
     document.title = 'Forgot password?'
-    adminChangeForgottenPassword.submitButton = adminChangeForgottenPassword.dom.querySelector('soci-button')
+    adminChangeForgottenPassword.submitButton = adminChangeForgottenPassword.dom.querySelector('nonio-button')
     adminChangeForgottenPassword.submitButton.addEventListener('click', adminChangeForgottenPassword.submitRequest)
   },
   onDeactivate: () => {
@@ -17,7 +17,7 @@ let adminChangeForgottenPassword = {
     let button = e.currentTarget
     let form = button.closest('form')
     if(form.reportValidity()){
-      let data = soci.getJSONFromForm(button.closest('form'))
+      let data = nonio.getJSONFromForm(button.closest('form'))
       data.token = token
       let response = await window.api.user.changeForgottenPassword(data)
       if(response == true) {

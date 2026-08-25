@@ -12,7 +12,7 @@ var prerender = require('prerender-node')
 var zlib = require('zlib')
 var crypto = require('crypto')
 
-// Asset filenames are not content-hashed (/soci.js is always /soci.js), so this
+// Asset filenames are not content-hashed (/nonio.js is always /nonio.js), so this
 // has to stay short enough that a deploy is picked up promptly. The win comes
 // from revalidating into a 304 rather than from a long TTL, so there is no
 // reason to reach for `immutable` here.
@@ -105,7 +105,7 @@ function renderPug(file){
 
 var server = http.createServer(function (req, res) {
 
-  var sociServer = () => {
+  var nonioServer = () => {
       var ext = path.extname(req.url)
       if(fs.existsSync('.' + req.url)) {
         switch(ext){
@@ -129,7 +129,7 @@ var server = http.createServer(function (req, res) {
       }
   }
 
-  sociServer()
+  nonioServer()
   return 0
 
   if(config.PRERENDER_HOST){
@@ -141,9 +141,9 @@ var server = http.createServer(function (req, res) {
     }
     prerender.set("prerenderServiceUrl", config.PRERENDER_HOST)
     console.log(req.headers['user-agent'])
-    prerender(req, res, sociServer)
+    prerender(req, res, nonioServer)
   }
-  else sociServer()
+  else nonioServer()
 })
 
 var sss = function(req) {

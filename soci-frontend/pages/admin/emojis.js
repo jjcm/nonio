@@ -1,6 +1,6 @@
 let adminEmojis = {
-  dom: document.currentScript.closest('soci-route'),
-  init: () => soci.registerPage(adminEmojis),
+  dom: document.currentScript.closest('nonio-route'),
+  init: () => nonio.registerPage(adminEmojis),
   onActivate: () => {
     const form = adminEmojis.dom.querySelector('#emoji-form')
     const btn = adminEmojis.dom.querySelector('#emoji-upload')
@@ -20,7 +20,7 @@ let adminEmojis = {
     const emojis = sets?.personal || []
     grid.innerHTML = emojis.map(e => `
       <div class="emoji-card">
-        <soci-emoji name="${e.name}" data-emoji-id="${e.id}" style="height:24px;"></soci-emoji>
+        <nonio-emoji name="${e.name}" data-emoji-id="${e.id}" style="height:24px;"></nonio-emoji>
         <div class="emoji-name">:${e.name}:</div>
       </div>
     `).join('')
@@ -38,7 +38,7 @@ let adminEmojis = {
     fd.append('name', name)
     const uploadRes = await fetch(window.config.AVATAR_HOST + '/upload', {
       method: 'POST',
-      headers: { Authorization: 'Bearer ' + soci.accessToken },
+      headers: { Authorization: 'Bearer ' + nonio.accessToken },
       body: fd
     }).catch(() => null)
     if (!uploadRes?.ok) { btn?.error?.(); return }

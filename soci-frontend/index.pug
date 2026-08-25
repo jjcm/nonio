@@ -6,23 +6,31 @@ html(lang="en")
   link(rel="icon" type="image/svg+xml" href="/lib/favicon.svg")
   //- The stylesheet comes before any synchronous script: markdown.js used to
   //- block the parser here, delaying CSS discovery and first paint.
-  link(rel="stylesheet" href="/soci.css")
+  link(rel="stylesheet" href="/nonio.css")
   //- Start the feed API request in parallel with the JS module graph: by the
-  //- time soci-post-list connects, the response is usually already in flight
-  //- or done (window.__preFetch, consumed by soci-post-list._loadPosts).
+  //- time nonio-post-list connects, the response is usually already in flight
+  //- or done (window.__preFetch, consumed by nonio-post-list._loadPosts).
   //- Mirrors _buildPostsUrl exactly (param order matters) for the anonymous
   //- home/tag/user cold loads; anything else falls through to a normal fetch.
   script.
+    // Column prefs were stored under soci-* before the rename. This has to run
+    // here, not in a module: the prefetch below reads them.
+    ;['sort', 'filter', 'view'].forEach(k => {
+      let v = localStorage.getItem('soci-column-' + k)
+      if(v == null) return
+      localStorage.removeItem('soci-column-' + k)
+      if(localStorage.getItem('nonio-column-' + k) == null) localStorage.setItem('nonio-column-' + k, v)
+    })
     ;(a => {
       if(localStorage.getItem('accessToken')) return
       let pf = window.__preFetch = {}
       let add = u => { let f = fetch(a + u).then(r => r.json()); f.catch(() => {}); pf[u] = f }
       let p = location.pathname, q = []
-      let s = localStorage.getItem('soci-column-sort')
+      let s = localStorage.getItem('nonio-column-sort')
       if(s == 'new') q.push('sort=new')
       else if(['day', 'week', 'month', 'year'].includes(s)) q.push('sort=top', 'time=' + s)
       let feed = tail => {
-        let f = localStorage.getItem('soci-column-filter')
+        let f = localStorage.getItem('nonio-column-filter')
         if(f && f != 'all') {
           let m = { images: 'image', videos: 'video', blogs: 'blog', links: 'link', audio: 'audio' }
           tail.push('type=' + encodeURIComponent(m[f] || f))
@@ -47,8 +55,8 @@ html(lang="en")
   //- (document order), so window.markdown exists before any component code
   //- runs, but it no longer blocks the parser while it downloads.
   script(src="/lib/markdown-wasm/markdown.js" defer)
-  script(src="/soci.js" type="module")
-  script(src="/components/soci-components.js" type="module")
+  script(src="/nonio.js" type="module")
+  script(src="/components/nonio-components.js" type="module")
   script.
     let lazyload = (path, parent) => {
       document.addEventListener('DOMContentLoaded', ()=>{
@@ -62,48 +70,48 @@ html(lang="en")
 
   include sidebar.pug
   #pages
-    soci-route#text-channel(path="^/@[\\w-]+:[^/#?]+$" fresh)
+    nonio-route#text-channel(path="^/@[\\w-]+:[^/#?]+$" fresh)
       script.
-        lazyload('/pages/text-channel.js', document.currentScript.closest('soci-route'))
-    soci-route#tags(test="both" path="^(/@[\\w-]+)?/?(#.*)?$" fresh)
+        lazyload('/pages/text-channel.js', document.currentScript.closest('nonio-route'))
+    nonio-route#tags(test="both" path="^(/@[\\w-]+)?/?(#.*)?$" fresh)
       include pages/tags.pug
-    soci-route#admin-create(path="/admin/create-account").admin-page
+    nonio-route#admin-create(path="/admin/create-account").admin-page
       include pages/admin/create.pug
-    soci-route#admin-subscribe(path="/admin/subscribe" fresh).admin-page
+    nonio-route#admin-subscribe(path="/admin/subscribe" fresh).admin-page
       include pages/admin/subscribe.pug
-    soci-route#admin-forgot-password(path="/admin/forgot-password").admin-page
+    nonio-route#admin-forgot-password(path="/admin/forgot-password").admin-page
       include pages/admin/forgot-password.pug
-    soci-route#admin-change-forgotten-password(path="/admin/change-forgotten-password").admin-page
+    nonio-route#admin-change-forgotten-password(path="/admin/change-forgotten-password").admin-page
       include pages/admin/change-forgotten-password.pug
-    soci-route#admin-settings(path="/admin/settings").admin-page
+    nonio-route#admin-settings(path="/admin/settings").admin-page
       include pages/admin/settings.pug
-    soci-route#notifications(path="/notifications")
+    nonio-route#notifications(path="/notifications")
       include pages/notifications.pug
-    soci-route#user(test="both" path="^/user/" fresh)
+    nonio-route#user(test="both" path="^/user/" fresh)
       include pages/user.pug
-    soci-route#submit(path="^(/@[\\w-]+)?/submit$" fresh)
+    nonio-route#submit(path="^(/@[\\w-]+)?/submit$" fresh)
       include pages/submit.pug
-    soci-route#admin-financials(path="/admin/financials").admin-page
+    nonio-route#admin-financials(path="/admin/financials").admin-page
       include pages/admin/financials.pug
-    soci-route#admin-emojis(path="/admin/emojis").admin-page
+    nonio-route#admin-emojis(path="/admin/emojis").admin-page
       include pages/admin/emojis.pug
-    soci-route#about(path="/about")
+    nonio-route#about(path="/about")
       include pages/about/about.pug
-    soci-route#privacy-policy(path="/about/privacy-policy")
+    nonio-route#privacy-policy(path="/about/privacy-policy")
       include pages/about/privacy-policy.pug
-    soci-route#contact(path="/about/contact")
+    nonio-route#contact(path="/about/contact")
       include pages/about/contact.pug
 
-    soci-route#community-settings(path="^(/@[\\w-]+)/admin$" fresh)
+    nonio-route#community-settings(path="^(/@[\\w-]+)/admin$" fresh)
       include pages/community-settings.pug
-    soci-route#community-users(path="^(/@[\\w-]+)/admin/users$" fresh)
+    nonio-route#community-users(path="^(/@[\\w-]+)/admin/users$" fresh)
       include pages/community-users.pug
-    soci-route#community-financials(path="^(/@[\\w-]+)/admin/financials$" fresh)
+    nonio-route#community-financials(path="^(/@[\\w-]+)/admin/financials$" fresh)
       include pages/community-financials.pug
-    soci-route#community-emojis(path="^(/@[\\w-]+)/admin/emojis$" fresh)
+    nonio-route#community-emojis(path="^(/@[\\w-]+)/admin/emojis$" fresh)
       include pages/community-emojis.pug
 
-    soci-route#post(default fresh)
+    nonio-route#post(default fresh)
       include pages/post.pug
 
   script(src="/pages/post.js")

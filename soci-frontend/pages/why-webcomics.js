@@ -1,16 +1,16 @@
 let webcomics = {
-  dom: document.currentScript.closest('soci-route'),
+  dom: document.currentScript.closest('nonio-route'),
   users: new Set(),
   init: () => {
-    webcomics.dom.querySelectorAll('soci-tag-group').forEach(group => group.addEventListener('vote', webcomics.onvote))
+    webcomics.dom.querySelectorAll('nonio-tag-group').forEach(group => group.addEventListener('vote', webcomics.onvote))
   },
   onActivate: () => {
   },
   onDeactivate: () => {
   },
   onvote: (e) => {
-    let user = e.target.closest('soci-post-li').querySelector('soci-user').getAttribute('name')
-    let tagGroup = e.target.closest('soci-post-li').querySelector('soci-tag-group')
+    let user = e.target.closest('nonio-post-li').querySelector('nonio-user').getAttribute('name')
+    let tagGroup = e.target.closest('nonio-post-li').querySelector('nonio-tag-group')
     if(tagGroup.hasAttribute('upvoted')){
       webcomics.users.add(user)
     }

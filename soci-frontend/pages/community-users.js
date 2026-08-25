@@ -1,12 +1,12 @@
 let communityUsers = {
-  dom: document.currentScript.closest('soci-route'),
+  dom: document.currentScript.closest('nonio-route'),
   state: {
     moderators: [],
     members: [],
     banned: []
   },
   init: () => {
-    soci.registerPage(communityUsers)
+    nonio.registerPage(communityUsers)
   },
   onActivate: () => {
     let path = document.location.pathname
@@ -17,7 +17,7 @@ let communityUsers = {
     document.title = `${communityName} - Users`
 
     // update nav links
-    communityUsers.dom.querySelectorAll('header soci-link').forEach(link => {
+    communityUsers.dom.querySelectorAll('header nonio-link').forEach(link => {
       let href = link.getAttribute('href')
       link.setAttribute('href', href.replace(/@[\w-]+/, `@${communityName}`))
     })
@@ -33,9 +33,9 @@ let communityUsers = {
       banned: communityUsers.dom.querySelector('[data-list="banned"]')
     }
     communityUsers.pickers = {
-      moderators: communityUsers.dom.querySelector('soci-user-picker[data-role="moderators"]'),
-      members: communityUsers.dom.querySelector('soci-user-picker[data-role="members"]'),
-      banned: communityUsers.dom.querySelector('soci-user-picker[data-role="banned"]')
+      moderators: communityUsers.dom.querySelector('nonio-user-picker[data-role="moderators"]'),
+      members: communityUsers.dom.querySelector('nonio-user-picker[data-role="members"]'),
+      banned: communityUsers.dom.querySelector('nonio-user-picker[data-role="banned"]')
     }
     communityUsers.headers = {
       moderators: communityUsers.dom.querySelector('.card-header[data-role="moderators"]'),
@@ -54,13 +54,13 @@ let communityUsers = {
     communityUsers.bindAddButtons()
   },
   bindAddButtons: () => {
-    communityUsers.dom.querySelectorAll('.card-header soci-button.add-btn').forEach(btn => {
+    communityUsers.dom.querySelectorAll('.card-header nonio-button.add-btn').forEach(btn => {
       const type = btn.getAttribute('data-role')
       btn.addEventListener('click', () => communityUsers.openPicker(type))
     })
   },
   loadUsers: async () => {
-    let res = await soci.getData(`/community/users?community=${communityUsers.communityName}`)
+    let res = await nonio.getData(`/community/users?community=${communityUsers.communityName}`)
     if(res.error) {
       console.error(res.error)
       return
@@ -101,7 +101,7 @@ let communityUsers = {
     let row = document.createElement('div')
     row.className = 'user-row'
 
-    let user = document.createElement('soci-user')
+    let user = document.createElement('nonio-user')
     user.setAttribute('name', username)
 
     let actions = document.createElement('div')
@@ -113,7 +113,7 @@ let communityUsers = {
     return row
   },
   makeActionButton: (label, handler) => {
-    let btn = document.createElement('soci-button')
+    let btn = document.createElement('nonio-button')
     btn.className = 'action'
     btn.textContent = label
     btn.setAttribute('subtle', '')
@@ -148,7 +148,7 @@ let communityUsers = {
     fn(username).then(()=> communityUsers.closePicker(type))
   },
   addModerator: async (username) => {
-    await soci.postData('/community/add-moderator', {
+    await nonio.postData('/community/add-moderator', {
       community: communityUsers.communityName,
       username
     })
@@ -157,12 +157,12 @@ let communityUsers = {
   addMember: async (username) => {
     let isBanned = communityUsers.state.banned?.some(u => (u.username || u) === username)
     if(isBanned) {
-      await soci.postData('/community/unban', {
+      await nonio.postData('/community/unban', {
         community: communityUsers.communityName,
         username
       })
     }
-    await soci.postData('/community/add-member', {
+    await nonio.postData('/community/add-member', {
       community: communityUsers.communityName,
       username
     })
@@ -170,7 +170,7 @@ let communityUsers = {
   },
   removeMember: async (username) => {
     if(!confirm(`Remove ${username} from members?`)) return
-    await soci.postData('/community/remove-member', {
+    await nonio.postData('/community/remove-member', {
       community: communityUsers.communityName,
       username
     })
@@ -178,7 +178,7 @@ let communityUsers = {
   },
   removeModerator: async (username) => {
     if(confirm(`Remove ${username} as moderator?`)) {
-      await soci.postData('/community/remove-moderator', {
+      await nonio.postData('/community/remove-moderator', {
         community: communityUsers.communityName,
         username
       })
@@ -187,7 +187,7 @@ let communityUsers = {
   },
   banUser: async (username) => {
     if(confirm(`Ban ${username}?`)) {
-      await soci.postData('/community/ban', {
+      await nonio.postData('/community/ban', {
         community: communityUsers.communityName,
         username
       })
@@ -195,7 +195,7 @@ let communityUsers = {
     }
   },
   unbanUser: async (username) => {
-    await soci.postData('/community/unban', {
+    await nonio.postData('/community/unban', {
       community: communityUsers.communityName,
       username
     })

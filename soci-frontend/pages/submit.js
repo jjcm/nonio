@@ -1,7 +1,7 @@
 let submit = {
-  dom: document.currentScript.closest('soci-route'),
+  dom: document.currentScript.closest('nonio-route'),
   init() {
-    soci.registerPage(submit)
+    nonio.registerPage(submit)
   },
   form: null, 
   currentCommunity: null,
@@ -10,9 +10,9 @@ let submit = {
     const dom = submit.dom || this
     submit.form = dom.querySelector('form')
 
-    submit.currentCommunity = window.soci.routeContext.community
+    submit.currentCommunity = window.nonio.routeContext.community
     
-    console.log('Submit onActivate - path:', window.soci.routeContext.path, 'currentCommunity:', submit.currentCommunity)
+    console.log('Submit onActivate - path:', window.nonio.routeContext.path, 'currentCommunity:', submit.currentCommunity)
 
     document.title = submit.currentCommunity 
       ? `Submit to ${submit.currentCommunity}` 
@@ -25,10 +25,10 @@ let submit = {
     title.addEventListener('blur', submit.checkUrl)
     title.focus()
 
-    submit.submitButton = dom.querySelector('soci-button')
+    submit.submitButton = dom.querySelector('nonio-button')
     submit.submitButton.addEventListener('click', submit.submit)
 
-    let linkInput = dom.querySelector('soci-link-input')
+    let linkInput = dom.querySelector('nonio-link-input')
     linkInput.addEventListener('url-metadata', submit.setLinkMetadata)
   },
   checkTitleValidity(e) {
@@ -39,19 +39,19 @@ let submit = {
       let title = e.target.value.replace(/[^a-zA-Z0-9\-\. ]/gi, '')
       title = title.replace(/ /g, '-')
 
-      let urlInput = submit.dom.querySelector('soci-url-input')
+      let urlInput = submit.dom.querySelector('nonio-url-input')
       if(!urlInput.manuallySet) urlInput.value = title
     }, 1)
   },
   checkUrl(e){
     if(e.target.value.length > 0)
-      submit.dom.querySelector('soci-url-input').checkUrlValidity()
+      submit.dom.querySelector('nonio-url-input').checkUrlValidity()
   },
   async submit(e) {
     if(submit.form.reportValidity()){
       let data = new FormData(submit.form)
-      let type = submit.dom.querySelector('soci-tab[active]').getAttribute('name').toLowerCase()
-      let fileUploader = submit.dom.querySelector(`soci-${type}-uploader`)
+      let type = submit.dom.querySelector('nonio-tab[active]').getAttribute('name').toLowerCase()
+      let fileUploader = submit.dom.querySelector(`nonio-${type}-uploader`)
       if(fileUploader){
         let newPath = await fileUploader.move(data.get('url'))
         if(newPath == null) {
@@ -59,7 +59,7 @@ let submit = {
           return 0
         }
       }
-      let linkUploader = submit.dom.querySelector('soci-link-input')
+      let linkUploader = submit.dom.querySelector('nonio-link-input')
       if(linkUploader && linkUploader.imageUrl) {
         let newPath = await linkUploader.move(data.get('url'))
         if(newPath == null) {
@@ -103,7 +103,7 @@ let submit = {
     }
   },
   setLinkMetadata(e) {
-    let previewLi = submit.dom.querySelector('soci-post-li')
+    let previewLi = submit.dom.querySelector('nonio-post-li')
     previewLi.setAttribute('post-title', '&nbsp;')
     let title = submit.dom.querySelector('input[name="title"]')
     if(title.value == '') {
@@ -126,7 +126,7 @@ let submit = {
       }, 100)
     }
 
-    let description = submit.dom.querySelector('soci-input[name="description"]')
+    let description = submit.dom.querySelector('nonio-input[name="description"]')
     if(description.value == '') {
       description.setText(e.detail.description)
     }

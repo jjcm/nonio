@@ -4,10 +4,50 @@
   <meta http-equiv="content-type" content="text/html; charset=utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <link rel="icon" type="image/svg+xml" href="/lib/favicon.svg">
-  <link rel="stylesheet" href="/soci.css">
-  <script src="/lib/markdown-wasm/markdown.js"></script>
-  <script src="/soci.js" type="module"></script>
-  <script src="/components/soci-components.js" type="module"></script>
+  <link rel="stylesheet" href="/nonio.css">
+  <script>
+    // Column prefs were stored under soci-* before the rename. This has to run
+    // here, not in a module: the prefetch below reads them.
+    ;['sort', 'filter', 'view'].forEach(k => {
+      let v = localStorage.getItem('soci-column-' + k)
+      if(v == null) return
+      localStorage.removeItem('soci-column-' + k)
+      if(localStorage.getItem('nonio-column-' + k) == null) localStorage.setItem('nonio-column-' + k, v)
+    })
+    ;(a => {
+      if(localStorage.getItem('accessToken')) return
+      let pf = window.__preFetch = {}
+      let add = u => { let f = fetch(a + u).then(r => r.json()); f.catch(() => {}); pf[u] = f }
+      let p = location.pathname, q = []
+      let s = localStorage.getItem('nonio-column-sort')
+      if(s == 'new') q.push('sort=new')
+      else if(['day', 'week', 'month', 'year'].includes(s)) q.push('sort=top', 'time=' + s)
+      let feed = tail => {
+        let f = localStorage.getItem('nonio-column-filter')
+        if(f && f != 'all') {
+          let m = { images: 'image', videos: 'video', blogs: 'blog', links: 'link', audio: 'audio' }
+          tail.push('type=' + encodeURIComponent(m[f] || f))
+        }
+        add('/posts' + (q.concat(tail).length ? '?' + q.concat(tail).join('&') : ''))
+      }
+      if(p == '/') {
+        let t = decodeURIComponent(location.hash.slice(1).split('+')[0] || '')
+        feed(t && t != 'all' ? ['tag=' + encodeURIComponent(t)] : [])
+      }
+      else if(p.startsWith('/user/') && p.length > 6 && location.hash != '#comments')
+        feed(['user=' + encodeURIComponent(p.slice(6))])
+      else {
+        let m = p.match(/^\/(?:@([\w-]+)\/)?([\w-]+)$/)
+        if(m && !['about', 'submit', 'notifications'].includes(m[2])) {
+          add(m[1] ? `/posts/@${m[1]}/${m[2]}` : `/posts/${m[2]}`)
+          add(`/comments?post=${m[2]}` + (m[1] ? `&community=${m[1]}` : ''))
+        }
+      }
+    })('')
+  </script>
+  <script src="/lib/markdown-wasm/markdown.js" defer></script>
+  <script src="/nonio.js" type="module"></script>
+  <script src="/components/nonio-components.js" type="module"></script>
   <script>
     let lazyload = (path, parent) => {
       document.addEventListener('DOMContentLoaded', ()=>{
@@ -20,30 +60,30 @@
     }
     
   </script>
-  <soci-sidebar loading>
+  <nonio-sidebar loading>
     <section id="user" slot="user">
-      <soci-user self></soci-user>
+      <nonio-user self></nonio-user>
       <div id="user-actions">
-        <soci-notification-badge></soci-notification-badge>
+        <nonio-notification-badge></nonio-notification-badge>
       </div>
     </section>
-    <soci-sidebar-community-panel id="community" panel="community"></soci-sidebar-community-panel>
-    <soci-sidebar-user-panel id="user-panel" panel="user"></soci-sidebar-user-panel>
+    <nonio-sidebar-community-panel id="community" panel="community"></nonio-sidebar-community-panel>
+    <nonio-sidebar-user-panel id="user-panel" panel="user"></nonio-sidebar-user-panel>
     <section id="footer" slot="footer">
       <links>
-        <soci-link href="/about">About</soci-link><a href="https://github.com/jjcm/nonio/issues/new">Feedback</a>
-        <soci-link id="logout" href="/">Logout</soci-link>
+        <nonio-link href="/about">About</nonio-link><a href="https://github.com/jjcm/nonio/issues/new">Feedback</a>
+        <nonio-link id="logout" href="/">Logout</nonio-link>
       </links>
     </section>
-  </soci-sidebar>
+  </nonio-sidebar>
   <div id="pages">
-    <soci-route id="text-channel" path="^/@[\w-]+:[^/#?]+$" fresh>
-      <script>lazyload('/pages/text-channel.js', document.currentScript.closest('soci-route'))</script>
-    </soci-route>
-    <soci-route id="tags" test="both" path="^(/@[\w-]+)?/?(#.*)?$" fresh>
-      <script>lazyload('/pages/tags.js', document.currentScript.closest('soci-route'))</script>
-    </soci-route>
-    <soci-route class="admin-page" id="admin-create" path="/admin/create-account">
+    <nonio-route id="text-channel" path="^/@[\w-]+:[^/#?]+$" fresh>
+      <script>lazyload('/pages/text-channel.js', document.currentScript.closest('nonio-route'))</script>
+    </nonio-route>
+    <nonio-route id="tags" test="both" path="^(/@[\w-]+)?/?(#.*)?$" fresh>
+      <script>lazyload('/pages/tags.js', document.currentScript.closest('nonio-route'))</script>
+    </nonio-route>
+    <nonio-route class="admin-page" id="admin-create" path="/admin/create-account">
       <div class="content">
         <div class="loading-block" load-order="primary">
           <h1>Thanks for choosing to sign up</h1>
@@ -69,8 +109,8 @@
           <p>Nonio would be nothing without creators. The point of the platform is to fund their creativity. In addition, it means that your vote is worth something. When you're choosing to upvote a post, you're saying that this item is deserving of a slice of your pool of contribution. This means other things you've voted on will get a smaller percentage of your pool as well, so you have to vote with a conscience. A picture of a cat may not be worthy of a percentage of your pool when you've previously voted up a high quality piece of investigative journalism. The hope is that this leads to higher quality content that gets surfaced, rather than surfacing wide-appeal-but-low-effort content like r/all on reddit.</p>
         </div>
       </div>
-    </soci-route>
-    <soci-route class="admin-page" id="admin-subscribe" path="/admin/subscribe" fresh>
+    </nonio-route>
+    <nonio-route class="admin-page" id="admin-subscribe" path="/admin/subscribe" fresh>
       <div class="content">
         <style>
           #admin-subscribe {
@@ -98,7 +138,7 @@
             background: var(--bg);
             position: relative;
             overflow: hidden;
-            transition: height 0.2s var(--soci-ease);
+            transition: height 0.2s var(--nonio-ease);
           }
           
           #admin-subscribe .column:first-child {
@@ -107,7 +147,7 @@
           
           #admin-subscribe .column.supporter[active] .features {
             opacity: 0;
-            transition: all var(--anim-duration-med) var(--soci-ease);
+            transition: all var(--anim-duration-med) var(--nonio-ease);
             pointer-events: none;
           }
           
@@ -134,7 +174,7 @@
             box-sizing: border-box;
             overflow: hidden;
             position: absolute;
-            transition: all var(--anim-duration-med) var(--soci-ease) var(--anim-duration-short);
+            transition: all var(--anim-duration-med) var(--nonio-ease) var(--anim-duration-short);
             padding: 10px 20px;
             opacity: 0;
             user-select: none;
@@ -155,7 +195,7 @@
             border-bottom: 1px solid var(--bg-secondary);
           }
           
-          #admin-subscribe .price-container soci-button {
+          #admin-subscribe .price-container nonio-button {
             position: absolute;
             bottom: 20px;
             right: 20px;
@@ -243,7 +283,7 @@
             transform: rotate(45deg);
           }
           
-          #admin-subscribe form soci-button {
+          #admin-subscribe form nonio-button {
             margin: 24px 0 8px;
           }
           
@@ -262,18 +302,18 @@
             <div class="payment">
               <form id="payment-form" style="user-select: none;">
                 <h3>Contribution</h3>
-                <soci-contribution-slider name="subscriptionAmount"></soci-contribution-slider>
+                <nonio-contribution-slider name="subscriptionAmount"></nonio-contribution-slider>
                 <h3>Payment Info</h3>
                 <input name="name" placeholder="Name">
                 <div id="card-element"></div>
                 <div id="card-element-errors" role="alert"></div>
-                <soci-button class="subscribe-button" async onclick="adminSubscribe.subscribe()">Subscribe</soci-button>
+                <nonio-button class="subscribe-button" async onclick="adminSubscribe.subscribe()">Subscribe</nonio-button>
               </form>
             </div>
             <div class="features">
               <div class="price-container">
                 <div class="price">$2-10<span>/mo</span></div>
-                <soci-button class="supporter-button" async onclick="adminSubscribe.chooseSupporter()">Choose supporter</soci-button>
+                <nonio-button class="supporter-button" async onclick="adminSubscribe.chooseSupporter()">Choose supporter</nonio-button>
               </div>
               <ul>
                 <li class="can">Submit posts</li>
@@ -292,7 +332,7 @@
             <div class="features">
               <div class="price-container">
                 <div class="price">$0<span>/mo</span></div>
-                <soci-button class="free-button" async subtle onclick="adminSubscribe.chooseFree()">Choose free</soci-button>
+                <nonio-button class="free-button" async subtle onclick="adminSubscribe.chooseFree()">Choose free</nonio-button>
               </div>
               <ul>
                 <li class="cant">Submit posts</li>
@@ -305,8 +345,8 @@
           </div>
         </div>
       </div>
-    </soci-route>
-    <soci-route class="admin-page" id="admin-forgot-password" path="/admin/forgot-password">
+    </nonio-route>
+    <nonio-route class="admin-page" id="admin-forgot-password" path="/admin/forgot-password">
       <div class="content">
         <div class="loading-block" load-order="primary">
           <h1>We all forget sometimes &lt;3</h1>
@@ -314,12 +354,12 @@
         </div>
         <div class="loading-block" load-order="secondary">
           <input type="text" placeholder="email">
-          <soci-button async>submit</soci-button>
+          <nonio-button async>submit</nonio-button>
         </div>
       </div>
-      <script>lazyload('/pages/admin/forgot-password.js', document.currentScript.closest('soci-route'))</script>
-    </soci-route>
-    <soci-route class="admin-page" id="admin-change-forgotten-password" path="/admin/change-forgotten-password">
+      <script>lazyload('/pages/admin/forgot-password.js', document.currentScript.closest('nonio-route'))</script>
+    </nonio-route>
+    <nonio-route class="admin-page" id="admin-change-forgotten-password" path="/admin/change-forgotten-password">
       <div class="content">
         <div class="loading-block" load-order="primary">
           <h1>Change forgotten password</h1>
@@ -327,9 +367,9 @@
         </div>
         <div class="loading-block" load-order="secondary">
           <form>
-            <soci-password name="newPassword" placeholder="New password"></soci-password>
-            <soci-password name="confirmPassword" match="newPassword" placeholder="Confirm new password"></soci-password>
-            <soci-button async>submit</soci-button>
+            <nonio-password name="newPassword" placeholder="New password"></nonio-password>
+            <nonio-password name="confirmPassword" match="newPassword" placeholder="Confirm new password"></nonio-password>
+            <nonio-button async>submit</nonio-button>
           </form>
         </div>
         <div class="success" load-order="primary">
@@ -337,45 +377,45 @@
           <p>Please use the sidebar to log in.</p>
         </div>
       </div>
-      <script>lazyload('/pages/admin/change-forgotten-password.js', document.currentScript.closest('soci-route'))</script>
-    </soci-route>
-    <soci-route class="admin-page" id="admin-settings" path="/admin/settings">
+      <script>lazyload('/pages/admin/change-forgotten-password.js', document.currentScript.closest('nonio-route'))</script>
+    </nonio-route>
+    <nonio-route class="admin-page" id="admin-settings" path="/admin/settings">
       <div class="container" id="admin-settings-container">
         <script src="/pages/admin/settings.js"></script>
-        <soci-modal title="Image too small" id="avatar-size-modal">
+        <nonio-modal title="Image too small" id="avatar-size-modal">
           <div class="modal-body">
             <p>Avatars must be a minimum of 240px on both sides.</p>
           </div>
-        </soci-modal>
+        </nonio-modal>
         <div class="blocks">
           <div class="block avatar" load-order="primary">
             <h2>Avatar</h2>
-            <soci-avatar-uploader></soci-avatar-uploader>
+            <nonio-avatar-uploader></nonio-avatar-uploader>
           </div>
           <div class="block description" load-order="secondary">
             <h2>Description</h2>
-            <soci-input placeholder="Enter description"></soci-input>
+            <nonio-input placeholder="Enter description"></nonio-input>
             <div class="actions">
-              <soci-button async>submit</soci-button>
-              <soci-button subtle>cancel</soci-button>
+              <nonio-button async>submit</nonio-button>
+              <nonio-button subtle>cancel</nonio-button>
             </div>
           </div>
           <div class="block password" load-order="tertiary">
             <h2>Change Password</h2>
             <form>
-              <soci-password name="oldPassword" placeholder="Old password"></soci-password>
-              <soci-password name="newPassword" placeholder="New password"></soci-password>
-              <soci-password name="confirmPassword" match="newPassword" placeholder="Confirm new password"></soci-password>
+              <nonio-password name="oldPassword" placeholder="Old password"></nonio-password>
+              <nonio-password name="newPassword" placeholder="New password"></nonio-password>
+              <nonio-password name="confirmPassword" match="newPassword" placeholder="Confirm new password"></nonio-password>
               <div class="actions">
-                <soci-button async>submit</soci-button>
-                <soci-button subtle>cancel</soci-button>
+                <nonio-button async>submit</nonio-button>
+                <nonio-button subtle>cancel</nonio-button>
               </div>
             </form>
           </div>
         </div>
       </div>
-    </soci-route>
-    <soci-route id="notifications" path="/notifications">
+    </nonio-route>
+    <nonio-route id="notifications" path="/notifications">
       <div class="content">
         <header load-order="primary">
           <div class="types">
@@ -386,86 +426,86 @@
         <div class="inner-content" load-order="secondary"></div>
       </div>
       <script src="/pages/notifications.js"></script>
-    </soci-route>
-    <soci-route id="user" test="both" path="^/user/" fresh>
+    </nonio-route>
+    <nonio-route id="user" test="both" path="^/user/" fresh>
       <div class="content" load-order="secondary">
         <div class="inner-content"></div>
       </div>
       <script src="/pages/user.js"></script>
-    </soci-route>
-    <soci-route id="submit" path="^(/@[\w-]+)?/submit$" fresh>
+    </nonio-route>
+    <nonio-route id="submit" path="^(/@[\w-]+)?/submit$" fresh>
       <div id="submit-container">
         <form action="#">
           <div class="load-group centered-container" id="submit-header" load-order="primary">
             <input type="text" name="title" placeholder="Enter title" required>
-            <soci-url-input name="url" required tabindex="0"></soci-url-input>
+            <nonio-url-input name="url" required tabindex="0"></nonio-url-input>
           </div>
           <div class="load-group" load-order="secondary">
-            <soci-tab-group>
+            <nonio-tab-group>
               <div class="centered-container">
-                <soci-tab name="Link" default>
-                  <soci-link-input name="link"></soci-link-input>
+                <nonio-tab name="Link" default>
+                  <nonio-link-input name="link"></nonio-link-input>
                   <div class="preview">
                     <h2>Preview </h2>
-                    <soci-post-li score="0" time="now">
-                      <soci-user self slot="user"></soci-user>
-                      <soci-tag-group slot="tags"></soci-tag-group>
-                    </soci-post-li>
+                    <nonio-post-li score="0" time="now">
+                      <nonio-user self slot="user"></nonio-user>
+                      <nonio-tag-group slot="tags"></nonio-tag-group>
+                    </nonio-post-li>
                   </div>
                   <h2>Description</h2>
-                  <soci-input placeholder="Enter description" name="description"></soci-input>
-                </soci-tab>
-                <soci-tab name="Image">
-                  <soci-image-uploader></soci-image-uploader>
+                  <nonio-input placeholder="Enter description" name="description"></nonio-input>
+                </nonio-tab>
+                <nonio-tab name="Image">
+                  <nonio-image-uploader></nonio-image-uploader>
                   <h2>Description</h2>
-                  <soci-input placeholder="Enter description" name="description"></soci-input>
-                </soci-tab>
-                <soci-tab name="Video">
-                  <soci-video-uploader></soci-video-uploader>
+                  <nonio-input placeholder="Enter description" name="description"></nonio-input>
+                </nonio-tab>
+                <nonio-tab name="Video">
+                  <nonio-video-uploader></nonio-video-uploader>
                   <h2>Description</h2>
-                  <soci-input placeholder="Enter description" name="description"></soci-input>
-                </soci-tab>
-                <!--soci-tab(name="Audio")
-                soci-file-drop(type="audio")
+                  <nonio-input placeholder="Enter description" name="description"></nonio-input>
+                </nonio-tab>
+                <!--nonio-tab(name="Audio")
+                nonio-file-drop(type="audio")
                 h2 Description
-                soci-input(placeholder="Enter description" name="description")
+                nonio-input(placeholder="Enter description" name="description")
                 
                 -->
-                <soci-tab name="Blog">
-                  <soci-input placeholder="Write your best" name="description"></soci-input>
-                </soci-tab>
+                <nonio-tab name="Blog">
+                  <nonio-input placeholder="Write your best" name="description"></nonio-input>
+                </nonio-tab>
               </div>
-              <soci-tab name="HTML">
-                <soci-html-uploader></soci-html-uploader>
+              <nonio-tab name="HTML">
+                <nonio-html-uploader></nonio-html-uploader>
                 <p style="max-width: 920px; margin: 12px auto;">[alpha] This will allow you to upload html to the site as a post. The content is presented in an iframe. If you want the iframe to be sized according to the frontend page, include this script in your html: <a href="https://html.non.io/nonio-embedded-page.js">https://html.non.io/nonio-embedded-page.js</a>. Feel free to test it, but note that I will be deleting posts that are simple alert tests.</p>
                 <div class="centered-container">
                   <h2>Description</h2>
-                  <soci-input placeholder="Enter description" name="description"></soci-input>
+                  <nonio-input placeholder="Enter description" name="description"></nonio-input>
                 </div>
-              </soci-tab>
-            </soci-tab-group>
+              </nonio-tab>
+            </nonio-tab-group>
           </div>
           <div class="load-group centered-container" id="submit-actions" load-order="tertiary">
-            <soci-button async>submit</soci-button>
+            <nonio-button async>submit</nonio-button>
           </div>
         </form>
       </div>
       <script>
-        lazyload('/pages/submit.js', document.currentScript.closest('soci-route'))
+        lazyload('/pages/submit.js', document.currentScript.closest('nonio-route'))
         
         
           
       </script>
-    </soci-route>
-    <soci-route class="admin-page" id="admin-financials" path="/admin/financials">
+    </nonio-route>
+    <nonio-route class="admin-page" id="admin-financials" path="/admin/financials">
       <div class="container" id="admin-financials-container">
         <script src="/pages/admin/financials.js"></script>
         <div class="header" load-order="primary">
           <h1>Your Financials </h1>
-          <soci-banner type="info" title="Auto-withdrawal enabled" style="display: none;">
-             Funds in your wallet will auto-deposit into your Stripe Connect account at the end of each month. </soci-banner>
+          <nonio-banner type="info" title="Auto-withdrawal enabled" style="display: none;">
+             Funds in your wallet will auto-deposit into your Stripe Connect account at the end of each month. </nonio-banner>
           <p>There are currently two ways to withdrawal money from your wallet. You can set up Stripe Connect to automatically deposit funds into your bank account at the end of each month, or you can email me at j@jjcm.org to manually withdrawal funds. I'll try and support whatever platforms I can to send money. </p>
-          <!--a(href="#" target="_blank")soci-button.dashboard-link View Stripe Dashboard <svg style="margin-left: 2px" width="9" height="9" viewBox="0 0 9 9" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.5 1.5H0.5V8.5H7.5V5.5M4 5L8.5 0.5M8.5 0.5H5.5M8.5 0.5V3.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <!--a(href="#" target="_blank")nonio-button.dashboard-link View Stripe Dashboard <svg style="margin-left: 2px" width="9" height="9" viewBox="0 0 9 9" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.5 1.5H0.5V8.5H7.5V5.5M4 5L8.5 0.5M8.5 0.5H5.5M8.5 0.5V3.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
           -->
         </div>
         <div class="amounts" load-order="secondary">
@@ -474,28 +514,28 @@
               <h2>Wallet</h2>
               <h1 class="cash">$</h1>
               <div class="button-group"><a href="#" target="_blank">
-                  <soci-button>View Stripe Dashboard <svg style="margin-left: 2px" width="9" height="9" viewBox="0 0 9 9" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.5 1.5H0.5V8.5H7.5V5.5M4 5L8.5 0.5M8.5 0.5H5.5M8.5 0.5V3.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg></soci-button></a>
-                <!-- soci-button(subtle onclick="adminFinancials.openWithdrawalModal()") Withdrawal-->
-                <!-- soci-button(danger onclick="adminFinancials.showChangeSubscription()") Disable auto-withdrawal-->
+                  <nonio-button>View Stripe Dashboard <svg style="margin-left: 2px" width="9" height="9" viewBox="0 0 9 9" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.5 1.5H0.5V8.5H7.5V5.5M4 5L8.5 0.5M8.5 0.5H5.5M8.5 0.5V3.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg></nonio-button></a>
+                <!-- nonio-button(subtle onclick="adminFinancials.openWithdrawalModal()") Withdrawal-->
+                <!-- nonio-button(danger onclick="adminFinancials.showChangeSubscription()") Disable auto-withdrawal-->
               </div>
             </div>
             <div class="block" id="financial-subscription">
               <h2>Monthly Subscription</h2>
               <h1 class="cash">$ <span>/mo</span></h1>
               <div class="button-group">
-                <!-- soci-button(subtle onclick="adminFinancials.showChangeSubscription()") Change Subscription Amount-->
-                <!--soci-button.cancel-sub-button(danger onclick="adminFinancials.cancelSubscription()") Cancel Subscription-->
+                <!-- nonio-button(subtle onclick="adminFinancials.showChangeSubscription()") Change Subscription Amount-->
+                <!--nonio-button.cancel-sub-button(danger onclick="adminFinancials.cancelSubscription()") Cancel Subscription-->
               </div>
             </div>
           </div>
         </div>
         <div class="ledger" load-order="tertiary">
           <hr>
-          <soci-ledger></soci-ledger>
+          <nonio-ledger></nonio-ledger>
         </div>
-        <soci-modal title="Manual Withdrawal" id="withdrawal-modal">
+        <nonio-modal title="Manual Withdrawal" id="withdrawal-modal">
           <div class="modal-body">
-            <p>This is a manual process right now and may take up to 5 business days to complete. The good news is I ( <soci-user name="jjcm"></soci-user> ) will aim to support pretty much any type of withdrawal you need. List the platform you'd prefer and the details of how to send the cash below.</p>
+            <p>This is a manual process right now and may take up to 5 business days to complete. The good news is I ( <nonio-user name="jjcm"></nonio-user> ) will aim to support pretty much any type of withdrawal you need. List the platform you'd prefer and the details of how to send the cash below.</p>
             <p>Here are some of the ways I can transfer:</p>
             <table>
               <tr>
@@ -511,13 +551,13 @@
               </tr>
             </table>
             <p>If you need another way, just ask and I'll see what we can do.</p>
-            <soci-input placeholder="Enter platform and details here"></soci-input>
-            <soci-button async onclick="adminFinancials.requestManualWithdrawal()">Request Withdrawal</soci-button>
+            <nonio-input placeholder="Enter platform and details here"></nonio-input>
+            <nonio-button async onclick="adminFinancials.requestManualWithdrawal()">Request Withdrawal</nonio-button>
           </div>
-        </soci-modal>
+        </nonio-modal>
       </div>
-    </soci-route>
-    <soci-route class="admin-page" id="admin-emojis" path="/admin/emojis">
+    </nonio-route>
+    <nonio-route class="admin-page" id="admin-emojis" path="/admin/emojis">
       <style>
         #admin-emojis {
           .container { max-width: 900px; margin: 0 auto; padding: 20px; }
@@ -525,7 +565,7 @@
           input[type="text"] { min-width: 180px; }
           .emoji-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; }
           .emoji-card { border: 1px solid var(--bg-secondary); border-radius: 8px; padding: 8px; text-align: center; }
-          .emoji-card img, .emoji-card soci-emoji { width: 24px; height: 24px; display: block; margin: 0 auto 6px; }
+          .emoji-card img, .emoji-card nonio-emoji { width: 24px; height: 24px; display: block; margin: 0 auto 6px; }
           .emoji-name { font-size: 12px; color: var(--text-secondary); }
         }
       </style>
@@ -534,13 +574,13 @@
         <form id="emoji-form">
           <input id="emoji-name" type="text" placeholder="emoji_name" required pattern="^[a-z0-9_]{2,32}$">
           <input id="emoji-file" type="file" accept="image/*" required>
-          <soci-button id="emoji-upload" async>Upload</soci-button>
+          <nonio-button id="emoji-upload" async>Upload</nonio-button>
         </form>
         <div class="emoji-grid" id="emoji-grid"></div>
       </div>
-      <script>lazyload('/pages/admin/emojis.js', document.currentScript.closest('soci-route'))</script>
-    </soci-route>
-    <soci-route id="about" path="/about">
+      <script>lazyload('/pages/admin/emojis.js', document.currentScript.closest('nonio-route'))</script>
+    </nonio-route>
+    <nonio-route id="about" path="/about">
       <div class="content info-page">
         <div class="loading-block" load-order="primary">
           <h1>About Non.io</h1>
@@ -548,12 +588,12 @@
           <h2>Open Source </h2>
           <p>The site is currently open source. You can find the repos at <a href="https://github.com/jjcm/nonio">github.com/jjcm/nonio</a>. Bug reports can be sent to the issue tracker in that project. </p>
           <h2>Other Info</h2>
-          <soci-link href="about/privacy-policy"><a>Privacy policy</a></soci-link><br/>
-          <soci-link href="about/contact"><a>Contact us</a></soci-link>
+          <nonio-link href="about/privacy-policy"><a>Privacy policy</a></nonio-link><br/>
+          <nonio-link href="about/contact"><a>Contact us</a></nonio-link>
         </div>
       </div>
-    </soci-route>
-    <soci-route id="privacy-policy" path="/about/privacy-policy">
+    </nonio-route>
+    <nonio-route id="privacy-policy" path="/about/privacy-policy">
       <div class="content info-page">
         <div class="loading-block" load-order="primary">
           <h1>Privacy Policy</h1>
@@ -586,8 +626,8 @@
           <p>If you need to contact us for any reason, ping Jacob at j@jjcm.org or at @pwnies on Twitter.</p>
         </div>
       </div>
-    </soci-route>
-    <soci-route id="contact" path="/about/contact">
+    </nonio-route>
+    <nonio-route id="contact" path="/about/contact">
       <div class="content info-page">
         <div class="loading-block" load-order="primary">
           <h1>Contact</h1>
@@ -595,25 +635,25 @@
           <ul> 
             <li>Email: <a href="mailto:j@jjcm.org">j@jjcm.org</a></li>
             <li>Twiter: <a href="https://twitter.com/pwnies">@pwnies</a></li>
-            <li>Nonio: <soci-link href="/user/jjcm"><a>jjcm</a></soci-link></li>
+            <li>Nonio: <nonio-link href="/user/jjcm"><a>jjcm</a></nonio-link></li>
           </ul>
         </div>
       </div>
-    </soci-route>
-    <soci-route id="community-settings" path="^(/@[\w-]+)/admin$" fresh>
+    </nonio-route>
+    <nonio-route id="community-settings" path="^(/@[\w-]+)/admin$" fresh>
       <div class="community-settings" id="community-settings">
         <header>
-          <soci-link class="nav-item active" href="/@community/admin"><span>Settings</span></soci-link>
-          <soci-link class="nav-item" href="/@community/admin/users"><span>Users</span></soci-link>
-          <soci-link class="nav-item" href="/@community/admin/financials"><span>Financials</span></soci-link>
-          <soci-link class="nav-item" href="/@community/admin/emojis"><span>Emojis</span></soci-link>
+          <nonio-link class="nav-item active" href="/@community/admin"><span>Settings</span></nonio-link>
+          <nonio-link class="nav-item" href="/@community/admin/users"><span>Users</span></nonio-link>
+          <nonio-link class="nav-item" href="/@community/admin/financials"><span>Financials</span></nonio-link>
+          <nonio-link class="nav-item" href="/@community/admin/emojis"><span>Emojis</span></nonio-link>
         </header>
         <div class="container">
           <form>
             <div class="load-group" load-order="primary">
               <h1>Community Settings</h1>
               <label>Banner</label>
-              <soci-avatar-uploader type="banner"></soci-avatar-uploader>
+              <nonio-avatar-uploader type="banner"></nonio-avatar-uploader>
             </div>
             <div class="load-group" load-order="secondary">
               <div class="columns">
@@ -622,45 +662,45 @@
                   <label for="name">Display name</label>
                   <input name="name" placeholder="Community Name" required>
                   <label for="description">Description</label>
-                  <soci-input name="description" placeholder="Add a short description of your community"></soci-input>
+                  <nonio-input name="description" placeholder="Add a short description of your community"></nonio-input>
                   <div style="margin-top: 8px; text-align: right;">
-                    <soci-button>Save Changes</soci-button>
+                    <nonio-button>Save Changes</nonio-button>
                   </div>
                 </div>
                 <div class="column">
                   <h2>Privacy & Permissions</h2>
                   <label>Privacy</label>
-                  <soci-radio-button-group class="radio-group" name="privacy" value="public">
-                    <soci-radio-button value="public">Public</soci-radio-button>
-                    <soci-radio-button value="invite-only">Invite Only</soci-radio-button>
-                  </soci-radio-button-group>
+                  <nonio-radio-button-group class="radio-group" name="privacy" value="public">
+                    <nonio-radio-button value="public">Public</nonio-radio-button>
+                    <nonio-radio-button value="invite-only">Invite Only</nonio-radio-button>
+                  </nonio-radio-button-group>
                   <label>Who can post?</label>
-                  <soci-radio-button-group class="radio-group" name="post_permission" value="all">
-                    <soci-radio-button value="all">All Users</soci-radio-button>
-                    <soci-radio-button value="paid">Paid Users Only</soci-radio-button>
-                    <soci-radio-button value="admin">Admins Only</soci-radio-button>
-                  </soci-radio-button-group>
+                  <nonio-radio-button-group class="radio-group" name="post_permission" value="all">
+                    <nonio-radio-button value="all">All Users</nonio-radio-button>
+                    <nonio-radio-button value="paid">Paid Users Only</nonio-radio-button>
+                    <nonio-radio-button value="admin">Admins Only</nonio-radio-button>
+                  </nonio-radio-button-group>
                   <label>Who can comment?</label>
-                  <soci-radio-button-group class="radio-group" name="comment_permission" value="all">
-                    <soci-radio-button value="all">All Users</soci-radio-button>
-                    <soci-radio-button value="paid">Paid Users Only</soci-radio-button>
-                    <soci-radio-button value="admin">Admins Only</soci-radio-button>
-                  </soci-radio-button-group>
+                  <nonio-radio-button-group class="radio-group" name="comment_permission" value="all">
+                    <nonio-radio-button value="all">All Users</nonio-radio-button>
+                    <nonio-radio-button value="paid">Paid Users Only</nonio-radio-button>
+                    <nonio-radio-button value="admin">Admins Only</nonio-radio-button>
+                  </nonio-radio-button-group>
                 </div>
               </div>
             </div>
           </form>
         </div>
       </div>
-      <script>lazyload('/pages/community-settings.js', document.currentScript.closest('soci-route'))</script>
-    </soci-route>
-    <soci-route id="community-users" path="^(/@[\w-]+)/admin/users$" fresh>
+      <script>lazyload('/pages/community-settings.js', document.currentScript.closest('nonio-route'))</script>
+    </nonio-route>
+    <nonio-route id="community-users" path="^(/@[\w-]+)/admin/users$" fresh>
       <div class="community-settings" id="community-users">
         <header>
-          <soci-link class="nav-item" href="/@community/admin"><span>Settings</span></soci-link>
-          <soci-link class="nav-item active" href="/@community/admin/users"><span>Users</span></soci-link>
-          <soci-link class="nav-item" href="/@community/admin/financials"><span>Financials</span></soci-link>
-          <soci-link class="nav-item" href="/@community/admin/emojis"><span>Emojis</span></soci-link>
+          <nonio-link class="nav-item" href="/@community/admin"><span>Settings</span></nonio-link>
+          <nonio-link class="nav-item active" href="/@community/admin/users"><span>Users</span></nonio-link>
+          <nonio-link class="nav-item" href="/@community/admin/financials"><span>Financials</span></nonio-link>
+          <nonio-link class="nav-item" href="/@community/admin/emojis"><span>Emojis</span></nonio-link>
         </header>
         <div class="container">
           <div class="load-group" load-order="primary">
@@ -672,30 +712,30 @@
               <div class="card">
                 <div class="card-header" data-role="moderators">
                   <h2>Moderators</h2>
-                  <soci-button class="add-btn" subtle data-role="moderators" aria-label="Add moderator">
-                    <soci-icon glyph="create"></soci-icon><span>add</span>
-                  </soci-button>
-                  <soci-user-picker data-role="moderators" placeholder="Add moderator" action-label="Add"></soci-user-picker>
+                  <nonio-button class="add-btn" subtle data-role="moderators" aria-label="Add moderator">
+                    <nonio-icon glyph="create"></nonio-icon><span>add</span>
+                  </nonio-button>
+                  <nonio-user-picker data-role="moderators" placeholder="Add moderator" action-label="Add"></nonio-user-picker>
                 </div>
                 <div class="list" data-list="moderators"></div>
               </div>
               <div class="card">
                 <div class="card-header" data-role="members">
                   <h2>Members</h2>
-                  <soci-button class="add-btn" subtle data-role="members" aria-label="Add member">
-                    <soci-icon glyph="create"></soci-icon><span>add</span>
-                  </soci-button>
-                  <soci-user-picker data-role="members" placeholder="Add member" action-label="Add"></soci-user-picker>
+                  <nonio-button class="add-btn" subtle data-role="members" aria-label="Add member">
+                    <nonio-icon glyph="create"></nonio-icon><span>add</span>
+                  </nonio-button>
+                  <nonio-user-picker data-role="members" placeholder="Add member" action-label="Add"></nonio-user-picker>
                 </div>
                 <div class="list" data-list="members"></div>
               </div>
               <div class="card">
                 <div class="card-header" data-role="banned">
                   <h2>Banned Users</h2>
-                  <soci-button class="add-btn" subtle data-role="banned" aria-label="Ban user">
-                    <soci-icon glyph="create"></soci-icon><span>add</span>
-                  </soci-button>
-                  <soci-user-picker data-role="banned" placeholder="Ban user" action-label="Ban"></soci-user-picker>
+                  <nonio-button class="add-btn" subtle data-role="banned" aria-label="Ban user">
+                    <nonio-icon glyph="create"></nonio-icon><span>add</span>
+                  </nonio-button>
+                  <nonio-user-picker data-role="banned" placeholder="Ban user" action-label="Ban"></nonio-user-picker>
                 </div>
                 <div class="list" data-list="banned"></div>
               </div>
@@ -703,15 +743,15 @@
           </div>
         </div>
       </div>
-      <script>lazyload('/pages/community-users.js', document.currentScript.closest('soci-route'))</script>
-    </soci-route>
-    <soci-route id="community-financials" path="^(/@[\w-]+)/admin/financials$" fresh>
+      <script>lazyload('/pages/community-users.js', document.currentScript.closest('nonio-route'))</script>
+    </nonio-route>
+    <nonio-route id="community-financials" path="^(/@[\w-]+)/admin/financials$" fresh>
       <div class="community-settings" id="community-financials">
         <header>
-          <soci-link class="nav-item" href="/@community/admin"><span>Settings</span></soci-link>
-          <soci-link class="nav-item" href="/@community/admin/users"><span>Users</span></soci-link>
-          <soci-link class="nav-item active" href="/@community/admin/financials"><span>Financials</span></soci-link>
-          <soci-link class="nav-item" href="/@community/admin/emojis"><span>Emojis</span></soci-link>
+          <nonio-link class="nav-item" href="/@community/admin"><span>Settings</span></nonio-link>
+          <nonio-link class="nav-item" href="/@community/admin/users"><span>Users</span></nonio-link>
+          <nonio-link class="nav-item active" href="/@community/admin/financials"><span>Financials</span></nonio-link>
+          <nonio-link class="nav-item" href="/@community/admin/emojis"><span>Emojis</span></nonio-link>
         </header>
         <div class="container">
           <div class="load-group" load-order="primary">
@@ -744,34 +784,34 @@
           </div>
         </div>
       </div>
-      <script>lazyload('/pages/community-financials.js', document.currentScript.closest('soci-route'))</script>
-    </soci-route>
-    <soci-route id="community-emojis" path="^(/@[\w-]+)/admin/emojis$" fresh>
+      <script>lazyload('/pages/community-financials.js', document.currentScript.closest('nonio-route'))</script>
+    </nonio-route>
+    <nonio-route id="community-emojis" path="^(/@[\w-]+)/admin/emojis$" fresh>
       <div class="community-settings" id="community-emojis">
         <header>
-          <soci-link class="nav-item" href="/@community/admin"><span>Settings</span></soci-link>
-          <soci-link class="nav-item" href="/@community/admin/users"><span>Users</span></soci-link>
-          <soci-link class="nav-item" href="/@community/admin/financials"><span>Financials</span></soci-link>
-          <soci-link class="nav-item active" href="/@community/admin/emojis"><span>Emojis</span></soci-link>
+          <nonio-link class="nav-item" href="/@community/admin"><span>Settings</span></nonio-link>
+          <nonio-link class="nav-item" href="/@community/admin/users"><span>Users</span></nonio-link>
+          <nonio-link class="nav-item" href="/@community/admin/financials"><span>Financials</span></nonio-link>
+          <nonio-link class="nav-item active" href="/@community/admin/emojis"><span>Emojis</span></nonio-link>
         </header>
         <div class="container">
           <h1>Community Emojis</h1>
           <form id="emoji-form">
             <input id="emoji-name" type="text" placeholder="emoji_name" required pattern="^[a-z0-9_]{2,32}$">
             <input id="emoji-file" type="file" accept="image/*" required>
-            <soci-button id="emoji-upload" async>Upload</soci-button>
+            <nonio-button id="emoji-upload" async>Upload</nonio-button>
           </form>
           <div class="emoji-grid" id="emoji-grid"></div>
         </div>
       </div>
-      <script>lazyload('/pages/community-emojis.js', document.currentScript.closest('soci-route'))</script>
-    </soci-route>
-    <soci-route id="post" default fresh>
-      <soci-post>
-        <soci-tag-group slot="tags" size="large"></soci-tag-group>
-        <soci-comment-list slot="comments"></soci-comment-list>
-      </soci-post>
-    </soci-route>
+      <script>lazyload('/pages/community-emojis.js', document.currentScript.closest('nonio-route'))</script>
+    </nonio-route>
+    <nonio-route id="post" default fresh>
+      <nonio-post>
+        <nonio-tag-group slot="tags" size="large"></nonio-tag-group>
+        <nonio-comment-list slot="comments"></nonio-comment-list>
+      </nonio-post>
+    </nonio-route>
   </div>
   <script src="/pages/post.js"></script>
 </html>

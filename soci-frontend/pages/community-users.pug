@@ -1,9 +1,9 @@
 #community-users.community-settings
   header
-    soci-link(href=`/@community/admin` class="nav-item") <span>Settings</span>
-    soci-link(href=`/@community/admin/users` class="nav-item active") <span>Users</span>
-    soci-link(href=`/@community/admin/financials` class="nav-item") <span>Financials</span>
-    soci-link(href=`/@community/admin/emojis` class="nav-item") <span>Emojis</span>
+    nonio-link(href=`/@community/admin` class="nav-item") <span>Settings</span>
+    nonio-link(href=`/@community/admin/users` class="nav-item active") <span>Users</span>
+    nonio-link(href=`/@community/admin/financials` class="nav-item") <span>Financials</span>
+    nonio-link(href=`/@community/admin/emojis` class="nav-item") <span>Emojis</span>
   .container
     .load-group(load-order="primary")
       h1 Community Users
@@ -13,27 +13,27 @@
         .card
           .card-header(data-role="moderators")
             h2 Moderators
-            soci-button.add-btn(subtle data-role="moderators" aria-label="Add moderator")
-              soci-icon(glyph="create")
+            nonio-button.add-btn(subtle data-role="moderators" aria-label="Add moderator")
+              nonio-icon(glyph="create")
               span add
-            soci-user-picker(data-role="moderators" placeholder="Add moderator" action-label="Add")
+            nonio-user-picker(data-role="moderators" placeholder="Add moderator" action-label="Add")
           .list(data-list="moderators")
         .card
           .card-header(data-role="members")
             h2 Members
-            soci-button.add-btn(subtle data-role="members" aria-label="Add member")
-              soci-icon(glyph="create")
+            nonio-button.add-btn(subtle data-role="members" aria-label="Add member")
+              nonio-icon(glyph="create")
               span add
-            soci-user-picker(data-role="members" placeholder="Add member" action-label="Add")
+            nonio-user-picker(data-role="members" placeholder="Add member" action-label="Add")
           .list(data-list="members")
         .card
           .card-header(data-role="banned")
             h2 Banned Users
-            soci-button.add-btn(subtle data-role="banned" aria-label="Ban user")
-              soci-icon(glyph="create")
+            nonio-button.add-btn(subtle data-role="banned" aria-label="Ban user")
+              nonio-icon(glyph="create")
               span add
-            soci-user-picker(data-role="banned" placeholder="Ban user" action-label="Ban")
+            nonio-user-picker(data-role="banned" placeholder="Ban user" action-label="Ban")
           .list(data-list="banned")
 
 script.
-  lazyload('/pages/community-users.js', document.currentScript.closest('soci-route'))
+  lazyload('/pages/community-users.js', document.currentScript.closest('nonio-route'))

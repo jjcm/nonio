@@ -2,12 +2,12 @@
   script(src="/pages/admin/financials.js")
   .header(load-order="primary")
     h1 Your Financials 
-    soci-banner(type="info" title="Auto-withdrawal enabled" style="display: none;") 
+    nonio-banner(type="info" title="Auto-withdrawal enabled" style="display: none;") 
       | Funds in your wallet will auto-deposit into your Stripe Connect account at the end of each month. 
     p There are currently two ways to withdrawal money from your wallet. You can set up Stripe Connect to automatically deposit funds into your bank account at the end of each month, or you can email me at j@jjcm.org to manually withdrawal funds. I'll try and support whatever platforms I can to send money. 
 
     //a(href="#" target="_blank")
-      soci-button.dashboard-link View Stripe Dashboard <svg style="margin-left: 2px" width="9" height="9" viewBox="0 0 9 9" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.5 1.5H0.5V8.5H7.5V5.5M4 5L8.5 0.5M8.5 0.5H5.5M8.5 0.5V3.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      nonio-button.dashboard-link View Stripe Dashboard <svg style="margin-left: 2px" width="9" height="9" viewBox="0 0 9 9" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.5 1.5H0.5V8.5H7.5V5.5M4 5L8.5 0.5M8.5 0.5H5.5M8.5 0.5V3.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
   .amounts(load-order="secondary")
     .blocks
       .block#financial-wallet
@@ -15,21 +15,21 @@
         h1.cash $
         .button-group
           a(href="#" target="_blank")
-            soci-button View Stripe Dashboard <svg style="margin-left: 2px" width="9" height="9" viewBox="0 0 9 9" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.5 1.5H0.5V8.5H7.5V5.5M4 5L8.5 0.5M8.5 0.5H5.5M8.5 0.5V3.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          // soci-button(subtle onclick="adminFinancials.openWithdrawalModal()") Withdrawal
-          // soci-button(danger onclick="adminFinancials.showChangeSubscription()") Disable auto-withdrawal
+            nonio-button View Stripe Dashboard <svg style="margin-left: 2px" width="9" height="9" viewBox="0 0 9 9" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.5 1.5H0.5V8.5H7.5V5.5M4 5L8.5 0.5M8.5 0.5H5.5M8.5 0.5V3.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          // nonio-button(subtle onclick="adminFinancials.openWithdrawalModal()") Withdrawal
+          // nonio-button(danger onclick="adminFinancials.showChangeSubscription()") Disable auto-withdrawal
       .block#financial-subscription
         h2 Monthly Subscription
         h1.cash $ <span>/mo</span>
         .button-group
-          // soci-button(subtle onclick="adminFinancials.showChangeSubscription()") Change Subscription Amount
-          //soci-button.cancel-sub-button(danger onclick="adminFinancials.cancelSubscription()") Cancel Subscription
+          // nonio-button(subtle onclick="adminFinancials.showChangeSubscription()") Change Subscription Amount
+          //nonio-button.cancel-sub-button(danger onclick="adminFinancials.cancelSubscription()") Cancel Subscription
   .ledger(load-order="tertiary")
     hr 
-    soci-ledger
-  soci-modal(title="Manual Withdrawal" id="withdrawal-modal")
+    nonio-ledger
+  nonio-modal(title="Manual Withdrawal" id="withdrawal-modal")
     .modal-body
-      p This is a manual process right now and may take up to 5 business days to complete. The good news is I ( <soci-user name="jjcm"></soci-user> ) will aim to support pretty much any type of withdrawal you need. List the platform you'd prefer and the details of how to send the cash below.
+      p This is a manual process right now and may take up to 5 business days to complete. The good news is I ( <nonio-user name="jjcm"></nonio-user> ) will aim to support pretty much any type of withdrawal you need. List the platform you'd prefer and the details of how to send the cash below.
       p Here are some of the ways I can transfer:
       table
         tr
@@ -49,5 +49,5 @@
             br
             | Ethereum
       p If you need another way, just ask and I'll see what we can do.
-      soci-input(placeholder="Enter platform and details here")
-      soci-button(async onclick="adminFinancials.requestManualWithdrawal()") Request Withdrawal
+      nonio-input(placeholder="Enter platform and details here")
+      nonio-button(async onclick="adminFinancials.requestManualWithdrawal()") Request Withdrawal

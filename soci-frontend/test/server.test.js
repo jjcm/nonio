@@ -67,20 +67,20 @@ test('the shell is gzipped for clients that accept it', async () => {
 })
 
 test('static assets get a short public cache and revalidate to 304s', async () => {
-  const first = await get('/soci.js')
+  const first = await get('/nonio.js')
   assert.equal(first.status, 200)
   assert.equal(first.headers.get('cache-control'), 'public, max-age=300')
   const etag = first.headers.get('etag')
   assert.ok(etag, 'static files should carry an ETag')
 
-  const revalidated = await get('/soci.js', { 'If-None-Match': etag })
+  const revalidated = await get('/nonio.js', { 'If-None-Match': etag })
   assert.equal(revalidated.status, 304)
 })
 
 test('large text assets are gzipped, and the payload round-trips', async () => {
   const [plain, zipped] = await Promise.all([
-    rawGet('/soci.css'),
-    rawGet('/soci.css', { 'Accept-Encoding': 'gzip' })
+    rawGet('/nonio.css'),
+    rawGet('/nonio.css', { 'Accept-Encoding': 'gzip' })
   ])
   assert.equal(zipped.headers['content-encoding'], 'gzip')
   assert.equal(gunzipSync(zipped.body).toString(), plain.body.toString())

@@ -1,7 +1,7 @@
 let textChannel = {
-  dom: document.currentScript.closest('soci-route'),
+  dom: document.currentScript.closest('nonio-route'),
   init: () => {
-    soci.registerPage(textChannel)
+    nonio.registerPage(textChannel)
   },
   onActivate: () => {
     textChannel.dom.innerHTML = ''
@@ -13,7 +13,7 @@ let textChannel = {
     const channel = decodeURIComponent(match[2] || '')
     if (!community || !channel) return
 
-    const view = document.createElement('soci-text-channel-view')
+    const view = document.createElement('nonio-text-channel-view')
     view.setAttribute('community', community)
     view.setAttribute('channel', channel)
     textChannel.dom.appendChild(view)

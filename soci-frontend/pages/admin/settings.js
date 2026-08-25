@@ -1,13 +1,13 @@
 let adminSettings = {
-  dom: document.currentScript.closest('soci-route'),
+  dom: document.currentScript.closest('nonio-route'),
   init: () => {
-    soci.registerPage(adminSettings)
+    nonio.registerPage(adminSettings)
   },
   onActivate: () => {
     document.title = 'Nonio - Settings'
 
-    adminSettings.dom.querySelector('.description soci-button').addEventListener('click', adminSettings.changeDescription)
-    adminSettings.dom.querySelector('.password soci-button').addEventListener('click', adminSettings.changePassword)
+    adminSettings.dom.querySelector('.description nonio-button').addEventListener('click', adminSettings.changeDescription)
+    adminSettings.dom.querySelector('.password nonio-button').addEventListener('click', adminSettings.changePassword)
     adminSettings.setDescription()
   },
   onDeactivate: () => {
@@ -16,7 +16,7 @@ let adminSettings = {
     let button = e.currentTarget
     let form = button.closest('form')
     if(form.reportValidity()){
-      let data = soci.getJSONFromForm(button.closest('form'))
+      let data = nonio.getJSONFromForm(button.closest('form'))
       let response = await window.api.user.changePassword(data)
       button.wait()
       if(response == true) {
@@ -32,16 +32,16 @@ let adminSettings = {
     }
   },
   cancelChangePassword: () => {
-    Array.from(document.querySelectorAll('#admin-settings soci-password')).forEach(pass => pass.value = '')
+    Array.from(document.querySelectorAll('#admin-settings nonio-password')).forEach(pass => pass.value = '')
   },
   setDescription: async () => {
-    let response = await soci.getData(`users/${soci.username}`)
-    let description = adminSettings.dom.querySelector('.description soci-input')
+    let response = await nonio.getData(`users/${nonio.username}`)
+    let description = adminSettings.dom.querySelector('.description nonio-input')
     description.value = response.description
   },
   changeDescription: async e => {
     let button = e.currentTarget
-    let description = adminSettings.dom.querySelector('.description soci-input')?.value
+    let description = adminSettings.dom.querySelector('.description nonio-input')?.value
     let response = await window.api.user.updateDescription(description)
     button.wait()
     if(!response.error) {
