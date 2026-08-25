@@ -632,6 +632,13 @@ soci-message-row button:hover {
   width: calc(100vw - 280px);
   position: relative;
   margin-left: 280px;
+
+  /* Custom elements are defined lazily per route; hide any element whose
+     definition hasn't landed yet so light-DOM children (e.g. submit's tab
+     contents) can't flash unstyled before upgrade. */
+  :not(:defined) {
+    display: none;
+  }
 }
 #pages:before {
   content: '';
