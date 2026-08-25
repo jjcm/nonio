@@ -54,7 +54,9 @@ const initScript = () => {
     const item = document.querySelector('soci-post-li, soci-post-card')
     if (item && item.shadowRoot && !item.hasAttribute('unloaded')) {
       const img = item.shadowRoot.querySelector('img')
-      const isText = !img || item.classList.contains('no-image')
+      // no-poster rows (videos without an encoded poster frame) paint a
+      // placeholder tile, so there is no thumbnail decode to wait for either.
+      const isText = !img || item.classList.contains('no-image') || item.classList.contains('no-poster')
       if (isText || (img.complete && img.naturalWidth > 0)) {
         window.__feedPaint = performance.now()
         return
