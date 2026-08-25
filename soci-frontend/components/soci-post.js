@@ -43,36 +43,6 @@ export default class SociPost extends SociComponent {
         --media-width: 100%;
       }
 
-      .media video,
-      .media img {
-        width: 100%;
-        max-width: var(--media-width);
-        max-height: min(calc(100vh - 100px), var(--media-height));
-        object-fit: contain;
-        position: relative;
-        z-index: 10;
-        display: block;
-        margin: 0 auto;
-      }
-
-      .media img {
-        max-width: var(--media-width);
-        max-height: var(--media-height);
-      }
-
-      .media img.bg {
-        position: inherit;
-        z-index: 9;
-        left: 0;
-        object-fit: cover;
-        transform: scale(1.1);
-        filter: blur(20px) brightness(0.8) saturate(0.8);
-        margin-bottom: 0;
-        position: absolute;
-        top: 0;
-        max-width: 100%;
-      }
-
       .media {
         opacity: 0;
       }
@@ -81,10 +51,6 @@ export default class SociPost extends SociComponent {
         opacity: 1;
         transition: opacity 0.3s var(--soci-ease-out);
         position: relative;
-      }
-
-      :host([type="image"]) #image {
-        display: block;
       }
 
       :host([type="video"]) #video {
@@ -339,6 +305,9 @@ export default class SociPost extends SociComponent {
 
   loadPost(url) {
     this.toggleAttribute('loaded', false)
+    // Back-nav reuses this element, and the previous post's dimensions would
+    // otherwise reserve the wrong box for a post that has none of its own.
+    this._width = this._height = 0
     this.getData(this._postApiPath(url)).then(post => {
       if(post.error) {
         this.select('#details-container').innerHTML = `<div id="error">${post.error}</div>`
@@ -367,12 +336,12 @@ export default class SociPost extends SociComponent {
             if(post[key] != '') this.select('#external-link').setAttribute('href', post[key])
             break
           case 'width':
-            if(parseInt(post[key]) != 0) 
-              this.select('#media-container').style.setProperty('--media-width', post[key] + 'px')
-            break
           case 'height':
-            if(parseInt(post[key]) != 0) 
-              this.select('#media-container').style.setProperty('--media-height', post[key] + 'px')
+            // Kept for loadContent, which reserves the media box from these
+            // before either the thumbnail or the full media is requested.
+            this['_' + key] = parseInt(post[key]) || 0
+            if(this['_' + key])
+              this.select('#media-container').style.setProperty(`--media-${key}`, post[key] + 'px')
             break
           case 'title':
             this.setAttribute('post-title', post[key])
@@ -478,7 +447,7 @@ export default class SociPost extends SociComponent {
           this.select('#media-container').innerHTML = ''
           this.select('#media-container').innerHTML = `
             <div id="video" class="media">
-              <soci-video></soci-video>
+              <soci-video ${this._mediaSize()}></soci-video>
             </div>
           `
           this.select('soci-video').url = this.url
@@ -493,33 +462,14 @@ export default class SociPost extends SociComponent {
 
   setImage(){
     this.setMeta('image', `${config.IMAGE_HOST}/${this.url}.webp`)
-    this.select('#media-container').innerHTML = `
-      <soci-image url="${this.url}"></soci-image>
-      <div id="image" class="media" style="display: none">
-        <picture>
-          <source>
-          <source>
-          <img/>
-        </picture>
-        <picture>
-          <source>
-          <source>
-          <img class="bg" />
-        </picture>
-      </div>
-    `
-    this.select('#media-container #image').addEventListener('click', this._zoomImage)
-    let img = this.select('#image img')
-    img.src = `${config.THUMBNAIL_HOST}/${this.url}.webp`
-    img.onerror = () => {
-      console.log('image load error')
-    }
+    this.select('#media-container').innerHTML = `<soci-image ${this._mediaSize()} url="${this.url}"></soci-image>`
+  }
 
-    this.select('#image img.bg').src = `${config.THUMBNAIL_HOST}/${this.url}.webp`
-    setTimeout(()=>{
-      this.select('#image img').src = `${config.IMAGE_HOST}/${this.url}.webp`
-      this.select('#image source').srcset = `${config.IMAGE_HOST}/${this.url}.webp`
-    },1)
+  // Stored post dimensions, for whichever media component is about to mount.
+  // They let it reserve the right box up front; without them it has to wait and
+  // measure the thumbnail instead.
+  _mediaSize(){
+    return this._width && this._height ? `width="${this._width}" height="${this._height}"` : ''
   }
 
   setMeta(property, value){
@@ -559,10 +509,6 @@ export default class SociPost extends SociComponent {
   _postApiPath(urlOverride){
     const slug = urlOverride || this.url
     return this.community ? `/posts/@${this.community}/${slug}` : `/posts/${slug}`
-  }
-
-  _zoomImage(){
-    this.select()
   }
 
   _scoreChanged(e){
