@@ -1,3 +1,55 @@
+## 2026-08-25 — Two frontend bugs: post media CLS and the un-clickable login button (branch `cursor/fix-media-cls-and-login-click-dd0b`)
+
+**1. Post media resized itself mid-load.** `soci-image` pointed one `<img>` at
+the thumbnail and then re-pointed it at the full image, so the media area was
+sized by whichever bitmap happened to be decoded — the 192x144 thumbnail first,
+then the full image. `soci-video` had no poster at all and sized itself off the
+`<video>` default ratio until metadata arrived. Both snapped everything below
+them down the page.
+
+Fixed with a shared ratio-locked box, `soci-frontend/lib/media-frame.js`
+(`MEDIA_FRAME_CSS` + `lockRatio`). The frame takes its height from
+`aspect-ratio` alone and stacks its sources absolutely with `object-fit:
+contain`, so the thumbnail and the full media occupy the same box and the swap
+is invisible. Ratio sources, in order, never guessed: stored post
+`width`/`height` (now threaded from `soci-post` as attributes, so the box is
+final before a single byte is requested), else the thumbnail/poster's intrinsic
+ratio, else the full image or the video's metadata. Width is additionally capped
+by the ratio against the height bound, or a portrait post would reserve a box
+wider than its own media and letterbox itself.
+
+Also removed from `soci-post`: the `#image` block behind `soci-image`, which
+carried `style="display: none"` inline and so could never show, but did
+duplicate both CDN requests; its dead `_zoomImage` handler (`this.select()`
+with no selector); and the CSS that only styled it. Feed tiles
+(`soci-post-li` 96x72, `soci-post-card`) are deliberately untouched.
+
+**2. The login submit button could not be left-clicked, though Enter worked.**
+Not an overlay or a `disabled` state: `soci-button` sets `float: right` on its
+own `:host`, and `.modal-form` had no clearfix, so the full-width login button
+left the form's flow and `.modal-footer` — a later sibling — painted over it.
+`document.elementFromPoint` at the button's own centre returned
+`soci-link#create-account`. Enter never went near the button; it is handled by a
+`keydown` listener on the modal. Fixed in `soci.css` by un-floating
+`soci-button` inside `.modal-form` and making the form a `flow-root`.
+
+Two further login problems found while confirming the cause. Login ran the
+40-bit entropy gate meant for choosing a password, so a weak-but-correct
+existing password failed `reportValidity()` — `soci-password` now takes
+`no-entropy` (applied to login, and to the "old password" field in admin
+settings, which had the same lockout); register keeps the gate and the meter.
+And the form value was only synced on `keydown`/`keyup`, so an autofilled
+password never reached the payload; it now syncs on `input`/`change` and in
+`checkValidity`, the pre-submit hook. Also dropped a leftover debug rule that
+painted a red 10x10 square inside the field on focus.
+
+**Tests:** `soci-frontend/test/browser.test.js`, 17 cases driving real Chrome
+via `puppeteer-core` (devDependency; the suite self-skips when no Chrome is
+present, so `npm test` still runs anywhere). It fixtures the CDNs by request
+interception with generated PNGs, holding the full image back to prove the
+thumbnail is on screen alone, and asserts the reserved box is identical at every
+stage. 11 of the 17 fail against the pre-fix code. Frontend `npm test` 29/29.
+
 ## 2026-08-24 — VPS speed lab: live deploy + measured perf loop (branch `cursor/speed-vps-loop-27f0`)
 
 Deployed the monorepo to a live 1-vCPU/1 GB Vultr box (108.61.219.46) with a
