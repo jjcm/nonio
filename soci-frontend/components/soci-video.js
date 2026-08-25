@@ -459,9 +459,11 @@ export default class SociVideoPlayer extends SociComponent {
     // Dropping the src rather than the element keeps the fallback on the direct
     // assignment path, so it does not wait on a hotswap that only happens once
     // something is already playing.
-    video.rejected = true
     if(video == this._video) video.removeAttribute('src')
-    else video.remove()
+    else {
+      video.rejected = true
+      video.remove()
+    }
     this._adjustResForScreenSize()
   }
 
