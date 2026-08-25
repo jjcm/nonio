@@ -10,9 +10,9 @@ import (
 
 func setupRoutes(settings *config.Config) {
 	avatarCache := "public, max-age=300"
-	http.Handle("/thumbnail/", http.StripPrefix("/thumbnail/", cacheControl(avatarCache, http.FileServer(http.Dir("./files/thumbnails")))))
+	http.Handle("/thumbnail/", http.StripPrefix("/thumbnail/", webpOnly(cacheControl(avatarCache, http.FileServer(http.Dir("./files/thumbnails"))))))
 	http.HandleFunc("/upload", route.UploadFile)
-	http.Handle("/", cacheControl(avatarCache, http.FileServer(http.Dir("./files/images"))))
+	http.Handle("/", webpOnly(cacheControl(avatarCache, http.FileServer(http.Dir("./files/images")))))
 
 	port := os.Getenv("APP_PORT")
 	if port == "" {
