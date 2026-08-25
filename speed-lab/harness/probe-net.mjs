@@ -35,7 +35,7 @@ page.on('request', r => events.push({ t: Date.now() - t0, kind: 'start', url: r.
 page.on('response', r => events.push({ t: Date.now() - t0, kind: 'end  ', url: r.url(), status: r.status() }))
 
 await page.evaluate(h => {
-  const target = window.__deepAll('soci-link')
+  const target = window.__deepAll('nonio-link')
     .map(l => l.shadowRoot?.querySelector('a') || l.querySelector('a'))
     .find(a => a?.getAttribute('href') === h)
   if (!target) throw new Error('no link ' + h)

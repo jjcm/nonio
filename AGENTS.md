@@ -8,10 +8,10 @@ For the frontend (soci-frontend), whenever possible be terse and concise. Don't 
 DRY practices are a must - if a similar function is in place somewhere else, consolidate it into a shared function. If a similar UI pattern is reused in multiple places, consider creating a new webcomponent for it. 
 
 ## soci-frontend rules
-This is the frontend of the system. NEVER update the generated `.html` files directly. **CSS source-of-truth is now `soci-frontend/soci.css`** (Stylus is deprecated). Create a webcomponent if it would make the semantic readability of the html better.
+This is the frontend of the system. NEVER update the generated `.html` files directly. **CSS source-of-truth is now `soci-frontend/nonio.css`** (Stylus is deprecated). Create a webcomponent if it would make the semantic readability of the html better.
 
 ## CSS nesting (required)
-When writing CSS (including component `css()` strings and `soci-frontend/soci.css`), **use modern CSS nesting** where it improves readability and reduces repetition.
+When writing CSS (including component `css()` strings and `soci-frontend/nonio.css`), **use modern CSS nesting** where it improves readability and reduces repetition.
 
 - Prefer nesting with the `&` selector for pseudo-classes / pseudo-elements and compound selectors.
 - Avoid duplicating the parent selector when nesting can express it once.

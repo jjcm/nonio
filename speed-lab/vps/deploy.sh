@@ -20,7 +20,7 @@ done
 
 if [[ $BUILD == 1 ]]; then
   echo "== build =="
-  (cd "$ROOT/soci-backend/cmd" && GOFLAGS=-buildvcs=false go build -o ../dist/socid .) &
+  (cd "$ROOT/soci-backend/cmd" && GOFLAGS=-buildvcs=false go build -o ../dist/noniod .) &
   for d in avatar image video html; do
     (cd "$ROOT/soci-$d-cdn" && GOFLAGS=-buildvcs=false CGO_ENABLED=0 go build -o "$d-cdn" .) &
   done

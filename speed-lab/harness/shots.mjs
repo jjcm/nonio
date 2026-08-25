@@ -14,7 +14,7 @@ await page.addInitScript(() => {
     return acc
   }
   window.__go = href => {
-    const a = window.__deepAll('soci-link')
+    const a = window.__deepAll('nonio-link')
       .map(l => l.shadowRoot?.querySelector('a') || l.querySelector('a'))
       .find(x => x?.getAttribute('href') === href)
     if (!a) throw new Error('no link ' + href)

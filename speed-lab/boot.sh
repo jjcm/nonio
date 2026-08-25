@@ -37,7 +37,7 @@ start_mariadb() {
 
 start_api() {
   (exec 3<>/dev/tcp/127.0.0.1/4201) 2>/dev/null && { echo "  api :4201 already up"; return 0; }
-  cd "$ROOT/soci-backend/cmd" && go build -o ../dist/socid || return 1
+  cd "$ROOT/soci-backend/cmd" && go build -o ../dist/noniod || return 1
   cd "$ROOT/soci-backend"
   env APP_KEY=asdfa323faefjifajwiefawef WEB_HOST=http://localhost:4200 \
       DB_HOST=127.0.0.1 DB_PORT=3306 DB_DATABASE=socidb DB_USER=dbuser DB_PASSWORD=password \
@@ -45,7 +45,7 @@ start_api() {
       LIVEKIT_URL=http://localhost:7880 LIVEKIT_API_KEY=devkey LIVEKIT_API_SECRET=secret \
       STRIPE_SECRET_KEY=sk_test_lab STRIPE_PUBLISHABLE_KEY=pk_test_lab WEBHOOK_ENDPOINT_SECRET= \
       DEV_TOOLS_ENABLED=true DEV_SUBSCRIPTION_PAYOUTS=true PAYOUT_CYCLE_DAYS=1 \
-      ./dist/socid > "$LOG/api.log" 2>&1 &
+      ./dist/noniod > "$LOG/api.log" 2>&1 &
   wait_port 4201 api
 }
 

@@ -1,5 +1,5 @@
 [Unit]
-Description=Nonio API (socid)
+Description=Nonio API (noniod)
 After=network.target mariadb.service
 Wants=mariadb.service
 
@@ -7,7 +7,7 @@ Wants=mariadb.service
 User=fable
 WorkingDirectory=/home/fable/nonio/soci-backend
 EnvironmentFile=/home/fable/env/api.env
-ExecStart=/home/fable/nonio/soci-backend/dist/socid
+ExecStart=/home/fable/nonio/soci-backend/dist/noniod
 Restart=always
 RestartSec=2
 LimitNOFILE=65536

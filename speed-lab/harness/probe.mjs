@@ -20,18 +20,18 @@ const out = await page.evaluate(() => {
       shadow: !!el.shadowRoot
     }
   }
-  const routes = [...document.querySelectorAll('soci-route')].map(r => ({
+  const routes = [...document.querySelectorAll('nonio-route')].map(r => ({
     id: r.id, active: r.hasAttribute('active'), path: r.getAttribute('path'), def: r.hasAttribute('default')
   }))
 
-  const list = document.querySelector('soci-post-list')
-  const rows = list?.shadowRoot ? [...list.shadowRoot.querySelectorAll('soci-post-li, soci-post-card')] : []
+  const list = document.querySelector('nonio-post-list')
+  const rows = list?.shadowRoot ? [...list.shadowRoot.querySelectorAll('nonio-post-li, nonio-post-card')] : []
   const firstRow = rows[0]
 
-  // Every soci-link href on the page (pierce shadow roots one level deep from key hosts)
+  // Every nonio-link href on the page (pierce shadow roots one level deep from key hosts)
   const links = []
   const collect = root => {
-    root.querySelectorAll?.('soci-link').forEach(l => {
+    root.querySelectorAll?.('nonio-link').forEach(l => {
       const a = l.shadowRoot?.querySelector('a') || l.querySelector('a')
       links.push({ host: l.closest('[id]')?.id || l.parentElement?.tagName, href: a?.getAttribute('href') || l.getAttribute('href') })
     })
@@ -43,8 +43,8 @@ const out = await page.evaluate(() => {
   }
   walk(document, 0)
 
-  const sidebar = document.querySelector('soci-sidebar')
-  const tagLis = sidebar?.shadowRoot ? [...sidebar.shadowRoot.querySelectorAll('soci-tag-li')].map(t => t.getAttribute('tag')) : []
+  const sidebar = document.querySelector('nonio-sidebar')
+  const tagLis = sidebar?.shadowRoot ? [...sidebar.shadowRoot.querySelectorAll('nonio-tag-li')].map(t => t.getAttribute('tag')) : []
 
   return {
     routes,

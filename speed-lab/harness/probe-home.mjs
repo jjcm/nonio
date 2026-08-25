@@ -24,11 +24,11 @@ await page.waitForTimeout(3000)
 
 const info = await page.evaluate(() => {
   const nav = performance.getEntriesByType('navigation')[0]
-  const list = document.querySelector('soci-post-list')
+  const list = document.querySelector('nonio-post-list')
   return {
     load: Math.round(nav.loadEventEnd),
     dcl: Math.round(nav.domContentLoadedEventEnd),
-    rows: list?.querySelectorAll('soci-post-li, soci-post-card').length,
+    rows: list?.querySelectorAll('nonio-post-li, nonio-post-card').length,
     resources: performance.getEntriesByType('resource')
       .map(r => ({ n: r.name.replace(/^https?:\/\/localhost/, ''), s: Math.round(r.startTime), e: Math.round(r.responseEnd), sz: r.transferSize }))
       .sort((a, b) => b.e - a.e)

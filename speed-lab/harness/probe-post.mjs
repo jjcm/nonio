@@ -1,4 +1,4 @@
-// Lab probe: dump soci-post / post-list internals so the transition harness can
+// Lab probe: dump nonio-post / post-list internals so the transition harness can
 // target real content nodes.
 import { chromium } from 'playwright'
 
@@ -10,9 +10,9 @@ await page.goto('http://localhost:4200/sl-txt-01', { waitUntil: 'load' })
 await page.waitForTimeout(4000)
 
 console.log(JSON.stringify(await page.evaluate(() => {
-  const post = document.querySelector('soci-post')
+  const post = document.querySelector('nonio-post')
   const sr = post?.shadowRoot
-  const list = document.querySelector('soci-post-list')
+  const list = document.querySelector('nonio-post-list')
   const dump = el => el ? {
     tag: el.tagName.toLowerCase(), id: el.id, cls: el.className,
     opacity: getComputedStyle(el).opacity, text: (el.textContent || '').trim().slice(0, 60),
@@ -34,9 +34,9 @@ await page.goto('http://localhost:4200/', { waitUntil: 'load' })
 await page.waitForTimeout(4000)
 console.log('--- HOME FEED ---')
 console.log(JSON.stringify(await page.evaluate(() => {
-  const list = document.querySelector('soci-post-list')
-  const rowsLight = [...list.querySelectorAll('soci-post-li, soci-post-card')]
-  const rowsShadow = list.shadowRoot ? [...list.shadowRoot.querySelectorAll('soci-post-li, soci-post-card')] : []
+  const list = document.querySelector('nonio-post-list')
+  const rowsLight = [...list.querySelectorAll('nonio-post-li, nonio-post-card')]
+  const rowsShadow = list.shadowRoot ? [...list.shadowRoot.querySelectorAll('nonio-post-li, nonio-post-card')] : []
   const first = rowsLight[0] || rowsShadow[0]
   return {
     listAttrs: [...list.attributes].map(a => a.name + '=' + a.value),

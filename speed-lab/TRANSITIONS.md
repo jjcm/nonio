@@ -13,7 +13,7 @@ has already loaded. This is not about first paint of the initial document.
 
 Per run: load the homepage, wait until its feed is painted, fully revealed and
 its first thumbnail decoded, settle 1200 ms. Then `t0 = performance.now()`
-immediately before dispatching a click on a real in-feed `<soci-link>` anchor,
+immediately before dispatching a click on a real in-feed `<nonio-link>` anchor,
 so the app's own `pushState` → router path runs. From `t0`, poll every frame:
 
 | Number | Meaning |
@@ -23,7 +23,7 @@ so the app's own `pushState` → router path runs. From `t0`, poll every frame:
 | **usable** | Time to usable content, route-specific: tag/user → ≥ 8 rows present *and* the first row's media decoded; post → post body painted *and* ≥ 5 comments in the tree. `usable` implies `fcr`. |
 
 Destinations are identified by the attribute the app sets on them
-(`soci-post-list[tag=photography]`, `[user=speedlab]`, `soci-post[url=sl-txt-01]`),
+(`nonio-post-list[tag=photography]`, `[user=speedlab]`, `nonio-post[url=sl-txt-01]`),
 never by "a post list exists". Homepage → tag is a *same-route* navigation, so
 the previous feed and its 21 rows are still in the DOM at `t0`; without that
 check the stale homepage feed scores as an instant render.
@@ -43,7 +43,7 @@ Two harness details that materially change the numbers, recorded so results are
 reproducible:
 
 - Opacity is measured along the **flattened** tree (following `assignedSlot`).
-  Feed rows are light-DOM children slotted into `soci-post-list`'s shadow
+  Feed rows are light-DOM children slotted into `nonio-post-list`'s shadow
   `#items`, and `#items` is the node the 350 ms entrance animation puts at
   opacity 0. Walking `parentElement` alone reports a fully-hidden row as
   opacity 1.
@@ -103,11 +103,11 @@ Network waterfall of each navigation, `t=0` at click, Slow 4G:
 
 Attributed to source:
 
-- The two unfiltered `/posts` come from a **bare `soci-post-list` placeholder**
+- The two unfiltered `/posts` come from a **bare `nonio-post-list` placeholder**
   in `pages/user.pug`. The `#user` route is `fresh`, so activating it restores
   that placeholder from the template; the placeholder connects, fetches the
   whole frontpage feed, and is then thrown away by `user.renderContent()`,
-  which replaces it with `<soci-post-list user="…">`. The largest payload on the
+  which replaces it with `<nonio-post-list user="…">`. The largest payload on the
   site is fetched twice per user navigation and never rendered.
 - Every duplicate is `attributeChangedCallback('filter')` →
   `_refreshFilterFetch()` → `fetchAndMerge()` firing during
@@ -120,7 +120,7 @@ Attributed to source:
 parallel (good). `/comment-votes` is sequential after comments and returns
 **401 for anonymous visitors** — a wasted round trip. The post response lands at
 173 ms but `fcr` is 290.9 ms; ~117 ms of that gap is an artificial
-`setTimeout(…, 100)` before `soci-post` gets its `loaded` attribute.
+`setTimeout(…, 100)` before `nonio-post` gets its `loaded` attribute.
 
 ## Iterations
 
@@ -131,7 +131,7 @@ All numbers are medians, n=5. Deltas are against the previous kept state.
 
 ### Iteration 1 — KEEP (weak win, removes provable waste)
 
-*Hypothesis:* the bare `soci-post-list` in `pages/user.pug` fetches the whole
+*Hypothesis:* the bare `nonio-post-list` in `pages/user.pug` fetches the whole
 unfiltered frontpage feed and is then discarded, so deleting it should speed up
 the user route.
 
@@ -158,7 +158,7 @@ understates the payload of a real frontpage.
 fires during `_initializeControls()` and duplicates the request
 `connectedCallback` is already making; suppressing it should help.
 
-Targets: tag, user. `soci-post-list` — `_initializing` guard.
+Targets: tag, user. `nonio-post-list` — `_initializing` guard.
 
 | lane | route | before | after | Δ fcr |
 | --- | --- | --- | --- | --- |
@@ -176,11 +176,11 @@ serves; halving that is worth shipping even though the client cannot feel it.
 
 ### Iteration 3 — KEEP (large win)
 
-*Hypothesis:* `soci-post` waits `setTimeout(…, 100)` after the response before
+*Hypothesis:* `nonio-post` waits `setTimeout(…, 100)` after the response before
 setting `[loaded]`, which is what its entrance transitions key on, so that 100 ms
 is dead time.
 
-Targets: post. `soci-post.loadPost` — `requestAnimationFrame` instead.
+Targets: post. `nonio-post.loadPost` — `requestAnimationFrame` instead.
 
 | lane | route | before | after | Δ |
 | --- | --- | --- | --- | --- |
@@ -195,7 +195,7 @@ front of it is gone.
 
 ### Iteration 4 — KEEP (large win)
 
-*Hypothesis:* `soci-comment-list` awaits `/comment-votes` *before* building the
+*Hypothesis:* `nonio-comment-list` awaits `/comment-votes` *before* building the
 comment tree, so anonymous readers pay a full round trip — answered 401 — before
 any comment appears.
 
@@ -235,14 +235,14 @@ Accept-Encoding` set.
 
 ### Iteration 6 — KEEP (largest win on tag and user)
 
-*Hypothesis:* the feed's entrance animates opacity on `--soci-ease`
+*Hypothesis:* the feed's entrance animates opacity on `--nonio-ease`
 (`cubic-bezier(0.65, 0, 0.35, 1)`, a symmetric ease-in-out). That curve leaves
 the feed below perceptible opacity for roughly its first 65 ms *after the
 response has already landed*, which matches the measured gap between the
-response and `fcr`. The design system already defines `--soci-ease-out` for
+response and `fcr`. The design system already defines `--nonio-ease-out` for
 entrances.
 
-Targets: tag, user. `soci-post-list` `#items` — opacity easing only. Duration
+Targets: tag, user. `nonio-post-list` `#items` — opacity easing only. Duration
 (0.35 s) and the `translateY` slide are unchanged.
 
 | lane | route | before | after | Δ fcr | Δ visible |
@@ -297,8 +297,8 @@ ends up far below master too.)
 
 ### Iteration 7 — KEEP (post `visible`)
 
-*Hypothesis:* every `opacity: 0 → 1` entrance on `soci-post` (host, media,
-title, tags, description, comments) eases on `--soci-ease` for the same reason
+*Hypothesis:* every `opacity: 0 → 1` entrance on `nonio-post` (host, media,
+title, tags, description, comments) eases on `--nonio-ease` for the same reason
 the feed did, so the same token swap should help. The host's `0.1s` ease-in-out
 in particular needs ~70 % of its duration to reach full opacity, which matches
 the measured `visible − fcr` gap on the post route.
