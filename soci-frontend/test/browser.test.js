@@ -146,7 +146,11 @@ describe('browser', { skip: reason }, () => {
         if (!holdFull) return respond()
         return new Promise(resolve => held.push(() => { respond(); resolve() }))
       }
-      // The API is not running under test; failing fast beats a 30s timeout.
+      // An expanding tile fetches its own description, and hangs on the spinner
+      // until that resolves.
+      if (url.startsWith('http://localhost:4201/posts/'))
+        return req.respond({ contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: '{"content":""}' })
+      // The rest of the API is not running under test; failing fast beats a 30s timeout.
       if (url.startsWith('http://localhost:4201')) return req.abort()
       req.continue()
     })
@@ -173,7 +177,7 @@ describe('browser', { skip: reason }, () => {
       document.querySelector('#harness')?.remove()
       const harness = document.createElement('div')
       harness.id = 'harness'
-      harness.style.cssText = `width:${width}px;position:absolute;top:0;left:0`
+      harness.style.cssText = `width:${width}px;position:absolute;top:0;left:0;z-index:9999`
       harness.innerHTML = `<${tag} ${attrs} url="${url}"></${tag}>`
       document.body.appendChild(harness)
       return window.__box(harness.firstElementChild)
@@ -386,6 +390,90 @@ describe('browser', { skip: reason }, () => {
         0,
         'a rendition known to be broken should not be offered again'
       )
+    })
+  })
+
+  // #preview is an overlay the size of the whole tile, so the wrapper itself has
+  // to stay out of hit testing or nothing beside the media can be clicked. What
+  // changes on expanding is the media inside it, which becomes a target of its
+  // own rather than letting clicks fall through to the thumbnail beneath.
+  describe('an expanded feed tile hands clicks to its media', { skip: reason }, () => {
+    const tile = "document.querySelector('soci-post-li')"
+    const probe = () => page.evaluate(() => {
+      const shadow = document.querySelector('soci-post-li').shadowRoot
+      const media = shadow.querySelector('#preview img')
+      const title = shadow.querySelector('.title')
+      const centre = el => { const r = el.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2] }
+      // The title's box spans the whole column while its text is pushed past the
+      // float, so only the glyphs say where it can actually be clicked.
+      const range = document.createRange()
+      range.selectNodeContents(title)
+      const text = range.getBoundingClientRect()
+      const rect = r => ({ left: Math.round(r.left), right: Math.round(r.right), top: Math.round(r.top), bottom: Math.round(r.bottom) })
+      return {
+        expanded: document.querySelector('soci-post-li').hasAttribute('expanded'),
+        pointerEvents: getComputedStyle(shadow.querySelector('#preview')).pointerEvents,
+        mediaTakesItsOwnClick: shadow.elementFromPoint(...centre(media)) == media,
+        thumbnailTakesItsOwnClick: shadow.elementFromPoint(...centre(shadow.querySelector('#thumbnail img'))) == shadow.querySelector('#thumbnail img'),
+        atTitleText: shadow.elementFromPoint(text.x + 2, text.y + text.height / 2)?.className,
+        preview: rect(shadow.querySelector('#preview').getBoundingClientRect()),
+        media: rect(media.getBoundingClientRect()),
+        thumb: rect(shadow.querySelector('#thumbnail img').getBoundingClientRect()),
+        titleText: rect(text),
+        tile: rect(document.querySelector('soci-post-li').getBoundingClientRect())
+      }
+    })
+
+    before(async () => {
+      held = []
+      holdFull = true
+      served = { thumb: [200, 150], full: [1000, 750] }
+      // Slotted the way soci-post-list builds a row, so the expanded layout is
+      // the one the text column actually gets.
+      await page.evaluate(url => {
+        document.querySelector('#harness')?.remove()
+        const harness = document.createElement('div')
+        harness.id = 'harness'
+        harness.style.cssText = 'width:800px;position:absolute;top:0;left:0;z-index:9999'
+        harness.innerHTML = `
+          <soci-post-li post-title="An expanded tile" url="${url}" type="image" score="3" comments="2" time="${Date.now()}">
+            <soci-user name="someone" slot="user"></soci-user>
+            <soci-tag-group slot="tags"><soci-tag tag="test" score="1" tag-id="1"></soci-tag></soci-tag-group>
+          </soci-post-li>`
+        document.body.appendChild(harness)
+      }, `fixture-${++fixtures}`)
+      await page.waitForFunction(`${tile}.shadowRoot.querySelector('#thumbnail img').naturalWidth > 0`)
+    })
+
+    test('collapsed, the overlay lets the thumbnail underneath take the click', async () => {
+      const collapsed = await probe()
+      assert.equal(collapsed.mediaTakesItsOwnClick, false)
+      assert.equal(collapsed.thumbnailTakesItsOwnClick, true, 'click-to-expand goes through the overlay')
+    })
+
+    test('expanded, the media takes its own clicks without covering the title', async () => {
+      await page.evaluate(`${tile}.shadowRoot.querySelector('#thumbnail img').click()`)
+      releaseFull()
+      await page.waitForFunction(`${tile}.shadowRoot.querySelector('#preview img').complete`)
+      // Expanding is a transition, and mid-flight geometry is nobody's layout.
+      await page.waitForFunction(() => new Promise(done => {
+        const shadow = document.querySelector('soci-post-li').shadowRoot
+        const widths = () => [...shadow.querySelectorAll('img')].map(i => i.getBoundingClientRect().width).join()
+        const before = widths()
+        requestAnimationFrame(() => requestAnimationFrame(() => done(widths() == before)))
+      }))
+
+      const expanded = await probe()
+      assert.equal(expanded.expanded, true)
+      assert.equal(expanded.mediaTakesItsOwnClick, true, 'the expanded media is not interactive')
+      assert.deepEqual(expanded.media, expanded.thumb, 'the overlay copy must sit exactly on the thumbnail')
+      assert.equal(expanded.atTitleText, 'title', `something is over the title: ${JSON.stringify(expanded)}`)
+    })
+
+    test('clicking the expanded media collapses the tile again', async () => {
+      await page.evaluate(`${tile}.shadowRoot.querySelector('#preview img').click()`)
+      await page.waitForFunction(`!${tile}.hasAttribute('expanded')`)
+      assert.equal((await probe()).mediaTakesItsOwnClick, false, 'the overlay must go back to letting clicks through')
     })
   })
 

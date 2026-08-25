@@ -47,9 +47,21 @@ export default class SociPostLi extends SociComponent {
         padding: 12px;
         top: 0;
         left: 0;
+        /* The overlay is the size of the whole tile and is only a positioning
+           wrapper, so it never takes a pointer itself -- it would otherwise
+           cover the title column beside the media. It cannot be narrowed to the
+           media either: the width is what the media's own percentage max-width
+           resolves against, and shrinking it shrinks the media with it, away
+           from the thumbnail it is stacked on. */
         pointer-events: none;
         box-sizing: border-box;
         width: 100%;
+
+        :host([expanded]) & img {
+          /* Expanded, this is the copy on screen, so it takes its own clicks
+             instead of letting them fall through to the thumbnail beneath. */
+          pointer-events: auto;
+        }
       }
 
       #preview img {
