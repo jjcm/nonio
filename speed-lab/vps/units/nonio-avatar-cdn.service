@@ -4,8 +4,8 @@ After=network.target
 
 [Service]
 User=fable
-WorkingDirectory=/home/fable/nonio/soci-avatar-cdn
-ExecStart=/home/fable/nonio/soci-avatar-cdn/avatar-cdn
+WorkingDirectory=/home/fable/nonio/nonio-avatar-cdn
+ExecStart=/home/fable/nonio/nonio-avatar-cdn/avatar-cdn
 Restart=always
 RestartSec=2
 LimitNOFILE=65536

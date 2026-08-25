@@ -5,9 +5,9 @@ Wants=mariadb.service
 
 [Service]
 User=fable
-WorkingDirectory=/home/fable/nonio/soci-backend
+WorkingDirectory=/home/fable/nonio/nonio-backend
 EnvironmentFile=/home/fable/env/api.env
-ExecStart=/home/fable/nonio/soci-backend/dist/noniod
+ExecStart=/home/fable/nonio/nonio-backend/dist/noniod
 Restart=always
 RestartSec=2
 LimitNOFILE=65536

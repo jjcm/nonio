@@ -21,7 +21,7 @@ if ! (exec 3<>/dev/tcp/127.0.0.1/3306) 2>/dev/null; then
   echo "Nothing on :3306 - starting mariadb via docker..."
   command -v docker >/dev/null || {
     echo "Install docker, or run your own MySQL/MariaDB on 3306 with database" \
-         "'socidb' and user dbuser/password (see soci-backend/localRun.sh)."
+         "'socidb' and user dbuser/password (see nonio-backend/localRun.sh)."
     exit 1
   }
   docker start soci-db >/dev/null 2>&1 || docker run -d --name soci-db -p 3306:3306 \
@@ -32,10 +32,10 @@ if ! (exec 3<>/dev/tcp/127.0.0.1/3306) 2>/dev/null; then
   echo ' up.'
 fi
 
-screen -AdmS nonio -t frontend bash -c "bash --init-file <(echo 'cd soci-frontend; npm i; npm start;')"
-screen -S nonio -X screen -t api bash -c "bash --init-file <(echo 'cd soci-backend; ./localRun.sh')"
-screen -S nonio -X screen -t avatar-cdn bash -c "bash --init-file <(echo 'cd soci-avatar-cdn; go build -o avatar-cdn main.go; ./avatar-cdn')"
-screen -S nonio -X screen -t image-cdn bash -c "bash --init-file <(echo 'cd soci-image-cdn; go build -o image-cdn main.go; ./image-cdn')"
-screen -S nonio -X screen -t video-cdn bash -c "bash --init-file <(echo 'cd soci-video-cdn; go build -o video-cdn main.go; ./video-cdn')"
-screen -S nonio -X screen -t html-cdn bash -c "bash --init-file <(echo 'cd soci-html-cdn; go build -o html-cdn main.go; ./html-cdn')"
+screen -AdmS nonio -t frontend bash -c "bash --init-file <(echo 'cd nonio-frontend; npm i; npm start;')"
+screen -S nonio -X screen -t api bash -c "bash --init-file <(echo 'cd nonio-backend; ./localRun.sh')"
+screen -S nonio -X screen -t avatar-cdn bash -c "bash --init-file <(echo 'cd nonio-avatar-cdn; go build -o avatar-cdn main.go; ./avatar-cdn')"
+screen -S nonio -X screen -t image-cdn bash -c "bash --init-file <(echo 'cd nonio-image-cdn; go build -o image-cdn main.go; ./image-cdn')"
+screen -S nonio -X screen -t video-cdn bash -c "bash --init-file <(echo 'cd nonio-video-cdn; go build -o video-cdn main.go; ./video-cdn')"
+screen -S nonio -X screen -t html-cdn bash -c "bash --init-file <(echo 'cd nonio-html-cdn; go build -o html-cdn main.go; ./html-cdn')"
 screen -rD nonio

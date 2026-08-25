@@ -1,45 +1,62 @@
 ## 2026-08-25 — Product prefix rename: `soci-*` → `nonio-*` (branch `cursor/rename-soci-to-nonio-e138`)
 
-Renamed the product prefix everywhere it is part of the public surface, and
-deprecated `soci`. Older entries in this changelog were rewritten to the new
-names so the paths and tags they cite still resolve.
+`soci` is deprecated. The product prefix is `nonio` everywhere now, including
+the service directories. Older entries in this changelog were rewritten to the
+new names so the paths and tags they cite still resolve.
 
 **Renamed:**
-- All 60 custom elements: `<soci-post>` → `<nonio-post>`, and the same for every
-  other tag. That covers `customElements.define` strings, pug/HTML markup,
-  `innerHTML` templates, `createElement`/`querySelector`/`closest` selectors,
-  `tagName == 'SOCI-…'` comparisons, and CSS selectors in both `nonio.css` and
-  component `css()` strings.
-- CSS custom properties `--soci-ease*`, `--soci-blog-*` → `--nonio-*`.
-- Class names `SociComponent`/`SociPost`/… → `Nonio*`, and the globals
+- All 60 custom elements: `<soci-post>` is now `<nonio-post>`, and the same for
+  every other tag. That covers the `customElements.define` strings, the pug and
+  HTML markup, the `innerHTML` templates, the
+  `createElement`/`querySelector`/`closest` selectors, the `tagName == 'SOCI-…'`
+  comparisons, and the CSS selectors in both `nonio.css` and the component
+  `css()` strings.
+- CSS custom properties `--soci-ease*` and `--soci-blog-*` → `--nonio-*`.
+- Class names `SociComponent`, `SociPost`, … → `Nonio*`, and the globals
   `window.soci`, `window.sociRouter`, `window.sociModals`.
-- Frontend filenames: `soci.js`/`soci.css` → `nonio.js`/`nonio.css`,
+- Files: `soci.js`/`soci.css` → `nonio.js`/`nonio.css`,
   `components/soci-*.js` → `components/nonio-*.js`, `lib/soci-*.js` →
-  `lib/nonio-*.js`. The service directories themselves are unchanged (see below).
-- Backend: `socid` binary → `noniod`, `sociConfig` → `nonioConfig`, the "SOCI"
-  strings in `/` and the CLI usage line, docs titles, npm package names.
+  `lib/nonio-*.js`, `soci-tokens.styl` → `nonio-tokens.styl`.
+- Directories: `soci-frontend` → `nonio-frontend`, `soci-backend` →
+  `nonio-backend`, `soci-{avatar,image,video,html}-cdn` →
+  `nonio-{avatar,image,video,html}-cdn`, with the Go module paths and every
+  import following. `nonio-tui`, `quickStart.sh`, `speed-lab/boot.sh`,
+  `speed-lab/vps/{deploy,provision}.sh` and the systemd units are updated to
+  match.
+- Backend: the `socid` binary is now `noniod`, `sociConfig` is `nonioConfig`,
+  and the strings a user sees ("welcome to SOCI v0.1!", the CLI usage line, the
+  docs titles) say Nonio. The npm package names and the dead `jjcm/soci-api`
+  repository URLs in `nonio-backend/docs` are updated too.
 - `localStorage` keys `soci-column-{sort,filter,view}` → `nonio-column-*`.
-  index.pug migrates the old keys once, before the shell prefetch reads them,
-  then deletes them.
+  index.pug migrates the old keys before the shell prefetch reads them, then
+  deletes them, so the first load after a deploy still prefetches the saved feed.
 - Custom event `soci-radio-select` → `nonio-radio-select`.
 
-**Intentionally left on the old name** (these are live infrastructure
-identifiers, and changing them is an ops task, not a code change): the MariaDB
-database `socidb` (plus `socidb_testing` / `socidb_handlers_testing` and the
-`soci-db` dev container), the service directories `soci-frontend`,
-`soci-backend`, `soci-{avatar,image,video,html}-cdn` and the Go module paths
-that follow them, and the `soci-build` unix group in the backend README.
+**Left alone.** The database names: `socidb`, plus the `socidb_testing` and
+`socidb_handlers_testing` databases the Go tests use and the `soci-db` dev
+container. Those are live DSNs, so renaming them is a migration rather than a
+code change. Also the `soci-build` unix group in the backend README, and
+"associated"/"social", which merely contain the letters.
 
-**Guard:** `soci-frontend/test/components.test.js` fails if a `soci-` element,
-`--soci-` custom property, or `Soci*` class name reappears, if a relative import
-stops resolving, or if a component is registered twice. Frontend `npm test` is
-15/15; CDN `go test ./...` green; backend `go vet ./...` clean (its model tests
-need a MySQL, which this box does not have).
+**Deploy.** `speed-lab/vps/deploy.sh` rsyncs with `--delete` and excludes the
+CDN media directories, so it now moves `soci-*-cdn/files` and
+`soci-frontend/config.js` across on the box before syncing. Without that step
+the first post-rename deploy would delete every upload. It only moves when the
+destination is absent, so re-running it is safe.
+
+**Guard.** `nonio-frontend/test/components.test.js` fails if a `soci-` element,
+`--soci-` custom property or `Soci*` class name reappears, if a relative import
+stops resolving, or if a component gets registered twice.
+
+**Verified.** Frontend `npm test` 15/15. Backend `go test ./...` green including
+`models` and `httpd/handlers` against a real MariaDB. All four CDN suites green.
+In headless Chromium all 60 elements register and upgrade, `--nonio-ease`
+resolves, `window.nonio` is present and `window.soci` is gone.
 
 **Migration note:** old `<soci-*>` tags will not upgrade. Nothing defines them
-any more, so any cached HTML or external embed that still uses them renders as
-inert unknown elements. The app shell is served `no-cache`, so a reload picks up
-the new markup.
+any more, so cached HTML or an external embed still using them renders as inert
+unknown elements. The app shell is served `no-cache`, so a reload picks up the
+new markup.
 
 ## 2026-08-24 — VPS speed lab: live deploy + measured perf loop (branch `cursor/speed-vps-loop-27f0`)
 
@@ -73,7 +90,7 @@ measure.mjs; Chromium pinned with `--disable-quic` on throttled lanes (QUIC
 bypasses CDP throttling) and fixed lazy-image margins via `--blink-settings`
 (Chrome's connection estimate flips them bimodally); transitions probe treats
 empty-`src` template imgs as decoded. Seed thumbnails regenerated at
-production geometry (`-resize 192x144^` per soci-image-cdn) after discovering
+production geometry (`-resize 192x144^` per nonio-image-cdn) after discovering
 the lab was serving 4-6× production weight.
 
 All suites green at wrap: backend `go test ./...`, frontend `npm test` (12/12),
@@ -83,7 +100,7 @@ avatar/html CDN tests. Not merged to master.
 
 Follow-on to the monorepo unification below, same branch/PR.
 
-- **Migrations condensed to one file** (`soci-backend/migrations/00001_initial_schema.sql`).
+- **Migrations condensed to one file** (`nonio-backend/migrations/00001_initial_schema.sql`).
   Reproduces the old 55-migration chain exactly — verified by diffing
   `mysqldump --no-data` of a fresh DB built each way (byte-identical). The old
   chain's UPDATEs were all mid-chain backfills (no-ops on empty DBs), so no
@@ -91,7 +108,7 @@ Follow-on to the monorepo unification below, same branch/PR.
   no-op under goose (double extension), so `admin_users` never existed on
   fresh DBs and is referenced nowhere — intentionally absent. Deployed DBs at
   goose v55 treat version 1 as applied; they pick up the new indexes via the
-  one-shot `soci-backend/scripts/2026-08-23-add-hot-path-indexes.sql`.
+  one-shot `nonio-backend/scripts/2026-08-23-add-hot-path-indexes.sql`.
 - **Backend perf (measured on a seeded local stack: 3000 posts, 30000
   comments, 300 users; medians of 9; responses byte-identical before/after):**
   - Batch hydration: `GET /posts` was 201 queries per uncached page (1 list +
@@ -130,12 +147,12 @@ Follow-on to the monorepo unification below, same branch/PR.
   wrappers); frontend `npm test` via node's built-in runner (server ETag/304/
   gzip behavior + api client logic), no new framework. Also fixed two
   pre-existing breaks that Go 1.24 vet turned into compile failures
-  (`models/user_test.go`, `soci-image-cdn/route/move.go`).
+  (`models/user_test.go`, `nonio-image-cdn/route/move.go`).
 
 ## 2026-08-23 — Monorepo unification (no more submodules)
 
-- Vendored all five former submodules (`soci-frontend`, `soci-backend`,
-  `soci-avatar-cdn`, `soci-image-cdn`, `soci-video-cdn`) into this repo as real
+- Vendored all five former submodules (`nonio-frontend`, `nonio-backend`,
+  `nonio-avatar-cdn`, `nonio-image-cdn`, `nonio-video-cdn`) into this repo as real
   directories, byte-exact at the SHAs the superrepo pinned. `.gitmodules` and
   the gitlinks are gone; a plain `git clone` is a complete checkout.
 - `quickStart.sh` is now the single start path: it verifies go/node/screen/goose,
@@ -154,7 +171,7 @@ Measured on a local stack (MariaDB, goose, Go API, CDNs, frontend) with a
 Playwright harness on two throttled lanes: Slow 4G (150 ms RTT / 1.6 Mbps) and
 a desktop wifi profile (20 ms RTT / 20 Mbps). Medians of n=9.
 
-- **Frontend (soci-frontend)**
+- **Frontend (nonio-frontend)**
   - `index.js`: gzip for text/JSON/JS/CSS/SVG over 512 B, with output memoized
     per path+ETag so a hot asset is compressed once rather than per request.
     ETag + 304 on static files (size+mtime) and on the rendered shell (content
@@ -182,7 +199,7 @@ a desktop wifi profile (20 ms RTT / 20 Mbps). Medians of n=9.
     transform curves are unchanged. The old curve held content below
     perceptible opacity for ~65 ms after the response had already landed.
 
-- **Backend (soci-backend)**
+- **Backend (nonio-backend)**
   - New `httpd/middleware/gzip.go`, wrapping all three route groups. Feed JSON
     is the largest thing a client downloads during an in-app navigation and
     compresses ~5x. Buffers the first 512 B so the decision uses both content
@@ -199,20 +216,20 @@ a desktop wifi profile (20 ms RTT / 20 Mbps). Medians of n=9.
     3968 → 208 ms, warm feed paint 4300 → 361 ms. No metric regressed.
 ## 2026-08-21 — Faster, shorter page and post load animations
 
-- **Frontend (soci-frontend)**
+- **Frontend (nonio-frontend)**
   - Halved the duration and vertical travel distance of post-list load animations in list and lanes views.
   - Halved the duration and vertical travel distance of primary, secondary, and tertiary route load animations.
 
 ## 2026-02-27 — User page post-list filtering + sidebar Posts default active
 
-- **Frontend (soci-frontend)**
+- **Frontend (nonio-frontend)**
   - Fixed `nonio-post-list` to honor `data` and `user` attributes: when `data` is set (e.g. `data="/posts?user=username&sort=top"`), the component now uses that URL and merges sort/filter from its controls. Added `user` attribute support so `_buildPostsUrl()` includes `?user=` when present.
   - User page post list now correctly filters to the current user's posts (user.js already passed `data`; nonio-post-list now consumes it).
   - Sidebar user panel: Posts is the default active nav item when navigating to `/user/:username`. Fixes: (1) `_setActiveNavItem('none')` was clearing all `nonio-tag-li[active]` after the user panel set them—now `_notifyUserPanelRouteState` is called again after `_setActiveNavItem`; (2) `nonio-post-list`'s `_syncFromLocation` was calling `activateTag` on connect/hashchange, which cleared the user panel's Posts—now it skips `activateTag` when pathname is `/user/...`.
 
 ## 2026-02-24 — Added nonio-emoji component and migrated custom emoji rendering
 
-- **Frontend (soci-frontend)**
+- **Frontend (nonio-frontend)**
   - Added new `components/nonio-emoji.js` web component (`<nonio-emoji name="...">`) with shadow-root `<img>` rendering.
   - `nonio-emoji` now updates image URL whenever `name` changes and uses fixed sizing behavior:
     - host-managed inline sizing,
@@ -231,7 +248,7 @@ a desktop wifi profile (20 ms RTT / 20 Mbps). Medians of n=9.
 
 ## 2026-02-24 — Text channel composers moved to nonio-input
 
-- **Frontend (soci-frontend)**
+- **Frontend (nonio-frontend)**
   - Updated `components/nonio-text-channel-view-threaded.js` to replace both channel composers (`#message-input` and `#thread-input`) from `textarea` to `nonio-input`.
   - Preserved Enter-to-send behavior (Shift+Enter newline) by intercepting keydown in capture phase on `nonio-input`.
   - Updated emoji picker insertion path to use `nonio-input.insertText(...)` so selected emojis insert at the current cursor in the active composer.
@@ -240,7 +257,7 @@ a desktop wifi profile (20 ms RTT / 20 Mbps). Medians of n=9.
 
 ## 2026-02-24 — Markdown/user-input rich token rendering (emoji + mentions)
 
-- **Frontend (soci-frontend)**
+- **Frontend (nonio-frontend)**
   - Added shared rich-text token utilities in `lib/nonio-rich-text.js` for `:emoji:` and `@username` scanning plus DOM decoration helpers.
   - Updated `components/nonio-markdown-view.js` to post-process parsed markdown with token-aware DOM decoration:
     - custom emojis render as inline images (`/emoji/:name.webp`) with text fallback on image load failure,
@@ -254,23 +271,23 @@ a desktop wifi profile (20 ms RTT / 20 Mbps). Medians of n=9.
   - Removed legacy text-channel-only markdown emoji post-processing from `components/nonio-text-channel-view-threaded.js` in favor of centralized `nonio-markdown-view` behavior.
 ## 2026-02-23 — Community admin settings refactor
 
-- **Frontend (soci-frontend)**
+- **Frontend (nonio-frontend)**
   - Added dedicated "Community settings" link to sidebar under "Submit post", visible to community admins.
   - Replaced inline admin links in the sidebar description block.
   - Added unified admin navigation header across `community-settings`, `community-users`, `community-financials`, and `community-emojis` pages.
   - Added a new `settings` icon in `nonio-icon.js`.
   - Updated JS controllers for admin pages to properly rewrite header `nonio-link` paths based on the active community URL.
 
-- **Backend (soci-backend)**
+- **Backend (nonio-backend)**
   - Updated `localRun.sh` to include the same local LiveKit dev env defaults used by `nonio-tui`:
     - `LIVEKIT_URL=http://localhost:7880`
     - `LIVEKIT_API_KEY=devkey`
     - `LIVEKIT_API_SECRET=secret`
-  - This keeps voice endpoints configured when backend is launched directly via `soci-backend/localRun.sh`.
+  - This keeps voice endpoints configured when backend is launched directly via `nonio-backend/localRun.sh`.
 
 ## 2026-02-22 — Voice presence websocket reconnect diagnostics
 
-- **Frontend (soci-frontend)**
+- **Frontend (nonio-frontend)**
   - Added targeted client-side diagnostics in `components/nonio-sidebar.js` for voice presence websocket lifecycle:
     - open/start trigger logging (including reconnect attempt),
     - close/error logging (close code, reason, cleanliness, readyState),
@@ -278,7 +295,7 @@ a desktop wifi profile (20 ms RTT / 20 Mbps). Medians of n=9.
     - explicit stop/restart reason logging at call sites (auth, community change, logout, disconnect callback, reconnect).
   - This is instrumentation only; behavior is unchanged.
 
-- **Backend (soci-backend)**
+- **Backend (nonio-backend)**
   - Added targeted server-side diagnostics in `httpd/handlers/voice_presence_ws.go`:
     - per-connection connect/disconnect logs (community, user ID, remote address, close reason),
     - current per-community client counts on connect/disconnect,
@@ -293,7 +310,7 @@ a desktop wifi profile (20 ms RTT / 20 Mbps). Medians of n=9.
 
 ## 2026-02-22 — Text channel live message delivery over websocket
 
-- **Backend (soci-backend)**
+- **Backend (nonio-backend)**
   - Added `GET /community/channel/ws` websocket endpoint (`httpd/handlers/channel_ws.go`) for channel-scoped realtime text message delivery with JWT auth and community membership checks.
   - Registered `/community/channel/ws` in `httpd/routes.go`.
   - Wired channel message create + thread reply create handlers to broadcast `channel.message.created` events to connected channel websocket clients.
@@ -301,7 +318,7 @@ a desktop wifi profile (20 ms RTT / 20 Mbps). Medians of n=9.
   - Follow-up fix: message create/reply now send/broadcast pointers (`&msg`) so custom channel-message JSON marshalling applies in both HTTP responses and websocket events (ensures `user` is populated).
   - Updated backend docs for the new route in `docs/sidebar.pug`, `docs/api/channels.pug`, and `docs/LLM.md`.
 
-- **Frontend (soci-frontend)**
+- **Frontend (nonio-frontend)**
   - Added `window.api.channelMessages.wsUrl(...)` helper in `api.js`.
   - `nonio-text-channel-view-threaded` now opens a channel websocket connection, handles reconnect with exponential backoff, and applies incoming `channel.message.created` events live.
   - Added live websocket handling for `channel.message.reaction` events so reaction chips/counts update across clients in real time.
@@ -313,22 +330,22 @@ a desktop wifi profile (20 ms RTT / 20 Mbps). Medians of n=9.
 
 ## 2026-02-22 — Text channel multi-image attachments + viewer
 
-- **Frontend (soci-frontend)**
+- **Frontend (nonio-frontend)**
   - `nonio-text-channel-view` now supports attaching multiple images on both main messages and thread replies.
   - Added composer thumbnail previews for pending attachments in both composers (`max-height: 80px`).
   - Added image paste support while composing in text channels and drag/drop image attach support across the full channel view surface.
   - Added fullscreen image viewer using `nonio-modal`; clicking message thumbnails opens the viewer and supports left/right navigation for multi-image messages.
   - Message attachment thumbnails are now constrained to `max-height: 200px`.
 
-- **Backend (soci-backend)**
+- **Backend (nonio-backend)**
   - Channel message create and thread reply create now accept `imageUrls` in addition to legacy `imageUrl`.
   - Message serialization now returns `imageUrls` while preserving `imageUrl` compatibility.
   - Message persistence stores multiple image references in the existing `image_url` field in a backward-compatible serialized form.
 
-## 2026-02-15 — API docs migrated to soci-backend/docs
+## 2026-02-15 — API docs migrated to nonio-backend/docs
 
-- **Backend (soci-backend)**
-  - Created `soci-backend/docs/` and ported nonio-api-docs project (Node.js server, pug, stylus).
+- **Backend (nonio-backend)**
+  - Created `nonio-backend/docs/` and ported nonio-api-docs project (Node.js server, pug, stylus).
   - Updated all API docs to match current routes: fixed paths (/posts/:url, /comments query params), methods (POST notification/mark-read), added community scoping.
   - Added new sections: Communities, Channels, Voice, Stripe, Subscriptions, Admin, Emojis.
   - Added `LLM.md` (full API in markdown for LLM consumption), served at /LLM.md.
@@ -346,14 +363,14 @@ a desktop wifi profile (20 ms RTT / 20 Mbps). Medians of n=9.
 
 ## 2026-02-15 — Voice presence: websocket-based community activity
 
-- **Backend (soci-backend)**
+- **Backend (nonio-backend)**
   - Added `GET /voice/presence/ws` websocket endpoint (community-scoped, token-authenticated, member-gated) in `httpd/handlers/voice_presence_ws.go`.
   - Added a shared in-process voice presence hub that tracks active websocket clients per community and broadcasts updates only to subscribed viewers.
   - Added server-side change detection for voice presence and broadcast events (`voice.presence.snapshot` on connect, `voice.presence.update` on participant changes).
   - Refactored `VoicePresence` (`POST /voice/presence`) to reuse shared voice presence snapshot logic (`getVoicePresenceChannels`).
   - Registered websocket route in `httpd/routes.go`.
 
-- **Frontend (soci-frontend)**
+- **Frontend (nonio-frontend)**
   - Replaced sidebar voice presence interval polling with websocket connection lifecycle in `components/nonio-sidebar.js`.
   - Added reconnect/backoff behavior for voice presence socket, scoped to the currently viewed community.
   - Sidebar now consumes realtime socket events (`voice.presence.snapshot` and `voice.presence.update`) to update `_voicePresenceByChannel` and re-render channel previews immediately.
@@ -362,7 +379,7 @@ a desktop wifi profile (20 ms RTT / 20 Mbps). Medians of n=9.
 
 ## 2026-02-13 — Move `/user/:name` context into sidebar user panel
 
-- **Frontend (soci-frontend)**
+- **Frontend (nonio-frontend)**
   - Added a dedicated `nonio-sidebar-user-panel` view in `components/nonio-sidebar-panel.js` and registered it in `components/nonio-components.js`.
   - Sidebar now switches to `view="user"` on `/user/*` routes and falls back to `community` when leaving that route (`components/nonio-sidebar.js`).
   - New user panel includes:
@@ -382,7 +399,7 @@ a desktop wifi profile (20 ms RTT / 20 Mbps). Medians of n=9.
 
 ## 2026-02-13 — Refactor: DRY community switcher + user panel cleanup
 
-- **Frontend (soci-frontend)**
+- **Frontend (nonio-frontend)**
   - Created `nonio-sidebar-switcher` component (`components/nonio-sidebar-switcher.js`): reusable wrapper for the community option dropdown shared between the community panel and user panel. Handles option population, navigation on select, and "Create Community" action.
   - Both `nonio-sidebar-community-panel` and `nonio-sidebar-user-panel` now wrap their `nonio-select` in `nonio-sidebar-switcher`, eliminating duplicated select-event handlers and option-building code.
   - Removed `_onCommunitySelect` from `nonio-sidebar.js` (switcher handles it).
@@ -397,7 +414,7 @@ a desktop wifi profile (20 ms RTT / 20 Mbps). Medians of n=9.
 
 ## 2026-01-08 — Reduce frontend bundle bloat + safer feed payloads
 
-- **Frontend (soci-frontend)**
+- **Frontend (nonio-frontend)**
   - Replaced large inline SVG blocks in `nonio-column` header controls with `nonio-icon` glyphs (smaller HTML strings, shared icon defs)
   - Sidebar “All posts” icon now uses the same glyph as the header
   - Added shared helper `lib/post-filter.js` to DRY filter→type mapping
@@ -408,7 +425,7 @@ a desktop wifi profile (20 ms RTT / 20 Mbps). Medians of n=9.
   - `nonio-post-list`: removed `ResizeObserver` “large” toggle; header control layout now uses `@media (min-width: 1025px)` instead
   - `nonio-post-list` lanes/masonry: prevent initial vertical-list flicker by hiding cards until the grid-lanes polyfill marks them positioned, then fade+slide them in (shadow DOM-safe)
 
-- **Backend (soci-backend)**
+- **Backend (nonio-backend)**
   - `/posts` list responses now truncate `content` to a short preview (max ~10 lines / 2000 chars) to avoid shipping full long-form content with every feed fetch
   - Fixed `/posts` handler crash (`fatal error: concurrent map writes`) by guarding `PostCache` with an RWMutex (concurrent requests were writing the global map)
   - Fixed `/posts` failing during tag enrichment when `posts_tags.tag_id` was `0` or referenced a missing tag row:
@@ -423,7 +440,7 @@ a desktop wifi profile (20 ms RTT / 20 Mbps). Medians of n=9.
 
 ## 2026-01-09 — Speed up backend `go test` by migrating DB once + truncating between tests
 
-- **Backend (soci-backend)**
+- **Backend (nonio-backend)**
   - Tests in `models/` now run DB migrations **once** per package test run (instead of per test), then **TRUNCATE** tables between tests to keep isolation.
   - `00053_scope_subscriptions_to_community.sql` made robust for fresh DBs and partially-migrated DBs:
     - Fix MySQL AUTO_INCREMENT requirement (must be keyed)
@@ -431,12 +448,12 @@ a desktop wifi profile (20 ms RTT / 20 Mbps). Medians of n=9.
 
 ## 2026-01-07 — Server-side type filtering + incremental post loading
 
-- **Backend (soci-backend)**
+- **Backend (nonio-backend)**
   - Added `type` parameter to `PostQueryParams` struct in `models/post.go`
   - Added `?type=image|video|blog|link|audio` query parameter to `/posts` endpoint
   - Server-side filtering by post type for more efficient queries
 
-- **Frontend (soci-frontend)**
+- **Frontend (nonio-frontend)**
   - Updated `nonio-column.js`:
     - Refactored `sortPosts` and `filterPosts` to use shared `_buildPostsUrl()` method
     - Filter changes now trigger server request with `type` parameter
@@ -448,7 +465,7 @@ a desktop wifi profile (20 ms RTT / 20 Mbps). Medians of n=9.
 
 ## 2026-01-06 — Header bar reorganization + tag input
 
-- **Frontend (soci-frontend)**
+- **Frontend (nonio-frontend)**
   - Reorganized `nonio-column` header bar layout:
     - New layout: `[menu] [tag input] |--spacer--| [view toggle] | [sort] | [filter]`
     - Added `#tag-input`: 32px text input for navigating to tags
@@ -459,20 +476,20 @@ a desktop wifi profile (20 ms RTT / 20 Mbps). Medians of n=9.
 
 ## 2026-01-06 — Fix video posts missing from feed (encoding flag fallback + better logging)
 
-- **Backend (soci-backend)**
+- **Backend (nonio-backend)**
   - `models/post.go`: feed query now includes video posts stuck in `is_encoding=true` for >24h (fallback in case encoding-complete notify fails)
   - `models/post.go`: improved `MarkEncodingComplete` logging + detects “0 rows updated” to catch URL mismatches
   - `httpd/handlers/postEncodingComplete.go`: added request + success/error logs for encoding-complete notifications
 
 ## 2026-01-06 — Fix community “Who can post?” = All Users not allowing free users
 
-- **Backend (soci-backend)**
+- **Backend (nonio-backend)**
   - `httpd/handlers/postCreate.go`: post creation now respects community `post_permission`; for community posts, **only** enforces `User.CanPost()` when `post_permission="paid"`.
   - `httpd/handlers/postHelpers.go`: added `resolveCommunity(...)` helper to share normalized slug + community lookup.
 
 ## 2026-01-05 — CSS Grid Lanes polyfill + post list view toggle
 
-- **Frontend (soci-frontend)**
+- **Frontend (nonio-frontend)**
   - Added `lib/grid-lanes-polyfill.js`: a polyfill implementing CSS Grid Level 3 "grid lanes" (masonry/waterfall) layout
     - Based on [CSS Grid Layout Module Level 3 spec](https://drafts.csswg.org/css-grid-3/#grid-lanes-layout)
     - Auto-calculates column count based on container width and minimum column width (300px)
@@ -496,7 +513,7 @@ a desktop wifi profile (20 ms RTT / 20 Mbps). Medians of n=9.
 
 ## 2026-01-04 — Switch email sending from Gmail OAuth2 to App Password
 
-- **Backend (soci-backend)**
+- **Backend (nonio-backend)**
   - Changed all email sending from `utils.SendEmailOAUTH2()` to `utils.SendEmail()`:
     - `models/user.go` (forgot password)
     - `httpd/handlers/userBan.go` (ban notification)
@@ -507,10 +524,10 @@ a desktop wifi profile (20 ms RTT / 20 Mbps). Medians of n=9.
 
 ## 2025-12-16 — Dev activity simulator + daily payout cycle (dev-only)
 
-- **Backend (soci-backend)**
+- **Backend (nonio-backend)**
   - Added **dev-only subscription-funded payout scheduling**: `DEV_SUBSCRIPTION_PAYOUTS=true` enables a scheduler that creates future `payouts` rows for users with `subscription_amount > 0`, using `PAYOUT_CYCLE_DAYS` (set to `1` for daily).
   - Added **dev-only endpoint** `POST /dev/user/set-subscription` (requires `DEV_TOOLS_ENABLED=true`) to set the authenticated user’s `subscription_amount` and ensure a corresponding future payout exists.
-  - Updated `soci-backend/localRun.sh` to default these flags on for local testing:
+  - Updated `nonio-backend/localRun.sh` to default these flags on for local testing:
     - `DEV_TOOLS_ENABLED=true`
     - `DEV_SUBSCRIPTION_PAYOUTS=true`
     - `PAYOUT_CYCLE_DAYS=1`
@@ -519,11 +536,11 @@ a desktop wifi profile (20 ms RTT / 20 Mbps). Medians of n=9.
   - Added `nonio-simulator/` which:
     - Bootstraps **multiple users** and assigns each a **different subscription amount** (via `/dev/user/set-subscription`).
     - Runs an **every-1-minute** activity loop:
-      - **5%** create a post (blog/image). Image posts use fal.ai Z-Image Turbo and upload to `soci-image-cdn`.
+      - **5%** create a post (blog/image). Image posts use fal.ai Z-Image Turbo and upload to `nonio-image-cdn`.
       - **95%** tag/upvote/tag-create interactions; sometimes reads comments, upvotes, and replies.
     - Uses **Grok (xAI)** for action/content selection and to generate **distinct personas** (background/personality/interests/tag prefs).
     - Sets each sim user’s **profile description** using `POST /user/update-description`.
-    - Gives each sim user an **avatar** by generating an image (fal.ai) and uploading it to `soci-avatar-cdn` (`AVATAR_HOST`, default `http://localhost:4202`).
+    - Gives each sim user an **avatar** by generating an image (fal.ai) and uploading it to `nonio-avatar-cdn` (`AVATAR_HOST`, default `http://localhost:4202`).
     - Persists sim users/personas/tokens in `nonio-simulator/.sim-state.json`.
 
 - **Known issue / next work**
@@ -532,19 +549,19 @@ a desktop wifi profile (20 ms RTT / 20 Mbps). Medians of n=9.
 
 ## 2025-12-22 — Sidebar light-DOM refactor (slots + logged-out behavior)
 
-- **Frontend (soci-frontend)**
-  - Moved sidebar default markup to **light DOM** via `soci-frontend/sidebar.pug` (included from `soci-frontend/index.pug`).
+- **Frontend (nonio-frontend)**
+  - Moved sidebar default markup to **light DOM** via `nonio-frontend/sidebar.pug` (included from `nonio-frontend/index.pug`).
   - `nonio-sidebar` now exposes:
     - `<slot name="user">`
     - default `<slot>` (community/tags + panels)
     - `<slot name="footer">`
   - Renamed panels: **`#auth` → `#community`**, **`#noauth` → `#login`**.
   - Logged-out users now still see **community + tags**; **subscribed tags are hidden** until authenticated; login view only shown via explicit action (footer “Login”).
-  - Migrated sidebar styles into `soci-frontend/nonio.css` and scoped user-route styles from `#user` to `nonio-route#user` to avoid collisions with sidebar’s `section#user`.
+  - Migrated sidebar styles into `nonio-frontend/nonio.css` and scoped user-route styles from `#user` to `nonio-route#user` to avoid collisions with sidebar’s `section#user`.
 
 ## 2026-01-03 — Login-required modals for gated actions (create community / tag interactions)
 
-- **Frontend (soci-frontend)**
+- **Frontend (nonio-frontend)**
   - Added a reusable `window.nonio.requireLogin(...)` helper that opens a `nonio-modal` explaining login is required.
   - Gated:
     - Sidebar community switcher “Create Community”
@@ -553,13 +570,13 @@ a desktop wifi profile (20 ms RTT / 20 Mbps). Medians of n=9.
 
 ## 2026-01-04 — Sidebar simplification + links filter
 
-- **Frontend (soci-frontend)**
+- **Frontend (nonio-frontend)**
   - Sidebar: removed pseudo-filters (**Images / Videos / Blogs**) from the sidebar list; kept **All posts** and added **Submit post** under it.
   - Feed filters now live strictly in `nonio-column`; added **Links** filter (before Images) and added post-list filtering support for link posts.
 
 ## 2026-01-03 — Fix "Subscribed Tags" section animation
 
-- **Frontend (soci-frontend)**
+- **Frontend (nonio-frontend)**
   - Fixed the "Subscribed Tags" section in the sidebar snapping in instead of animating. Multiple issues:
     1. CSS `transition: all` is unreliable for `height` - changed to explicitly list `height`, `min-height`, `opacity`
     2. The function was being called multiple times in quick succession (race from async tag loaders) - added `_subscribedListAnimating` guard
@@ -568,13 +585,13 @@ a desktop wifi profile (20 ms RTT / 20 Mbps). Medians of n=9.
 
 ## 2026-01-03 — Remove live preview from nonio-input
 
-- **Frontend (soci-frontend)**
+- **Frontend (nonio-frontend)**
   - Removed live markdown preview from `nonio-input` component (the preview that appeared below the textarea while editing)
   - Simplified component by removing preview-related HTML, CSS, and JS (focus/blur handlers for toggling preview visibility)
 
 ## 2026-01-03 — Mobile sidebar and post list fixes (hamburger close + footer + delete)
 
-- **Frontend (soci-frontend)**
+- **Frontend (nonio-frontend)**
   - Added hamburger close button in mobile sidebar overlay: hamburger icon floats (position absolute) over the community selector on the left
   - Added 40px left padding to selected `nonio-option` in mobile overlay to make room for the hamburger
   - Fixed footer (`#sidebar-user`) width in mobile view: now fills 100% width instead of being stuck at 280px
@@ -585,14 +602,14 @@ a desktop wifi profile (20 ms RTT / 20 Mbps). Medians of n=9.
 
 ## 2026-02-13 — Remove user route header (moved controls to sidebar panel)
 
-- **Frontend (soci-frontend)**
+- **Frontend (nonio-frontend)**
   - Removed the `<header>` block from `pages/user.pug` so the user route no longer renders duplicated in-page controls.
   - Simplified `pages/user.js` by removing header click wiring and deleting the now-unused `headerClick` + mutable `sort` state; user content requests now always use `sort=top`.
   - Scoped the old header UI CSS in `nonio.css` to notifications only, so stale `#user` header selectors are no longer carried in the user route styles.
 
 ## 2026-02-14 — Sidebar user-route DRY refactor + nav active fix
 
-- **Frontend (soci-frontend)**
+- **Frontend (nonio-frontend)**
   - Removed duplicate user-route detection from `nonio-sidebar-user-panel`: deleted panel-side route regex parsing and `hashchange`/`popstate`/`link` listeners.
   - Added a single user-route resolver in `nonio-sidebar` (`_resolveUserRouteState`) and route-state handoff to the user panel (`setRouteState`) from `_onRouteChange`.
   - Kept route matching behavior centralized in sidebar routing flow, so user panel now renders from sidebar-provided `username` + `section` context.
@@ -601,7 +618,7 @@ a desktop wifi profile (20 ms RTT / 20 Mbps). Medians of n=9.
 
 ## 2026-02-14 — Move sidebar auth/create flows into top-level modals
 
-- **Frontend (soci-frontend)**
+- **Frontend (nonio-frontend)**
   - Moved `nonio-sidebar-login-panel`, `nonio-sidebar-account-creation`, and `nonio-sidebar-create-community-panel` out of the sidebar and into dedicated top-level `nonio-modal` containers in `index.pug`.
   - Simplified sidebar view semantics so sidebar panels remain route/context-driven (`community` / `user`) while login/create flows are modal actions.
   - Rewired sidebar actions (`showLogin`, signup click, create community from selector) to open the new modals, and added modal close coordination (`closeSidebarAuthModals`) after successful login/community creation.
@@ -611,7 +628,7 @@ a desktop wifi profile (20 ms RTT / 20 Mbps). Medians of n=9.
 
 ## 2026-02-14 — Modal components directory + lazy modal manager
 
-- **Frontend (soci-frontend)**
+- **Frontend (nonio-frontend)**
   - Added `components/modals/` with one file per modal component: `nonio-login-modal`, `nonio-create-account-modal`, and `nonio-create-community-modal`.
   - Added `components/modals/nonio-modal-manager.js` as a small registry-based, lazy-loaded modal manager (`open`, `close`, `closeAll`) that dynamically imports each modal component only when first opened.
   - Removed static auth/create modal instances from `index.pug`; auth/create modals are now mounted on demand and removed on close to avoid idle DOM pollution.
@@ -622,7 +639,7 @@ a desktop wifi profile (20 ms RTT / 20 Mbps). Medians of n=9.
 
 ## 2026-02-14 — Event-driven auth modals + standard styling
 
-- **Frontend (soci-frontend)**
+- **Frontend (nonio-frontend)**
   - Decoupled `nonio-login-modal`, `nonio-create-account-modal`, and `nonio-create-community-modal` from `nonio-sidebar`. They now dispatch `auth-login`, `auth-signup`, and `community-created` events on `window`.
   - Updated `nonio-sidebar` to listen for these global events instead of injecting callbacks or methods into the modals.
   - Standardized modal CSS: added `.modal-form` and `.modal-footer` classes in `nonio.css` and applied them to all auth/create modals for consistent layout.
@@ -634,17 +651,17 @@ a desktop wifi profile (20 ms RTT / 20 Mbps). Medians of n=9.
 
 ## 2026-02-15 — Text channel threads/reactions/emojis + emoji admin surfaces
 
-- **Backend (soci-backend)**
+- **Backend (nonio-backend)**
   - Added thread + reaction + emoji metadata APIs and route registration for text channels (`/community/channel/thread`, `/community/channel/message/react`, `/community/emojis`, `/community/emoji/create`, `/emoji/create`, `/emojis/sets`, `/emoji/subscribe`, `/emoji`).
   - Added message model support for `parentID`, `replyCount`, and reaction summaries, including reaction toggle and metadata hydration helpers for list responses.
   - Added emoji metadata model helpers for community-owned, user-owned, subscribed, and default emoji sets.
   - Added migration for threaded messages, message reactions, emoji metadata, and user emoji subscriptions.
 
-- **CDN (soci-avatar-cdn)**
+- **CDN (nonio-avatar-cdn)**
   - Added `type=emoji` upload handling with deterministic keys for community/user scopes.
   - Added emoji encoder pipeline for 64x64 WebP output with animated GIF -> animated WebP conversion support.
 
-- **Frontend (soci-frontend)**
+- **Frontend (nonio-frontend)**
   - Added message-row hover actions (reply/react), hover clock timestamp gutter, and reactions slot rendering hooks.
   - Added threaded text-channel UX: right-side thread panel on desktop and single-column thread view with back arrow on narrow screens.
   - Added reaction chips + emoji picker with default/community/personal/subscribed sets; picker supports reacting or token insertion (`:e<ID>:`).
@@ -654,9 +671,9 @@ a desktop wifi profile (20 ms RTT / 20 Mbps). Medians of n=9.
 
 ## 2026-02-21 — Thread reply avatar stacks on message rows
 
-- **Backend (soci-backend)**
+- **Backend (nonio-backend)**
   - Added `replyUsers` metadata to channel message responses by hydrating top reply participants (up to 5, ordered by reply frequency per parent message).
 
-- **Frontend (soci-frontend)**
+- **Frontend (nonio-frontend)**
   - Updated `nonio-message-row` reply chips to render a stacked avatar strip before the reply count text.
   - Wired threaded channel rendering to pass `replyUsers` through to rows and refresh row avatar stacks when thread data loads or new replies are sent.

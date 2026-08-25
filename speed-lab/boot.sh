@@ -37,8 +37,8 @@ start_mariadb() {
 
 start_api() {
   (exec 3<>/dev/tcp/127.0.0.1/4201) 2>/dev/null && { echo "  api :4201 already up"; return 0; }
-  cd "$ROOT/soci-backend/cmd" && go build -o ../dist/noniod || return 1
-  cd "$ROOT/soci-backend"
+  cd "$ROOT/nonio-backend/cmd" && go build -o ../dist/noniod || return 1
+  cd "$ROOT/nonio-backend"
   env APP_KEY=asdfa323faefjifajwiefawef WEB_HOST=http://localhost:4200 \
       DB_HOST=127.0.0.1 DB_PORT=3306 DB_DATABASE=socidb DB_USER=dbuser DB_PASSWORD=password \
       APP_PORT=4201 ADMIN_EMAIL=nonio@non.io ADMIN_EMAIL_PASSWORD=x \
@@ -61,7 +61,7 @@ start_cdn() {
 
 start_frontend() {
   (exec 3<>/dev/tcp/127.0.0.1/4200) 2>/dev/null && { echo "  frontend :4200 already up"; return 0; }
-  cd "$ROOT/soci-frontend"
+  cd "$ROOT/nonio-frontend"
   [[ -f config.js ]] || cp config.js.example config.js
   [[ -d node_modules ]] || npm install --silent
   node index.js > "$LOG/frontend.log" 2>&1 &
@@ -70,10 +70,10 @@ start_frontend() {
 
 echo "speed-lab: booting stack from $ROOT"
 start_mariadb
-cd "$ROOT/soci-backend/migrations" && goose mysql "dbuser:password@tcp(127.0.0.1:3306)/socidb" up >/dev/null 2>&1
+cd "$ROOT/nonio-backend/migrations" && goose mysql "dbuser:password@tcp(127.0.0.1:3306)/socidb" up >/dev/null 2>&1
 start_api
-start_cdn soci-avatar-cdn 4202
-start_cdn soci-image-cdn 4203
-start_cdn soci-video-cdn 4204
+start_cdn nonio-avatar-cdn 4202
+start_cdn nonio-image-cdn 4203
+start_cdn nonio-video-cdn 4204
 start_frontend
 echo "speed-lab: stack ready. logs in $LOG"

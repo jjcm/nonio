@@ -14,12 +14,12 @@ A Terminal User Interface (TUI) built with [Bubble Tea](https://github.com/charm
 ## Services Monitored
 
 1. **MariaDB** (Port 3306) - Database connection monitoring
-2. **soci-backend** (Port 4201) - Primary backend API
-3. **soci-frontend** (Port 4200) - Frontend web server
+2. **nonio-backend** (Port 4201) - Primary backend API
+3. **nonio-frontend** (Port 4200) - Frontend web server
 4. **LiveKit** (Port 7880) - Local voice signaling/media server
-5. **soci-avatar-cdn** (Port 4202) - Avatar CDN and encoding
-6. **soci-image-cdn** (Port 4203) - Image CDN and encoding
-7. **soci-video-cdn** (Port 4204) - Video CDN and encoding
+5. **nonio-avatar-cdn** (Port 4202) - Avatar CDN and encoding
+6. **nonio-image-cdn** (Port 4203) - Image CDN and encoding
+7. **nonio-video-cdn** (Port 4204) - Video CDN and encoding
 
 ## Building
 
@@ -60,7 +60,7 @@ The TUI uses environment variables for database configuration. If not set, it de
 - `DB_PASSWORD=password`
 - `DB_DATABASE=socidb`
 
-For the backend service, it uses the same environment variables as defined in `soci-backend/localRun.sh`.
+For the backend service, it uses the same environment variables as defined in `nonio-backend/localRun.sh`.
 
 ## Requirements
 

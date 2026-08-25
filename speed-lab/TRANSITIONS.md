@@ -215,7 +215,7 @@ user unchanged. The 401 request is gone entirely for anonymous readers.
 sits on the critical path on a slow link.
 
 Targets: tag, user, post, homepage. New `middleware.Gzip` wrapping all three
-route groups in `soci-backend`.
+route groups in `nonio-backend`.
 
 `/posts` 8894 → 1860 B, `/posts?tag=photography` 4530 → 1011 B,
 `/comments?post=` 1627 → 506 B, `/tags` 146 B left uncompressed (below the
@@ -352,7 +352,7 @@ validator and no `Cache-Control`, and recompiles `index.pug` on every request
 (measured: 31 ms per request). Fixing all three should move homepage load a lot
 and must not regress transitions.
 
-Targets: homepage load. `soci-frontend/index.js`.
+Targets: homepage load. `nonio-frontend/index.js`.
 
 - gzip for text/JSON/JS/CSS/SVG over 512 B, output memoized per path+ETag so a
   hot asset is compressed once, not per request.

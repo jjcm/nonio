@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 User=fable
-WorkingDirectory=/home/fable/nonio/soci-frontend
+WorkingDirectory=/home/fable/nonio/nonio-frontend
 Environment=PORT=4200
 Environment=NODE_ENV=production
 ExecStart=/usr/bin/node index.js

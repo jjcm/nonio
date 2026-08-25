@@ -1,0 +1,7 @@
+nonio-html-cdn
+html-cdn
+config.json
+files/*
+!files/temp/
+files/temp/*
+!files/temp/.gitkeep

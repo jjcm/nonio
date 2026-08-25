@@ -20,7 +20,7 @@ gen() { # idx aspect W H tw th
     -vf "scale=${tw}:${th}" -c:v libwebp -quality 80 "$thumb"
 }
 
-# Thumbnail geometry mirrors production: soci-image-cdn encodes thumbnails
+# Thumbnail geometry mirrors production: nonio-image-cdn encodes thumbnails
 # with imagemagick `-resize 192x144^` (cover), so per aspect:
 #   16x9 -> 256x144, 4x3 -> 192x144, 9x16 -> 192x342
 for i in $(seq 0 23); do

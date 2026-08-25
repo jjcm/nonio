@@ -1,0 +1,12 @@
+#### update the values of environment variables
+
+Environment=APP_PORT=4203               # the application port
+
+#### start the application by systemd
+
+$ cp nonio-image-cdn.service /etc/systemd/system/    # copy the 'nonio-image-cdn.service' to directory '/etc/systemd/system'
+$ systemctl daemon-reload
+$ systemctl enable nonio-image-cdn.service
+$ systemctl start nonio-image-cdn.service
+$ systemctl status nonio-image-cdn.service
+$ systemctl stop nonio-image-cdn.service

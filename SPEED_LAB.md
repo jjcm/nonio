@@ -109,7 +109,7 @@ after the fix below): 116 requests / 517 KB cold. Transitions neutral-to-better
 **Hypothesis:** 65 modules discovered at depth 2-3 cost one RTT per level; emitting
 `<link rel="modulepreload">` for the crawled graph flattens discovery.
 
-**Change:** import-graph crawler in `soci-frontend/index.js`, links injected in `index.pug`.
+**Change:** import-graph crawler in `nonio-frontend/index.js`, links injected in `index.pug`.
 
 Results: WAN cold neutral (FCP 556→552, LCP 716→708 — discovery already overlaps other work
 on h2). Warm slightly better (−20 ms FCP). slow4g cold: FCP −188 ms but **LCP +112 ms** and
@@ -192,7 +192,7 @@ first, and brotli's win over gzip (~10 KB across the graph) is too small to matt
 
 ### seed realism fix (not an iteration)
 
-`soci-image-cdn` produces thumbnails with imagemagick `-resize 192x144^`; the lab seed had
+`nonio-image-cdn` produces thumbnails with imagemagick `-resize 192x144^`; the lab seed had
 generated 640 px / ~40 KB thumbnails — 4-6× production weight. Regenerated at production
 geometry (256x144 / 192x144 / 192x342 cover, ~6-14 KB) and re-referenced every lane (refD).
 slow4g cold feedPaint dropped 3572 → 2471 from data realism alone; all keep/revert decisions
