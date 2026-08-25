@@ -88,8 +88,6 @@ func Image(file multipart.File, user string, xOffset int, yOffset int, size int)
 	// since this is an image we'll use magick to encode it
 	cmd := exec.Command("convert", tempFile.Name(),
 		"(", "+clone", "-resize", "96x96^", "-write", fmt.Sprintf("files/thumbnails/%v.webp", name), "+delete", ")",
-		"(", "+clone", "-resize", "96x96^", "-write", fmt.Sprintf("files/thumbnails/%v.heic", name), "+delete", ")",
-		"(", "+clone", "-resize", "512x512>", "-write", fmt.Sprintf("files/images/%v.heic", name), "+delete", ")",
 		"-resize", "512x512>", fmt.Sprintf("files/images/%v.webp", name))
 	cmd.Dir = workingDir
 	var output bytes.Buffer
@@ -173,8 +171,6 @@ func Banner(file multipart.File, user string, xOffset int, yOffset int, cropWidt
 	// Resize to banner dimensions: 800x180 full, 160x36 thumbnail
 	cmd := exec.Command("convert", tempFile.Name(),
 		"(", "+clone", "-resize", "160x36!", "-write", fmt.Sprintf("files/thumbnails/%v.webp", name), "+delete", ")",
-		"(", "+clone", "-resize", "160x36!", "-write", fmt.Sprintf("files/thumbnails/%v.heic", name), "+delete", ")",
-		"(", "+clone", "-resize", "800x180!", "-write", fmt.Sprintf("files/images/%v.heic", name), "+delete", ")",
 		"-resize", "800x180!", fmt.Sprintf("files/images/%v.webp", name))
 	cmd.Dir = workingDir
 	var output bytes.Buffer

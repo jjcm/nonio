@@ -320,18 +320,8 @@ export default class SociAvatarUploader extends SociComponent {
   }
 
   _loadCurrentAvatar(){
-    const formats = [
-      {tag: 'source', extension: 'webp'},
-      {tag: 'source', extension: 'heic'},
-      {tag: 'img', extension: 'webp'},
-    ]
-    const ts = Date.now()
-    const html = formats.map(format=>{
-      const attr = format.tag === 'source' ? 'srcset' : 'src'
-      return `<${format.tag} ${attr}="${config.AVATAR_HOST}/${this._avatarPath}.${format.extension}?${ts}">`
-    })
-    this.select('picture').innerHTML = html.join('')
-    this._currentAvatarUrl = `${config.AVATAR_HOST}/${this._avatarPath}.webp?${ts}`
+    this._currentAvatarUrl = `${config.AVATAR_HOST}/${this._avatarPath}.webp?${Date.now()}`
+    this.select('picture').innerHTML = `<img src="${this._currentAvatarUrl}">`
     this.select('#preview').src = this._currentAvatarUrl
   }
 

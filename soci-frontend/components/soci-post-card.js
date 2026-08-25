@@ -190,8 +190,6 @@ export default class SociPostCard extends SociPostLi {
       <div id="media">
         <soci-link id="media-link" href="${postPath}">
           <picture>
-            <source class="heic">
-            <source class="webp">
             <img @load=_onImageLoad />
           </picture>
         </soci-link>
@@ -256,9 +254,6 @@ export default class SociPostCard extends SociPostLi {
     
     img.src = `${host}/${this.url}.webp`
     img.onerror = () => this.classList.add('no-image')
-    
-    container.querySelector('.heic').src = `${host}/${this.url}.heic`
-    container.querySelector('.webp').src = `${host}/${this.url}.webp`
   }
 
   loadContent(type) {

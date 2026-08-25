@@ -3,7 +3,6 @@ package route
 import (
 	"fmt"
 	"net/http"
-	"regexp"
 	"soci-image-cdn/encode"
 	"soci-image-cdn/util"
 
@@ -69,10 +68,7 @@ func FetchOGImage(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
-	re, _ := regexp.Compile("([a-zA-Z]+)/")
-	var mimeType = resp.Header["Content-Type"][0]
-
-	if re.FindStringSubmatch(mimeType)[1] != "image" {
+	if util.MediaCategory(resp.Header.Get("Content-Type")) != "image" {
 		util.SendError(w, "Thumbnail is not an image", 400)
 		return
 	}
