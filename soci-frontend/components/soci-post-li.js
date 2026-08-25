@@ -326,15 +326,11 @@ export default class SociPostLi extends SociComponent {
     return `
     <slot name="thumbnail">
       <picture id="thumbnail">
-        <source class="heic">
-        <source class="webp">
         <img @click=expand />
       </picture>
     </slot>
     <div id="preview">
       <picture>
-        <source class="heic">
-        <source class="webp">
         <img @click=expand />
       </picture>
       <content></content>
@@ -514,8 +510,6 @@ export default class SociPostLi extends SociComponent {
     img.onerror = () => {
       this.classList.toggle('no-image', true)
     }
-    container.querySelector('.heic').src = `${host}/${this.url}.heic`
-    container.querySelector('.webp').src = `${host}/${this.url}.webp`
   }
 
   loadContent(type) {
