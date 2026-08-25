@@ -175,7 +175,7 @@ block content
         files: (binary)
 
       h5 Response
-      p Responds with the temporary name of the image after encoding. This can be accessed via https://image.non.io/${tempName}.webp or via other file extensions. 
+      p Responds with the temporary name of the image after encoding. Uploads are transcoded to webp - including HEIC/HEIF from iOS - so the only extension served is .webp, at https://image.non.io/${tempName}.webp. Requests for .heic or .heif answer 410.
       :code(javascript)
         4e4b2709-e82e-415d-ae6d-5e9f1efaaae8
 
@@ -208,7 +208,7 @@ block content
         }
 
       h5 Response
-      p Responds with the temporary name of the image after encoding. This can be accessed via https://image.non.io/${tempName}.webp or via other file extensions. 
+      p Responds with the created post. Its image is served as webp only, at https://image.non.io/${url}.webp.
       :code(javascript)
         {
           "ID": 28,

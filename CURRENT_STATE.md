@@ -1,3 +1,40 @@
+## 2026-08-25 — HEIC/HEIF deprecated: webp in, webp out (branch `cursor/deprecate-heic-serve-webp-only-ed87`)
+
+Nonio now ingests and serves webp only. HEIC/HEIF uploads are transcoded on the
+way in; nothing writes or serves `.heic` any more.
+
+- **soci-image-cdn ingest:** `encode.Image` sniffs the upload's own bytes
+  (`isHEIF` reads the ISO-BMFF ftyp box, covering the `heix`/`hevc`/`mif1`/…
+  brands `filetype` misses) and runs HEIC/HEIF through the *same* convert
+  pipeline as any other photo — `-resize 192x144^` thumbnail plus the full
+  webp, no extra encoder flags. The three near-identical per-format branches
+  collapsed into `encodeCommands`, which now returns commands and can be
+  asserted on; convert's stderr is folded into the returned error so a missing
+  imagemagick delegate stops being an opaque "exit status 1".
+- **soci-image-cdn + soci-avatar-cdn serving:** `webpOnly` wraps both file
+  servers and answers `.heic`/`.heif` with 410 + `text/plain`, so leftovers from
+  the old dual-encode pipeline can never come back as `image/heic`. Cache TTLs
+  unchanged (images 1 day, avatars 5 min — names aren't content-hashed).
+- **soci-avatar-cdn encode:** avatar + banner `convert` calls no longer write
+  the `.heic` copies (which, incidentally, fail outright on ImageMagick builds
+  where HEIC is read-only).
+- **Upload routing:** content-type parsing moved to `util.MediaCategory`,
+  shared by `/upload` and `/fetch-og-image`. An upload that is neither image nor
+  video now answers 400 instead of panicking on a nil regexp match or returning
+  200 having encoded nothing.
+- **Frontend:** `<source class="heic">` removed from `soci-post-li`,
+  `soci-post-card`, `soci-user` and `soci-avatar-uploader` (those requests were
+  404s already, since image-cdn never produced heic).
+- **Tests:** `soci-image-cdn/encode` covers brand sniffing, "heic gets the same
+  settings as jpeg", the heic→webp ingest via an exec seam, plus a real
+  end-to-end heic→webp encode that skips unless `convert`/`heif-enc` are
+  installed; `serve_test.go` in both CDNs covers the 410; frontend
+  `media-formats.test.js` guards against a heic link creeping back.
+
+Tradeoff: iOS uploads now cost one HEVC decode on the upload path (CPU at
+ingest) in exchange for one stored format, one URL per image, and no HEIC
+decode on any client.
+
 ## 2026-08-24 — VPS speed lab: live deploy + measured perf loop (branch `cursor/speed-vps-loop-27f0`)
 
 Deployed the monorepo to a live 1-vCPU/1 GB Vultr box (108.61.219.46) with a
