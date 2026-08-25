@@ -5,9 +5,10 @@
 // Skipped when no Chrome is installed, so `npm test` still runs everywhere.
 import { test, describe, before, after } from 'node:test'
 import assert from 'node:assert/strict'
-import { spawn } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import { deflateSync } from 'node:zlib'
 import fs from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -54,6 +55,23 @@ function chunk(type, data) {
   return Buffer.concat([len, body, tail])
 }
 
+// -- and a real video of a given size, for the ratio the box must end up on ---
+const FFMPEG = ['/usr/bin/ffmpeg', '/usr/local/bin/ffmpeg', '/opt/homebrew/bin/ffmpeg'].find(p => fs.existsSync(p))
+const clips = {}
+
+function mp4(width, height) {
+  const key = `${width}x${height}`
+  if (!clips[key]) {
+    const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'soci-')), 'clip.mp4')
+    spawnSync(FFMPEG, [
+      '-v', 'error', '-f', 'lavfi', '-i', `color=c=gray:s=${key}:d=1:r=5`,
+      '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', file
+    ])
+    clips[key] = fs.readFileSync(file)
+  }
+  return clips[key]
+}
+
 function png(width, height) {
   const ihdr = Buffer.alloc(13)
   ihdr.writeUInt32BE(width, 0)
@@ -79,6 +97,7 @@ describe('browser', { skip: reason }, () => {
   let held = []
   let holdFull = true
   let served = {}
+  let requested = []
   const releaseFull = () => {
     holdFull = false
     const queued = held
@@ -109,10 +128,18 @@ describe('browser', { skip: reason }, () => {
       const url = req.url()
       const image = url.match(/^http:\/\/localhost:4203\/(thumbnail\/)?fixture-\d+\.webp$/)
       const poster = url.match(/^http:\/\/localhost:4204\/thumbnail\/fixture-\d+\.webp$/)
+      const clip = url.match(/^http:\/\/localhost:4204\/fixture-\d+(-\d+p)?\.mp4$/)
       const thumb = () => served.thumb
         ? req.respond({ contentType: 'image/png', body: png(...served.thumb) })
         : req.respond({ status: 404 })
       if (poster) return thumb()
+      if (clip) {
+        requested.push(clip[1] || 'source')
+        const size = served[clip[1] ? 'rendition' : 'source']
+        return size
+          ? req.respond({ contentType: 'video/mp4', headers: { 'Accept-Ranges': 'none' }, body: mp4(...size) })
+          : req.respond({ status: 404 })
+      }
       if (image) {
         if (image[1]) return thumb()
         const respond = () => req.respond({ contentType: 'image/png', body: png(...served.full) })
@@ -136,10 +163,11 @@ describe('browser', { skip: reason }, () => {
   // reserved before any of its media was fetched. Each mount gets its own url so
   // one fixture's bitmap cannot be served to the next out of the cache.
   let fixtures = 0
-  async function mount(tag, attrs, thumb, full) {
+  async function mount(tag, attrs, thumb, full, { source, rendition, width = BOX } = {}) {
     held = [] // requests from a torn-down element are nobody's to release
     holdFull = true
-    served = { thumb, full }
+    served = { thumb, full, source, rendition }
+    requested = []
     const url = `fixture-${++fixtures}`
     const reserved = await page.evaluate((tag, attrs, url, width) => {
       document.querySelector('#harness')?.remove()
@@ -149,7 +177,7 @@ describe('browser', { skip: reason }, () => {
       harness.innerHTML = `<${tag} ${attrs} url="${url}"></${tag}>`
       document.body.appendChild(harness)
       return window.__box(harness.firstElementChild)
-    }, tag, attrs, url, BOX)
+    }, tag, attrs, url, width)
     return { reserved, url }
   }
 
@@ -161,6 +189,10 @@ describe('browser', { skip: reason }, () => {
       window.__box = el => {
         const frame = el.shadowRoot.querySelector('#frame')
         const r = frame.getBoundingClientRect()
+        return { width: Math.round(r.width), height: Math.round(r.height) }
+      }
+      window.__hostBox = el => {
+        const r = el.getBoundingClientRect()
         return { width: Math.round(r.width), height: Math.round(r.height) }
       }
       window.__childBoxes = el => [...el.shadowRoot.querySelectorAll('#frame > *')].map(c => {
@@ -244,13 +276,6 @@ describe('browser', { skip: reason }, () => {
       )
     })
 
-    test('without stored dimensions the video poster locks the box', async () => {
-      // 4:3 poster, so a 16:9 fallback would give 800x450 rather than 800x600.
-      await mount('soci-video', '', [200, 150], [1000, 750])
-      await page.waitForFunction("document.querySelector('soci-video').hasAttribute('ratio')")
-      assert.deepEqual(await box('soci-video'), { width: 800, height: 600 })
-    })
-
     test('feed list tiles keep their fixed thumbnail box', async () => {
       const tile = await page.evaluate(() => {
         document.querySelector('#harness')?.remove()
@@ -263,6 +288,104 @@ describe('browser', { skip: reason }, () => {
         return { width: s.width, height: s.height, fit: s.objectFit, loading: img.loading }
       })
       assert.deepEqual(tile, { width: '96px', height: '72px', fit: 'cover', loading: 'lazy' })
+    })
+  })
+
+  // The post detail player has to be the shape of the file that is playing, and
+  // has to be playing the file the encoder actually produced. Getting either
+  // wrong shows up as a picture that is letterboxed, squashed, or both.
+  describe('the video player takes the shape of its file', { skip: reason || (FFMPEG ? false : 'no ffmpeg installed') }, () => {
+    const settled = url => page.waitForFunction(
+      u => document.querySelector('soci-video').shadowRoot.querySelector(`video[src$="${u}"]`)?.readyState > 0,
+      {}, url
+    )
+
+    test('a portrait video is the box, not a letterboxed strip inside a wider slab', async () => {
+      // 9:16 against a 800px tall bound is 450x800. The container is 800 wide,
+      // so a box taken from the width alone would be 800x1422.
+      const { reserved } = await mount('soci-video', 'width="720" height="1280"', null, null, { source: [720, 1280] })
+      assert.deepEqual(reserved, { width: 450, height: 800 })
+      assert.deepEqual(
+        await page.evaluate(() => window.__hostBox(document.querySelector('soci-video'))),
+        reserved,
+        'the host must be the box; a full width host paints black either side of the picture'
+      )
+    })
+
+    // Waits until the browser has the poster, so "no ratio yet" means the poster
+    // was declined rather than merely late.
+    const posterLoaded = () => page.waitForFunction(async () => {
+      const poster = document.querySelector('soci-video').shadowRoot.querySelector('video').poster
+      await new Promise(done => Object.assign(new Image(), { onload: done, onerror: done, src: poster }))
+      return true
+    })
+
+    test('the poster crop is never used to reserve the box', async () => {
+      // A video thumbnail is a crop of a frame rather than a scaled copy of one,
+      // so its ratio is not the video's: avo-coffeeshop's is 615x545 for a
+      // 720x1280 video. With no stored dimensions and no file to measure, the
+      // box has to stay unreserved rather than take the crop's 4:3.
+      await mount('soci-video', '', [200, 150], null)
+      await posterLoaded()
+      assert.equal(
+        await page.evaluate(() => document.querySelector('soci-video').hasAttribute('ratio')),
+        false
+      )
+    })
+
+    test('without stored dimensions the file itself locks the box', async () => {
+      const { url } = await mount('soci-video', '', [200, 150], null, { source: [720, 1280] })
+      await settled(`${url}.mp4`)
+      await page.waitForFunction("document.querySelector('soci-video').hasAttribute('ratio')")
+      assert.deepEqual(await box('soci-video'), { width: 450, height: 800 })
+    })
+
+    test('stored dimensions reserve the box, then give way to the file', async () => {
+      // Stale post metadata: 854x480 stored against a 720x1280 file. Small
+      // enough that 480p is the source, so the ladder stays out of it.
+      const { reserved, url } = await mount('soci-video', 'width="854" height="480"', null, null, { source: [720, 1280] })
+      assert.deepEqual(reserved, { width: 800, height: 450 }, 'reserved from the stored ratio, before any request')
+      await settled(`${url}.mp4`)
+      await page.waitForFunction(() => Math.abs(document.querySelector('soci-video').mediaRatio - 720 / 1280) < 0.01)
+      assert.deepEqual(await box('soci-video'), { width: 450, height: 800 })
+    })
+
+    test('the video fills the box without being stretched to it', async () => {
+      const { url } = await mount('soci-video', 'width="720" height="1280"', null, null, { source: [720, 1280] })
+      await settled(`${url}.mp4`)
+      const [video] = await page.evaluate(() => window.__childBoxes(document.querySelector('soci-video')))
+      assert.deepEqual({ width: video.width, height: video.height }, await box('soci-video'))
+      assert.equal(
+        await page.evaluate(() => getComputedStyle(document.querySelector('soci-video').shadowRoot.querySelector('video')).objectFit),
+        'contain'
+      )
+    })
+
+    test('a portrait video is not dropped to the shortest rung of the ladder', async () => {
+      // The rungs are keyed on the larger source dimension, so they have to be
+      // compared against the larger rendered one. This box is 450x800: wide
+      // enough for the source at 800 tall, and picked against its 450px width
+      // it would fetch a 480p rendition it does not need.
+      await mount('soci-video', 'width="720" height="1280"', null, null, { source: [720, 1280] })
+      await page.waitForFunction("document.querySelector('soci-video').resolution")
+      assert.deepEqual(requested, ['source'])
+    })
+
+    test('a rendition that is not the shape of the source is dropped for the source', async () => {
+      // avo-coffeeshop's -480p, which is 1518x854 for a 720x1280 video: the
+      // frames in it are squashed, and no amount of object-fit can unsquash
+      // them. A 200px container puts the ladder on that rung to begin with.
+      const { url } = await mount('soci-video', 'width="720" height="1280"', null, null,
+        { source: [720, 1280], rendition: [1518, 854], width: 200 })
+      await page.waitForFunction("document.querySelector('soci-video').resolution == '720p'")
+      await settled(`${url}.mp4`)
+      assert.deepEqual(requested, ['-480p', 'source'], 'the bad rendition should be tried once, then abandoned')
+      assert.deepEqual(await box('soci-video'), { width: 200, height: 356 }, 'the box keeps the source ratio')
+      assert.equal(
+        await page.evaluate(() => document.querySelector('soci-video').shadowRoot.querySelectorAll('soci-option[value="480p"]').length),
+        0,
+        'a rendition known to be broken should not be offered again'
+      )
     })
   })
 
