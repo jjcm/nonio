@@ -66,7 +66,7 @@ func TestUploadFileRejectsUnauthorizedUsers(t *testing.T) {
 
 func TestUploadFileRejectsInvalidEmojiNames(t *testing.T) {
 	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`{"email":"user@example.com","username":"sociuser","id":1}`))
+		w.Write([]byte(`{"email":"user@example.com","username":"noniouser","id":1}`))
 	}))
 	defer api.Close()
 	config.Settings.APIHost = api.URL

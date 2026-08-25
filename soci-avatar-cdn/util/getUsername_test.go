@@ -26,14 +26,14 @@ func fakeAPI(t *testing.T, status int, body string) *httptest.Server {
 }
 
 func TestGetUsernameReturnsTheUsername(t *testing.T) {
-	fakeAPI(t, 200, `{"email":"user@example.com","username":"sociuser","id":42}`)
+	fakeAPI(t, 200, `{"email":"user@example.com","username":"noniouser","id":42}`)
 
 	username, err := GetUsername("Bearer token")
 	if err != nil {
 		t.Fatalf("A valid token should not error. Error: %v", err)
 	}
-	if username != "sociuser" {
-		t.Errorf("Expected username 'sociuser', got %q", username)
+	if username != "noniouser" {
+		t.Errorf("Expected username 'noniouser', got %q", username)
 	}
 }
 

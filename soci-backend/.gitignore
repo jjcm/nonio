@@ -3,5 +3,5 @@ release.sh
 .env
 start.sh
 Makefile
-socid
+noniod
 .idea

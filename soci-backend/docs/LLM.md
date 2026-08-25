@@ -1,4 +1,4 @@
-# Soci Backend API
+# Nonio Backend API
 
 API documentation for soci-backend. Base URL: https://api.non.io (or configured WEB_HOST).
 

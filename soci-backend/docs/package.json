@@ -1,5 +1,5 @@
 {
-  "name": "soci-backend-docs",
+  "name": "nonio-backend-docs",
   "version": "1.0.0",
   "description": "API documentation for soci-backend",
   "main": "index.js",
@@ -8,14 +8,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jjcm/soci-api.git"
+    "url": "git+https://github.com/jjcm/nonio.git"
   },
   "author": "Jake Miller",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/jjcm/soci-api/issues"
+    "url": "https://github.com/jjcm/nonio/issues"
   },
-  "homepage": "https://github.com/jjcm/soci-api#readme",
+  "homepage": "https://github.com/jjcm/nonio#readme",
   "dependencies": {
     "mime-types": "^2.1.24",
     "pug": "^3.0.3",

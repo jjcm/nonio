@@ -36,8 +36,8 @@ func migrateQuillToMarkdownCommand() cli.Command {
 }
 
 func modelsDB() *sqlx.DB {
-	// bootstrap() hydrates sociConfig + models DBConn.
-	return sociConfig.DBConn
+	// bootstrap() hydrates nonioConfig + models DBConn.
+	return nonioConfig.DBConn
 }
 
 func runQuillToMarkdownBackfill(db *sqlx.DB, dryRun bool, limit int) error {

@@ -12,45 +12,45 @@ import (
 	"github.com/stripe/stripe-go/v72"
 )
 
-var sociConfig bs.Config
+var nonioConfig bs.Config
 
 func bootstrap() {
 	c, err := bs.InitConfig()
-	sociConfig = c
+	nonioConfig = c
 	if err != nil {
 		logError(err)
-		log(sociConfig)
+		log(nonioConfig)
 		panic("Application can't start without a valid DB connection")
 	}
 
 	log("Application bootstrapped with these settings:")
-	log("Port: " + sociConfig.AppPort)
-	log("Database: " + sociConfig.DBDatabase)
-	log("DB Username: " + sociConfig.DBUsername)
+	log("Port: " + nonioConfig.AppPort)
+	log("Database: " + nonioConfig.DBDatabase)
+	log("DB Username: " + nonioConfig.DBUsername)
 
 	// let's now hydrate a few things in the handlers package
-	handlers.DBConn = sociConfig.DBConn
-	handlers.Log = sociConfig.Logger
-	utils.HmacSampleSecret = sociConfig.HMACKey
-	utils.AdminEmail = sociConfig.AdminEmail
-	utils.AdminEmailPassword = sociConfig.AdminEmailPassword
-	utils.Log = sociConfig.Logger
-	fmt.Println(sociConfig.AdminEmail)
+	handlers.DBConn = nonioConfig.DBConn
+	handlers.Log = nonioConfig.Logger
+	utils.HmacSampleSecret = nonioConfig.HMACKey
+	utils.AdminEmail = nonioConfig.AdminEmail
+	utils.AdminEmailPassword = nonioConfig.AdminEmailPassword
+	utils.Log = nonioConfig.Logger
+	fmt.Println(nonioConfig.AdminEmail)
 
 	// let's now hydrate a few things in the middleware package
-	middleware.Log = sociConfig.Logger
+	middleware.Log = nonioConfig.Logger
 
 	// let's now hydrate a few things in the models package
-	models.DBConn = sociConfig.DBConn
-	models.Log = sociConfig.Logger
-	models.ServerFee, err = strconv.ParseFloat(sociConfig.ServerFee, 64)
-	models.WebHost = sociConfig.WebHost
+	models.DBConn = nonioConfig.DBConn
+	models.Log = nonioConfig.Logger
+	models.ServerFee, err = strconv.ParseFloat(nonioConfig.ServerFee, 64)
+	models.WebHost = nonioConfig.WebHost
 
 	// init the stripe secret key
-	stripe.Key = sociConfig.StripeSecretKey
+	stripe.Key = nonioConfig.StripeSecretKey
 
 	// LiveKit voice (optional)
-	handlers.LiveKitURL = sociConfig.LiveKitURL
-	handlers.LiveKitAPIKey = sociConfig.LiveKitAPIKey
-	handlers.LiveKitSecret = sociConfig.LiveKitSecret
+	handlers.LiveKitURL = nonioConfig.LiveKitURL
+	handlers.LiveKitAPIKey = nonioConfig.LiveKitAPIKey
+	handlers.LiveKitSecret = nonioConfig.LiveKitSecret
 }

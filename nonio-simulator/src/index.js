@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { config, requireKeysForRun } from "./config.js";
 import { loadState, saveState } from "./state.js";
-import * as soci from "./soci.js";
+import * as nonio from "./nonio.js";
 import { grokJson } from "./grok.js";
 import { downloadBytes, generateImage } from "./fal.js";
 import { HttpError } from "./http.js";
@@ -47,7 +47,7 @@ async function validateCommunity({ community }) {
   const slug = normalizeCommunity(community);
   if (!slug) return;
   try {
-    await soci.getCommunity({ community: slug });
+    await nonio.getCommunity({ community: slug });
     return;
   } catch (e) {
     // Per requirements: simulator should NOT create communities.
@@ -70,7 +70,7 @@ async function bootstrapUsers(state) {
     // Validate any persisted token; if the user was deleted, token will 401 and we must re-login/register.
     if (u.token) {
       try {
-        await soci.tokenDetails({ token: u.token });
+        await nonio.tokenDetails({ token: u.token });
       } catch (e) {
         if (e instanceof HttpError && e.status === 401) {
           u.token = "";
@@ -84,11 +84,11 @@ async function bootstrapUsers(state) {
     if (!u.token) {
       // Prefer login if user exists; otherwise register.
       try {
-        const login = await soci.login({ email: u.email, password: config.password });
+        const login = await nonio.login({ email: u.email, password: config.password });
         u.token = login.accessToken;
         console.log(`[bootstrap] logged in ${u.username}`);
       } catch {
-        const reg = await soci.register({ email: u.email, username: u.username, password: config.password });
+        const reg = await nonio.register({ email: u.email, username: u.username, password: config.password });
         u.token = reg.accessToken;
         console.log(`[bootstrap] registered ${u.username}`);
       }
@@ -103,7 +103,7 @@ async function bootstrapUsers(state) {
     // Set varying subscription amounts (dev-only endpoint)
     const amount = config.subscriptionAmounts[i % config.subscriptionAmounts.length];
     try {
-      await soci.setSubscription({ token: u.token, amount });
+      await nonio.setSubscription({ token: u.token, amount });
       u.subscriptionAmount = amount;
     } catch (e) {
       // If dev tools aren't enabled, this will fail; simulator can still run activity.
@@ -157,7 +157,7 @@ async function bootstrapUsers(state) {
       ].filter(Boolean);
       const description = lines.join("\n");
       try {
-        await soci.updateDescription({ token: u.token, description });
+        await nonio.updateDescription({ token: u.token, description });
         u.descriptionSet = true;
       } catch {
         // ignore
@@ -175,7 +175,7 @@ async function bootstrapUsers(state) {
         const cropSize = Math.min(512, img.width || 512, img.height || 512);
         const xoffset = Math.max(0, Math.floor(((img.width || cropSize) - cropSize) / 2));
         const yoffset = Math.max(0, Math.floor(((img.height || cropSize) - cropSize) / 2));
-        await soci.uploadAvatarToCdn({ token: u.token, bytes, contentType, crop: { xoffset, yoffset, size: cropSize } });
+        await nonio.uploadAvatarToCdn({ token: u.token, bytes, contentType, crop: { xoffset, yoffset, size: cropSize } });
         u.avatarSet = true;
       } catch {
         // ignore; can retry later
@@ -192,7 +192,7 @@ async function chooseAndRunTick(state) {
   const roll = Math.random();
   const isPost = roll < 0.05;
 
-  const postsData = await soci.getPosts({
+  const postsData = await nonio.getPosts({
     time: "all",
     sort: "new",
     offset: 0,
@@ -254,7 +254,7 @@ async function doPostAction(actor, posts) {
   if (type === "blog") {
     const content = String(plan.content || plan.description || "").slice(0, 4000);
     const url = slug("blog");
-    const created = await soci.createPost({
+    const created = await nonio.createPost({
       token: actor.token,
       title,
       url,
@@ -273,8 +273,8 @@ async function doPostAction(actor, posts) {
   const { bytes, contentType } = await downloadBytes(img.url);
 
   const url = slug("img");
-  await soci.uploadImageToCdn({ token: actor.token, urlSlug: url, bytes, contentType });
-  const created = await soci.createPost({
+  await nonio.uploadImageToCdn({ token: actor.token, urlSlug: url, bytes, contentType });
+  const created = await nonio.createPost({
     token: actor.token,
     title,
     url,
@@ -331,27 +331,27 @@ async function doInteractAction(actor, posts) {
   // Ensure the tag exists on the post, then vote for it.
   if (plan.tag_action === "create") {
     try {
-      await soci.createPostTag({ token: actor.token, postUrl: target.url, tag, community });
+      await nonio.createPostTag({ token: actor.token, postUrl: target.url, tag, community });
       console.log(`[tick] ${actor.username} added tag "${tag}" on /${target.url}`);
     } catch (e) {
       // If tag already exists, fall back to upvote.
-      await soci.addPostTagVote({ token: actor.token, postUrl: target.url, tag, community });
+      await nonio.addPostTagVote({ token: actor.token, postUrl: target.url, tag, community });
       console.log(`[tick] ${actor.username} upvoted tag "${tag}" on /${target.url}`);
     }
   } else {
     // If tag isn't on the post yet, create it first (so upvote works).
     try {
-      await soci.addPostTagVote({ token: actor.token, postUrl: target.url, tag, community });
+      await nonio.addPostTagVote({ token: actor.token, postUrl: target.url, tag, community });
       console.log(`[tick] ${actor.username} upvoted tag "${tag}" on /${target.url}`);
     } catch (e) {
-      await soci.createPostTag({ token: actor.token, postUrl: target.url, tag, community });
+      await nonio.createPostTag({ token: actor.token, postUrl: target.url, tag, community });
       console.log(`[tick] ${actor.username} added+voted tag "${tag}" on /${target.url}`);
     }
   }
 
   if (!readComments) return;
 
-  const commentsData = await soci.getComments({ postUrl: target.url, time: "all", sort: "top", community });
+  const commentsData = await nonio.getComments({ postUrl: target.url, time: "all", sort: "top", community });
   const comments = commentsData?.comments || [];
   if (!comments.length) {
     // If there are no comments yet, bots should be able to start a thread with a top-level comment.
@@ -375,7 +375,7 @@ async function doInteractAction(actor, posts) {
       const plan0 = await grokJson({ system: system0, user: user0, temperature: 0.7 });
       const content0 = String(plan0?.content || "").trim().slice(0, 800);
       if (content0) {
-        await soci.createComment({ token: actor.token, postUrl: target.url, parentId: null, content: content0, community });
+        await nonio.createComment({ token: actor.token, postUrl: target.url, parentId: null, content: content0, community });
         console.log(`[tick] ${actor.username} commented (top-level) on /${target.url}`);
       }
     } catch (e) {
@@ -415,7 +415,7 @@ async function doInteractAction(actor, posts) {
   const upvoteIds = Array.isArray(plan2.upvote_ids) ? plan2.upvote_ids.slice(0, 3).filter((n) => Number.isFinite(n)) : [];
   for (const id of upvoteIds) {
     try {
-      await soci.addCommentVote({ token: actor.token, commentId: id, upvoted: true });
+      await nonio.addCommentVote({ token: actor.token, commentId: id, upvoted: true });
       console.log(`[tick] ${actor.username} upvoted comment ${id} on /${target.url}`);
     } catch {
       // ignore
@@ -424,7 +424,7 @@ async function doInteractAction(actor, posts) {
 
   if (plan2.new_comment && String(plan2.new_comment.content || "").trim()) {
     try {
-      await soci.createComment({
+      await nonio.createComment({
         token: actor.token,
         postUrl: target.url,
         parentId: null,
@@ -439,7 +439,7 @@ async function doInteractAction(actor, posts) {
 
   if (plan2.reply && Number.isFinite(plan2.reply.parent_id) && String(plan2.reply.content || "").trim()) {
     try {
-      await soci.createComment({
+      await nonio.createComment({
         token: actor.token,
         postUrl: target.url,
         parentId: plan2.reply.parent_id,

@@ -13,7 +13,7 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "soci-backend"
 	app.Version = "0.0.0"
-	app.Usage = "launch the web API server for SOCI"
+	app.Usage = "launch the web API server for Nonio"
 	app.Flags = []cli.Flag{
 		&cli.StringFlag{
 			Name:  "port, p",

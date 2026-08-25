@@ -1,6 +1,6 @@
 # nonio-simulator
 
-Dev-only activity simulator for the `soci` stack.
+Dev-only activity simulator for the `nonio` stack.
 
 ## What it does
 

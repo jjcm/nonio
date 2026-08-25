@@ -42,8 +42,8 @@ func runApp(c *cli.Context) error {
 	// startup (and every restart) for a minute.
 	go models.FixUserSubs()
 
-	log("Starting web api at port " + sociConfig.AppPort)
-	http.ListenAndServe(":"+sociConfig.AppPort, nil)
+	log("Starting web api at port " + nonioConfig.AppPort)
+	http.ListenAndServe(":"+nonioConfig.AppPort, nil)
 
 	return nil
 }

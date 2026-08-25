@@ -10,7 +10,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 cd "${SCRIPT_DIR}/cmd"
-go build -o ../dist/socid
+go build -o ../dist/noniod
 
 export APP_KEY="asdfa323faefjifajwiefawef"
 export WEB_HOST="http://localhost:4200"
@@ -38,6 +38,6 @@ cd "${SCRIPT_DIR}/migrations"
 goose mysql "${DB_USER}:${DB_PASSWORD}@tcp(${DB_HOST}:${DB_PORT})/${DB_DATABASE}" up
 
 cd "${SCRIPT_DIR}"
-./dist/socid migrate-quill-to-markdown "$@"
+./dist/noniod migrate-quill-to-markdown "$@"
 
 

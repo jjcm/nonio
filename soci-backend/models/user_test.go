@@ -198,18 +198,18 @@ func TestWeCanGetTheUsersPreferredDisplayName(t *testing.T) {
 	u := User{
 		ID:       88,
 		Email:    "user@example.com",
-		Username: "sociuser",
-		Name:     "Soci User",
+		Username: "noniouser",
+		Name:     "Nonio User",
 	}
 
 	// default is to show the user by their username
-	expected := "sociuser"
+	expected := "noniouser"
 	if u.GetDisplayName() != expected {
 		t.Errorf("If the username isn't an empty string, then it should be the value returned.\nExpected: %s\n  Actual: %s\n", expected, u.GetDisplayName())
 	}
 
 	u.Username = ""
-	expected = "Soci User"
+	expected = "Nonio User"
 	if u.GetDisplayName() != expected {
 		t.Errorf("If the username is an empty string, then it should be the name that is returned.\nExpected: %s\n  Actual: %s\n", expected, u.GetDisplayName())
 	}

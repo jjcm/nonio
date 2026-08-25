@@ -1,4 +1,4 @@
-# SOCI API - Now in Go!
+# Nonio API - Now in Go!
 
 This small program runs the backend API for the SCOI Web App.
 
@@ -17,7 +17,7 @@ DB_PASSWORD=password
 
 There is one environment variable that you'll need to set that doesn't have a default. `APP_KEY` is what is used to sign the JWT tokens, and it should be a nice random string between 32 and 64 chars. If you ever change this, the JWTs that are signed with one key won't be readable with another key. So, on my local computer, I start the linux binary with this command from the project root:
 
-`APP_KEY=asdf DB_USER=root DB_PASSWORD=secret dist/socid`
+`APP_KEY=asdf DB_USER=root DB_PASSWORD=secret dist/noniod`
 
 # Database
 
@@ -51,7 +51,7 @@ If all is well up to this point, you can build the binary. The included `build.s
 
 When your latest code is ready to be tested on the stanging server, we can build this code directly on the staging machine. While the team is small, this works pretty well. We will eventually want to automate this into a CI/CD pipeline, but until then here is what you can do:
 
-First ssh into the staging machine. Once you are there, navigate to the `/soci` folder and run `./release.sh`. You will likely need to run this with sudo privileges, as it not only builds the latest binary but also stops the systemd process, replaces the old binary with the new one, and starts up the service again. It also runs all migrations on the DB, so please make sure your migrations are all up to date and working properly with the tests before running this script.
+First ssh into the staging machine. Once you are there, navigate to the `/nonio` folder and run `./release.sh`. You will likely need to run this with sudo privileges, as it not only builds the latest binary but also stops the systemd process, replaces the old binary with the new one, and starts up the service again. It also runs all migrations on the DB, so please make sure your migrations are all up to date and working properly with the tests before running this script.
 
 If you are having trouble with permissions, you may also want to add your user to the linux group `soci-build`. All files created in the /soci-build folder wil be owned by the group `soci-build` so as long as your user is in that group all git commands should work.
 
@@ -71,11 +71,11 @@ Run LiveKit locally: `livekit-server --dev` (see [LiveKit docs](https://docs.liv
 
 ## Example
 
-Start up the Go API (if you're on OSX, the example below needs to run the socid-osx binary), then jump into the example directory and start up a dev server (example below uses PHP 🤔) to see how this works. There's a very basic HTML file in there that uses vue.js to make a few AJAX requests.
+Start up the Go API (if you're on OSX, the example below needs to run the noniod-osx binary), then jump into the example directory and start up a dev server (example below uses PHP 🤔) to see how this works. There's a very basic HTML file in there that uses vue.js to make a few AJAX requests.
 
 ```
 # from the project root
-APP_KEY=asdfasdfasdfasdf DB_USER=root DB_PASSWORD=secret dist/socid &
+APP_KEY=asdfasdfasdfasdf DB_USER=root DB_PASSWORD=secret dist/noniod &
 
 cd example/
 php -S localhost:8888

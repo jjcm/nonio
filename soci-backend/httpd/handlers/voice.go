@@ -209,8 +209,8 @@ func newLiveKitRoomServiceClient() (livekit.RoomService, error) {
 		RoomAdmin: true,
 	}
 	at.SetVideoGrant(grant).
-		SetIdentity("soci-backend-voice-presence").
-		SetName("soci-backend-voice-presence").
+		SetIdentity("nonio-backend-voice-presence").
+		SetName("nonio-backend-voice-presence").
 		SetValidFor(2 * time.Minute)
 
 	token, err := at.ToJWT()

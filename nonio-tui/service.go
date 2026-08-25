@@ -88,7 +88,7 @@ func NewServiceManager() *ServiceManager {
 	sm.services["frontend"] = frontendService
 
 	// Backend service (second in order)
-	backendDist := filepath.Join(baseDir, "soci-backend", "dist", "socid")
+	backendDist := filepath.Join(baseDir, "soci-backend", "dist", "noniod")
 	backendService := &Service{
 		Name:       "soci-backend",
 		Port:       "4201",

@@ -1,5 +1,5 @@
 cd cmd
-go build -o ../dist/socid
+go build -o ../dist/noniod
 export APP_KEY="asdfa323faefjifajwiefawef"
 export WEB_HOST="http://localhost:4200"
 export DB_HOST="127.0.0.1"
@@ -27,5 +27,5 @@ export PAYOUT_CYCLE_DAYS="1"
 cd ../migrations
 goose mysql "${DB_USER}:${DB_PASSWORD}@tcp(${DB_HOST}:${DB_PORT})/${DB_DATABASE}" up
 
-../dist/socid
+../dist/noniod
 
