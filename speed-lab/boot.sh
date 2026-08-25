@@ -54,7 +54,7 @@ start_cdn() {
   (exec 3<>"/dev/tcp/127.0.0.1/$port") 2>/dev/null && { echo "  $dir :$port already up"; return 0; }
   cd "$ROOT/$dir" || return 1
   [[ -f config.json ]] || cp config.json.example config.json
-  go build -o "$dir" main.go || return 1
+  go build -o "$dir" . || return 1
   "./$dir" > "$LOG/$dir.log" 2>&1 &
   wait_port "$port" "$dir"
 }

@@ -34,8 +34,8 @@ fi
 
 screen -AdmS nonio -t frontend bash -c "bash --init-file <(echo 'cd nonio-frontend; npm i; npm start;')"
 screen -S nonio -X screen -t api bash -c "bash --init-file <(echo 'cd nonio-backend; ./localRun.sh')"
-screen -S nonio -X screen -t avatar-cdn bash -c "bash --init-file <(echo 'cd nonio-avatar-cdn; go build -o avatar-cdn main.go; ./avatar-cdn')"
-screen -S nonio -X screen -t image-cdn bash -c "bash --init-file <(echo 'cd nonio-image-cdn; go build -o image-cdn main.go; ./image-cdn')"
-screen -S nonio -X screen -t video-cdn bash -c "bash --init-file <(echo 'cd nonio-video-cdn; go build -o video-cdn main.go; ./video-cdn')"
-screen -S nonio -X screen -t html-cdn bash -c "bash --init-file <(echo 'cd nonio-html-cdn; go build -o html-cdn main.go; ./html-cdn')"
+screen -S nonio -X screen -t avatar-cdn bash -c "bash --init-file <(echo 'cd nonio-avatar-cdn; go build -o avatar-cdn .; ./avatar-cdn')"
+screen -S nonio -X screen -t image-cdn bash -c "bash --init-file <(echo 'cd nonio-image-cdn; go build -o image-cdn .; ./image-cdn')"
+screen -S nonio -X screen -t video-cdn bash -c "bash --init-file <(echo 'cd nonio-video-cdn; go build -o video-cdn .; ./video-cdn')"
+screen -S nonio -X screen -t html-cdn bash -c "bash --init-file <(echo 'cd nonio-html-cdn; go build -o html-cdn .; ./html-cdn')"
 screen -rD nonio
