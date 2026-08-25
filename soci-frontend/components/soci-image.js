@@ -1,5 +1,6 @@
 import SociComponent from './soci-component.js'
 import config from '../config.js'
+import { MEDIA_FRAME_CSS, lockRatio } from '../lib/media-frame.js'
 
 export default class SociImageViewer extends SociComponent {
   constructor() {
@@ -7,9 +8,28 @@ export default class SociImageViewer extends SociComponent {
   }
 
   css(){ return `
-    :host { width: 100%; display: block; overflow: auto; position: relative; }
+    :host {
+      --media-max-width: min(var(--media-width, 100%), 100%);
+      --media-max-height: min(calc(100vh - 100px), var(--media-height, calc(100vh - 100px)));
+      width: 100%;
+      display: block;
+      overflow: auto;
+      position: relative;
+    }
+    ${MEDIA_FRAME_CSS}
+    #frame {
+      z-index: 2;
+    }
     :host([zoomable]) #image { cursor: zoom-in; }
-    :host([zoomed]) #image { cursor: zoom-out; max-height: var(--media-height); max-width: var(--media-width); }
+    :host([zoomed]) #frame {
+      /* Zooming means "paint at 1:1 and let the host scroll", so the bounds the
+         frame is normally capped by have to come off. */
+      width: var(--natural-width);
+      max-width: none;
+      max-height: none;
+
+      #image { cursor: zoom-out; }
+    }
     ::-webkit-scrollbar { width: 14px; }
     ::-webkit-scrollbar-track { background: var(--bg-bold); }
     /* this is a bad hack to get alpha transparency on the scroll bars */
@@ -18,14 +38,6 @@ export default class SociImageViewer extends SociComponent {
       border-radius: 7px;
       border: 3px solid var(--bg-bold);
       &:hover { background: linear-gradient(90deg, var(--text-secondary-hover) -1500px, transparent 1000px); }
-    }
-    #image {
-      max-width: min(var(--media-width), 100%);
-      margin: 0 auto;
-      max-height: min(calc(100vh - 100px), var(--media-height));
-      display: block;
-      position: relative;
-      z-index: 2;
     }
     img.bg {
       position: absolute;
@@ -42,21 +54,25 @@ export default class SociImageViewer extends SociComponent {
   `}
 
   html(){ return `
-    <img id="image" @click=_toggleZoom />
+    <div id="frame">
+      <img id="thumb" />
+      <img id="image" @click=_toggleZoom />
+    </div>
     <img class="bg"/>
   `}
 
   static get observedAttributes() {
-    return ['url']
+    return ['url', 'width', 'height']
   }
 
   attributeChangedCallback(name, oldValue, newValue){
     if(name == 'url') this.url = newValue
+    else lockRatio(this, this.getAttribute('width'), this.getAttribute('height'))
   }
 
   connectedCallback(){
     this._checkZoomable = this._checkZoomable.bind(this)
-    this._image = this.select('#image')
+    this._frame = this.select('#frame')
     this._resizeObserver = new ResizeObserver(this._checkZoomable)
     this._resizeObserver.observe(this)
   }
@@ -66,7 +82,7 @@ export default class SociImageViewer extends SociComponent {
   }
 
   _checkZoomable(){
-    if(this.naturalWidth > this._image.offsetWidth || this.naturalHeight > this.offsetHeight){
+    if(this.naturalWidth > this._frame.offsetWidth || this.naturalHeight > this._frame.offsetHeight){
       this.toggleAttribute('zoomable', true)
     }
     else {
@@ -88,17 +104,32 @@ export default class SociImageViewer extends SociComponent {
       this.setAttribute('url', val)
       return
     }
+    let thumb = this.select('#thumb')
     let image = this.select('#image')
     let thumbUrl = `${config.THUMBNAIL_HOST}/${this.url}.webp`
-    image.src = thumbUrl
-    this.select('img.bg').src = thumbUrl
-    setTimeout(()=>{
-      image.onload = () => {
-        this.naturalWidth = image.naturalWidth
-        this.naturalHeight = image.naturalHeight
-        this._checkZoomable()
-      }
-      image.src = `${config.IMAGE_HOST}/${this.url}.webp`
-    },1)
+
+    // Posts predating stored dimensions have to be measured. The thumbnail is
+    // resized on the ratio it came in on, so it can stand in for the full image
+    // and it lands first by an order of magnitude.
+    let ratioIsKnown = lockRatio(this, this.getAttribute('width'), this.getAttribute('height'))
+    if(!ratioIsKnown)
+      thumb.onload = () => lockRatio(this, thumb.naturalWidth, thumb.naturalHeight)
+
+    image.onload = () => {
+      this.naturalWidth = image.naturalWidth
+      this.naturalHeight = image.naturalHeight
+      this.style.setProperty('--natural-width', `${image.naturalWidth}px`)
+      // Only a last resort, for when the thumbnail is missing too. Re-locking a
+      // box that is already reserved is the shift this component exists to
+      // avoid, even when the full image disagrees by a fraction of a pixel.
+      if(!this.hasAttribute('ratio'))
+        lockRatio(this, image.naturalWidth, image.naturalHeight)
+      this._checkZoomable()
+    }
+
+    thumb.src = this.select('img.bg').src = thumbUrl
+    // #image sits above #thumb in the frame and paints nothing until it decodes,
+    // so the two can load in parallel and the handoff needs no cross-fade.
+    image.src = `${config.IMAGE_HOST}/${this.url}.webp`
   }
 }

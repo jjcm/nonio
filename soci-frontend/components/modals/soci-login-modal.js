@@ -5,7 +5,7 @@ class SociLoginModal extends HTMLElement {
     this.innerHTML = `
       <form class="modal-form">
         <input type="email" name="email" placeholder="Email address" autocomplete="email">
-        <soci-password name="password"></soci-password>
+        <soci-password no-entropy name="password"></soci-password>
         <soci-button async id="login-btn">login</soci-button>
       </form>
       <div class="modal-footer">

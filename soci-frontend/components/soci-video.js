@@ -1,5 +1,6 @@
 import SociComponent from './soci-component.js'
 import config from '../config.js'
+import { MEDIA_FRAME_CSS, lockRatio } from '../lib/media-frame.js'
 
 export default class SociVideoPlayer extends SociComponent {
   constructor() {
@@ -8,21 +9,23 @@ export default class SociVideoPlayer extends SociComponent {
 
   css(){ return `
     :host {
+      /* Unlike an image, a video is free to scale past its source resolution
+         here, so width is bounded by the container rather than by --media-width. */
+      --media-max-width: 100%;
+      --media-max-height: calc(100vh - 100px);
       display: block;
       width: 100%;
       position: relative;
       background: #000;
     }
-    video {
-      /*
-      max-width: min(var(--media-width), 100%);
-      max-height: min(calc(100vh - 100px), var(--media-height));
-      */
-
-      width: 100%;
-      max-height: calc(100vh - 100px);
-      margin: 0 auto;
-      display: block;
+    ${MEDIA_FRAME_CSS}
+    :host(:fullscreen) {
+      --media-max-height: 100vh;
+      /* The frame letterboxes itself against the screen ratio, so it needs
+         centering in the leftover space rather than sizing to fill it. */
+      display: flex;
+      align-items: center;
+      height: 100vh;
     }
     controls {
       display: flex;
@@ -133,11 +136,6 @@ export default class SociVideoPlayer extends SociComponent {
     .track-container[seeking] .thumb {
       transition: none;
     }
-    :host(:fullscreen) video {
-      max-width: 100vw;
-      max-height: 100vh;
-      width: 100%;
-    }
     soci-icon[glyph="exitfullscreen"],
     :host(:fullscreen) soci-icon[glyph="fullscreen"] {
       display: none;
@@ -202,7 +200,7 @@ export default class SociVideoPlayer extends SociComponent {
   `}
 
   html(){ return `
-    <div id="video-container">
+    <div id="frame">
       <video autoplay @play=_onplay @pause=_onpause></video>
     </div>
     <controls>
@@ -233,7 +231,7 @@ export default class SociVideoPlayer extends SociComponent {
   `}
 
   static get observedAttributes() {
-    return ['url', 'resolution']
+    return ['url', 'resolution', 'width', 'height']
   }
 
   connectedCallback(){
@@ -260,6 +258,10 @@ export default class SociVideoPlayer extends SociComponent {
     switch(name) {
       case 'url':
         this.url = newValue
+        break
+      case 'width':
+      case 'height':
+        lockRatio(this, this.getAttribute('width'), this.getAttribute('height'))
         break
     }
   }
@@ -428,7 +430,7 @@ export default class SociVideoPlayer extends SociComponent {
       newVideo.addEventListener('play', this._onplay)
       newVideo.addEventListener('pause', this._onpause)
       newVideo.volume = this.volume
-      this.select('#video-container').appendChild(newVideo)
+      this.select('#frame').appendChild(newVideo)
 
       let hotswap = ()=>{
         timestamp = this._video.currentTime
@@ -479,6 +481,24 @@ export default class SociVideoPlayer extends SociComponent {
       this.setAttribute('url', val)
       return
     }
+    // The poster fills the reserved frame while the first video frame is still
+    // in flight, and both are laid out by #frame rather than by their own
+    // intrinsic size, so it hands over without resizing the media area.
+    let poster = `${config.VIDEO_HOST}/thumbnail/${val}.webp`
+    let video = this.select('video')
+    video.poster = poster
+
+    // Posts predating stored dimensions have to be measured. The poster is
+    // resized on the ratio it came in on and lands before the video does; the
+    // video's own metadata is the authority, but only arrives later.
+    if(!lockRatio(this, this.getAttribute('width'), this.getAttribute('height'))){
+      let probe = new Image()
+      probe.onload = () => lockRatio(this, probe.naturalWidth, probe.naturalHeight)
+      probe.src = poster
+      video.addEventListener('loadedmetadata',
+        () => lockRatio(this, video.videoWidth, video.videoHeight), {once: true})
+    }
+
     setTimeout(()=>{
       let width = parseInt(getComputedStyle(this).getPropertyValue('--media-width').slice(0, -2))
       let height = parseInt(getComputedStyle(this).getPropertyValue('--media-height').slice(0, -2))
