@@ -53,12 +53,11 @@ export default class SociPost extends SociComponent {
         position: relative;
       }
 
+      /* No backdrop here: soci-video is the size of its own picture and carries
+         its own black, so painting the wrapper as well put a portrait video in
+         a slab twice its width. */
       :host([type="video"]) #video {
         display: block;
-      }
-
-      #video {
-        background: #000;
       }
 
       content {
