@@ -25,6 +25,7 @@
     "pug": "^3.0.1"
   },
   "devDependencies": {
-    "pug-cli": "^1.0.0-alpha6"
+    "pug-cli": "^1.0.0-alpha6",
+    "puppeteer-core": "^25.8.0"
   }
 }
