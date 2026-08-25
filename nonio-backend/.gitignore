@@ -1,0 +1,7 @@
+dist/*
+release.sh
+.env
+start.sh
+Makefile
+noniod
+.idea

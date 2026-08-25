@@ -20,24 +20,24 @@ die() { echo "speed-lab/seed.sh: $*" >&2; exit 1; }
 [[ -d "$FIX/images" ]] || die "missing $FIX/images"
 [[ -f "$SQL" ]] || die "missing $SQL"
 
-IMG_CDN="$ROOT/soci-image-cdn/files"
-VID_CDN="$ROOT/soci-video-cdn/files"
+IMG_CDN="$ROOT/nonio-image-cdn/files"
+VID_CDN="$ROOT/nonio-video-cdn/files"
 
 mkdir -p "$IMG_CDN/images" "$IMG_CDN/thumbnails" "$VID_CDN/videos" "$VID_CDN/thumbnails"
 
-echo "Copying image fixtures -> soci-image-cdn/files/images/"
+echo "Copying image fixtures -> nonio-image-cdn/files/images/"
 cp -f "$FIX/images/"*.webp "$IMG_CDN/images/"
 
-echo "Copying image thumbnails -> soci-image-cdn/files/thumbnails/"
+echo "Copying image thumbnails -> nonio-image-cdn/files/thumbnails/"
 cp -f "$FIX/thumbnails/"sl-img-*.webp "$IMG_CDN/thumbnails/"
 
-echo "Copying video fixture -> soci-video-cdn/files/videos/"
+echo "Copying video fixture -> nonio-video-cdn/files/videos/"
 cp -f "$FIX/videos/sl-vid-01.mp4" "$VID_CDN/videos/"
 
-echo "Copying video poster -> soci-video-cdn/files/thumbnails/"
+echo "Copying video poster -> nonio-video-cdn/files/thumbnails/"
 cp -f "$FIX/thumbnails/sl-vid-01.webp" "$VID_CDN/thumbnails/"
 
-# DB creds: env overrides, then soci-backend config.json, then localRun.sh, then defaults.
+# DB creds: env overrides, then nonio-backend config.json, then localRun.sh, then defaults.
 MYSQL_HOST="${MYSQL_HOST:-}"
 MYSQL_PORT="${MYSQL_PORT:-}"
 MYSQL_USER="${MYSQL_USER:-}"
@@ -82,12 +82,12 @@ parse_localrun() {
   grep -E "^[[:space:]]*(export[[:space:]]+)?${var}=" "$file" 2>/dev/null | tail -n1 | sed -E "s/^[^=]+=//; s/^['\"]//; s/['\"]$//" || true
 }
 
-CFG_JSON="$ROOT/soci-backend/config.json"
+CFG_JSON="$ROOT/nonio-backend/config.json"
 LOCALRUN=""
-if [[ -f "$ROOT/soci-backend/localRun.sh" ]]; then
-  LOCALRUN="$ROOT/soci-backend/localRun.sh"
-elif [[ -f "$ROOT/soci-backend/localrun.sh" ]]; then
-  LOCALRUN="$ROOT/soci-backend/localrun.sh"
+if [[ -f "$ROOT/nonio-backend/localRun.sh" ]]; then
+  LOCALRUN="$ROOT/nonio-backend/localRun.sh"
+elif [[ -f "$ROOT/nonio-backend/localrun.sh" ]]; then
+  LOCALRUN="$ROOT/nonio-backend/localrun.sh"
 fi
 
 if [[ -z "$MYSQL_USER" && -f "$CFG_JSON" ]]; then
@@ -111,7 +111,7 @@ MYSQL_HOST="${MYSQL_HOST:-127.0.0.1}"
 MYSQL_PORT="${MYSQL_PORT:-3306}"
 MYSQL_USER="${MYSQL_USER:-root}"
 MYSQL_PASSWORD="${MYSQL_PASSWORD:-}"
-MYSQL_DATABASE="${MYSQL_DATABASE:-soci}"
+MYSQL_DATABASE="${MYSQL_DATABASE:-nonio}"
 
 echo "Applying $SQL to ${MYSQL_USER}@${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}"
 

@@ -40,7 +40,7 @@ await page.waitForTimeout(4000)
 const calls = await page.evaluate(async h => {
   window.__t0 = performance.now()
   window.__recording = true
-  const target = window.__deepAll('soci-link')
+  const target = window.__deepAll('nonio-link')
     .map(l => l.shadowRoot?.querySelector('a') || l.querySelector('a'))
     .find(a => a?.getAttribute('href') === h)
   if (!target) throw new Error('no link ' + h)

@@ -75,10 +75,10 @@ func NewServiceManager() *ServiceManager {
 
 	// Frontend service (first in order)
 	frontendService := &Service{
-		Name:       "soci-frontend",
+		Name:       "nonio-frontend",
 		Port:       "4200",
 		Status:     StatusStopped,
-		WorkingDir: filepath.Join(baseDir, "soci-frontend"),
+		WorkingDir: filepath.Join(baseDir, "nonio-frontend"),
 		RunCmd:     []string{"npm", "start"},
 		BuildCmd:   []string{"npm", "run", "build"},
 		HealthCheck: func() bool {
@@ -88,12 +88,12 @@ func NewServiceManager() *ServiceManager {
 	sm.services["frontend"] = frontendService
 
 	// Backend service (second in order)
-	backendDist := filepath.Join(baseDir, "soci-backend", "dist", "socid")
+	backendDist := filepath.Join(baseDir, "nonio-backend", "dist", "noniod")
 	backendService := &Service{
-		Name:       "soci-backend",
+		Name:       "nonio-backend",
 		Port:       "4201",
 		Status:     StatusStopped,
-		WorkingDir: filepath.Join(baseDir, "soci-backend"),
+		WorkingDir: filepath.Join(baseDir, "nonio-backend"),
 		BuildCmd:   []string{"go", "build", "-o", backendDist, "./cmd"},
 		RunCmd:     []string{backendDist},
 		Env:        getBackendEnv(),
@@ -118,12 +118,12 @@ func NewServiceManager() *ServiceManager {
 
 	// Image CDN (fourth in order)
 	imageCdnService := &Service{
-		Name:       "soci-image-cdn",
+		Name:       "nonio-image-cdn",
 		Port:       "4203",
 		Status:     StatusStopped,
-		WorkingDir: filepath.Join(baseDir, "soci-image-cdn"),
+		WorkingDir: filepath.Join(baseDir, "nonio-image-cdn"),
 		BuildCmd:   []string{"go", "build", "-o", "image-cdn", "main.go"},
-		RunCmd:     []string{filepath.Join(baseDir, "soci-image-cdn", "image-cdn")},
+		RunCmd:     []string{filepath.Join(baseDir, "nonio-image-cdn", "image-cdn")},
 		HealthCheck: func() bool {
 			return checkPort("4203")
 		},
@@ -132,12 +132,12 @@ func NewServiceManager() *ServiceManager {
 
 	// Video CDN (fifth in order)
 	videoCdnService := &Service{
-		Name:       "soci-video-cdn",
+		Name:       "nonio-video-cdn",
 		Port:       "4204",
 		Status:     StatusStopped,
-		WorkingDir: filepath.Join(baseDir, "soci-video-cdn"),
+		WorkingDir: filepath.Join(baseDir, "nonio-video-cdn"),
 		BuildCmd:   []string{"go", "build", "-o", "video-cdn", "main.go"},
-		RunCmd:     []string{filepath.Join(baseDir, "soci-video-cdn", "video-cdn")},
+		RunCmd:     []string{filepath.Join(baseDir, "nonio-video-cdn", "video-cdn")},
 		HealthCheck: func() bool {
 			return checkPort("4204")
 		},
@@ -146,12 +146,12 @@ func NewServiceManager() *ServiceManager {
 
 	// Avatar CDN (sixth in order)
 	avatarCdnService := &Service{
-		Name:       "soci-avatar-cdn",
+		Name:       "nonio-avatar-cdn",
 		Port:       "4202",
 		Status:     StatusStopped,
-		WorkingDir: filepath.Join(baseDir, "soci-avatar-cdn"),
+		WorkingDir: filepath.Join(baseDir, "nonio-avatar-cdn"),
 		BuildCmd:   []string{"go", "build", "-o", "avatar-cdn", "main.go"},
-		RunCmd:     []string{filepath.Join(baseDir, "soci-avatar-cdn", "avatar-cdn")},
+		RunCmd:     []string{filepath.Join(baseDir, "nonio-avatar-cdn", "avatar-cdn")},
 		HealthCheck: func() bool {
 			return checkPort("4202")
 		},

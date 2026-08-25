@@ -10,7 +10,7 @@
 // ------------------------------------------------------------
 // Per run we load the homepage, wait until its feed is fully painted and idle,
 // then take t0 = performance.now() immediately before dispatching the click on
-// a real in-feed affordance (a <soci-link> anchor, so the app's own pushState
+// a real in-feed affordance (a <nonio-link> anchor, so the app's own pushState
 // path runs). From t0 we rAF-poll the destination and record three numbers:
 //
 //   fcr     first contentful render. The destination's primary content node is
@@ -87,7 +87,7 @@ const initScript = () => {
 
   // Product of opacity along the FLATTENED tree from `el` upward. Following
   // assignedSlot matters: feed rows are light-DOM children slotted into
-  // soci-post-list's shadow #items, and #items is the element the entrance
+  // nonio-post-list's shadow #items, and #items is the element the entrance
   // animation puts at opacity 0. Walking parentElement alone would report a
   // fully-hidden row as opacity 1.
   T.effOpacity = el => {
@@ -111,11 +111,11 @@ const initScript = () => {
     return r.width > 0 && r.height > 0
   }
 
-  // An in-feed link the app itself would follow: find the <soci-link> whose
-  // href matches, then its inner <a>. Clicking the <a> runs soci-link's
+  // An in-feed link the app itself would follow: find the <nonio-link> whose
+  // href matches, then its inner <a>. Clicking the <a> runs nonio-link's
   // localLink handler -> history.pushState -> router, i.e. the real path.
   T.findLink = href => {
-    for (const l of T.deepAll('soci-link')) {
+    for (const l of T.deepAll('nonio-link')) {
       const a = l.shadowRoot?.querySelector('a') || l.querySelector('a')
       const h = a?.getAttribute('href') || l.getAttribute('href')
       if (h === href) return a || l
@@ -123,7 +123,7 @@ const initScript = () => {
     return null
   }
 
-  T.route = id => document.querySelector('soci-route#' + id)
+  T.route = id => document.querySelector('nonio-route#' + id)
 
   // The destination feed, identified by the attribute the page set on it rather
   // than by "a post-list exists". Homepage -> tag is a same-route navigation, so
@@ -132,13 +132,13 @@ const initScript = () => {
   T.destList = (routeId, attr, value) => {
     const route = T.route(routeId)
     if (!route || !route.hasAttribute('active')) return null
-    for (const l of T.deepAll('soci-post-list', route)) {
+    for (const l of T.deepAll('nonio-post-list', route)) {
       if ((l.getAttribute(attr) || '') === value) return l
     }
     return null
   }
 
-  T.rowsOf = list => (list ? T.deepAll('soci-post-li, soci-post-card', list) : [])
+  T.rowsOf = list => (list ? T.deepAll('nonio-post-li, nonio-post-card', list) : [])
 
   T.mediaReady = row => {
     if (!row) return false
@@ -151,19 +151,19 @@ const initScript = () => {
   }
 
   // The post page's primary content block (title + byline + body). Gated by the
-  // `url` attribute so a leftover soci-post from the inactive route template
+  // `url` attribute so a leftover nonio-post from the inactive route template
   // cannot be mistaken for the destination.
   T.postBody = slug => {
     const route = T.route('post')
     if (!route || !route.hasAttribute('active')) return null
-    const post = T.deep('soci-post', route)
+    const post = T.deep('nonio-post', route)
     if (!post || post.getAttribute('url') !== slug) return null
     const el = post.shadowRoot?.querySelector('#details-container')
     if (!el || (el.textContent || '').trim().length < 5 || !T.painted(el)) return null
     return el
   }
 
-  T.comments = () => T.deepAll('soci-comment').filter(c => (c.textContent || '').trim().length > 2)
+  T.comments = () => T.deepAll('nonio-comment').filter(c => (c.textContent || '').trim().length > 2)
 
   // Force a style resolution on the animated wrappers every frame.
   //
@@ -175,11 +175,11 @@ const initScript = () => {
   // every run and every iteration on identical footing.
   T.pump = () => {
     let acc = 0
-    for (const l of T.deepAll('soci-post-list')) {
+    for (const l of T.deepAll('nonio-post-list')) {
       const items = l.shadowRoot?.querySelector('#items')
       if (items) acc += parseFloat(getComputedStyle(items).opacity)
     }
-    for (const p of T.deepAll('soci-post')) acc += parseFloat(getComputedStyle(p).opacity)
+    for (const p of T.deepAll('nonio-post')) acc += parseFloat(getComputedStyle(p).opacity)
     return acc
   }
 

@@ -51,7 +51,7 @@ const initScript = () => {
   // their images out of LCP candidacy, so LCP alone misses the feed content.
   window.__feedPaint = -1
   const tick = () => {
-    const item = document.querySelector('soci-post-li, soci-post-card')
+    const item = document.querySelector('nonio-post-li, nonio-post-card')
     if (item && item.shadowRoot && !item.hasAttribute('unloaded')) {
       const img = item.shadowRoot.querySelector('img')
       const isText = !img || item.classList.contains('no-image')

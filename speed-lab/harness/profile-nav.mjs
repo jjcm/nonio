@@ -34,7 +34,7 @@ await cdp.send('Profiler.setSamplingInterval', { interval: 100 })
 await cdp.send('Profiler.start')
 
 await page.evaluate(h => {
-  const target = window.__deepAll('soci-link')
+  const target = window.__deepAll('nonio-link')
     .map(l => l.shadowRoot?.querySelector('a') || l.querySelector('a'))
     .find(a => a?.getAttribute('href') === h)
   target.click()

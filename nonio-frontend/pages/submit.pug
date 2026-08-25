@@ -1,0 +1,57 @@
+#submit-container
+  form(action="#")
+    #submit-header.load-group(load-order="primary").centered-container
+      input(type="text" name="title" placeholder="Enter title" required)
+      nonio-url-input(name="url" required tabindex=0)
+    
+    .load-group(load-order="secondary")
+      nonio-tab-group
+        .centered-container
+          nonio-tab(name="Link" default)
+            nonio-link-input(name="link")
+
+            .preview
+              h2 Preview 
+              nonio-post-li(score="0" time="now")
+                nonio-user(self slot="user")
+                nonio-tag-group(slot="tags")
+
+            h2 Description
+            nonio-input(placeholder="Enter description" name="description")
+
+          nonio-tab(name="Image")
+            nonio-image-uploader
+            h2 Description
+            nonio-input(placeholder="Enter description" name="description")
+
+          nonio-tab(name="Video")
+            nonio-video-uploader
+            h2 Description
+            nonio-input(placeholder="Enter description" name="description")
+              
+          //nonio-tab(name="Audio")
+            nonio-file-drop(type="audio")
+            h2 Description
+            nonio-input(placeholder="Enter description" name="description")
+
+          nonio-tab(name="Blog")
+            nonio-input(placeholder="Write your best" name="description")
+
+        nonio-tab(name="HTML")
+          nonio-html-uploader
+          p(style="max-width: 920px; margin: 12px auto;") [alpha] This will allow you to upload html to the site as a post. The content is presented in an iframe. If you want the iframe to be sized according to the frontend page, include this script in your html: <a href="https://html.non.io/nonio-embedded-page.js">https://html.non.io/nonio-embedded-page.js</a>. Feel free to test it, but note that I will be deleting posts that are simple alert tests.
+
+          .centered-container
+            h2 Description
+            nonio-input(placeholder="Enter description" name="description")
+    
+
+    #submit-actions.load-group(load-order="tertiary").centered-container
+      nonio-button(async) submit
+
+script.
+  lazyload('/pages/submit.js', document.currentScript.closest('nonio-route'))
+  
+
+    
+

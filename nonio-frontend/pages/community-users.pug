@@ -1,0 +1,39 @@
+#community-users.community-settings
+  header
+    nonio-link(href=`/@community/admin` class="nav-item") <span>Settings</span>
+    nonio-link(href=`/@community/admin/users` class="nav-item active") <span>Users</span>
+    nonio-link(href=`/@community/admin/financials` class="nav-item") <span>Financials</span>
+    nonio-link(href=`/@community/admin/emojis` class="nav-item") <span>Emojis</span>
+  .container
+    .load-group(load-order="primary")
+      h1 Community Users
+      p Manage moderators, members, and bans in one place.
+    .load-group(load-order="secondary")
+      .grid
+        .card
+          .card-header(data-role="moderators")
+            h2 Moderators
+            nonio-button.add-btn(subtle data-role="moderators" aria-label="Add moderator")
+              nonio-icon(glyph="create")
+              span add
+            nonio-user-picker(data-role="moderators" placeholder="Add moderator" action-label="Add")
+          .list(data-list="moderators")
+        .card
+          .card-header(data-role="members")
+            h2 Members
+            nonio-button.add-btn(subtle data-role="members" aria-label="Add member")
+              nonio-icon(glyph="create")
+              span add
+            nonio-user-picker(data-role="members" placeholder="Add member" action-label="Add")
+          .list(data-list="members")
+        .card
+          .card-header(data-role="banned")
+            h2 Banned Users
+            nonio-button.add-btn(subtle data-role="banned" aria-label="Ban user")
+              nonio-icon(glyph="create")
+              span add
+            nonio-user-picker(data-role="banned" placeholder="Ban user" action-label="Ban")
+          .list(data-list="banned")
+
+script.
+  lazyload('/pages/community-users.js', document.currentScript.closest('nonio-route'))

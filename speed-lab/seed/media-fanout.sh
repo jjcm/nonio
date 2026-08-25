@@ -7,9 +7,9 @@ ROOT="${1:-$HOME/nonio}"
 SEED="$ROOT/speed-lab/seed"
 SRC="$SEED/srcimg"
 MAN="$SEED/media-manifest.tsv"
-IMG="$ROOT/soci-image-cdn/files"
-VID="$ROOT/soci-video-cdn/files"
-AVA="$ROOT/soci-avatar-cdn/files"
+IMG="$ROOT/nonio-image-cdn/files"
+VID="$ROOT/nonio-video-cdn/files"
+AVA="$ROOT/nonio-avatar-cdn/files"
 VIDEO_FIXTURE="$ROOT/speed-lab/fixtures/videos/sl-vid-01.mp4"
 
 [[ -f $MAN ]] || { echo "missing $MAN" >&2; exit 1; }

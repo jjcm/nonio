@@ -1,0 +1,14 @@
+nonio-sidebar(loading)
+  section#user(slot="user")
+    nonio-user(self)
+    #user-actions
+      nonio-notification-badge
+
+  nonio-sidebar-community-panel#community(panel="community")
+  nonio-sidebar-user-panel#user-panel(panel="user")
+
+  section#footer(slot="footer")
+    links
+      nonio-link(href="/about") About
+      a(href="https://github.com/jjcm/nonio/issues/new") Feedback
+      nonio-link#logout(href="/") Logout

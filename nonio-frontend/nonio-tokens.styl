@@ -1,0 +1,302 @@
+:root
+  --n0: #FFF
+  --n1: hsl(120, 17%, 95%)
+  --n2: hsl(0, 0%, 85%)
+  --n3: hsl(160, 5%, 52%)
+  --n4: hsl(195, 19%, 17%)
+
+  --z0: #FFFFFF
+  --z1: #EAEBEB
+  --z2: #D6D7D8
+  --z3: #C2C3C4
+  --z4: #AEB0B1
+  --z5: #696D70
+  --z6: #3A3E41
+  --z7: #2B2F33
+  --z8: #1C2024
+  --z9: #0D1216
+
+  --r3: hsl(360, 55%, 46%)
+  --r2: hsl(360, 61%, 50%)
+  --r1: hsl(360, 100%, 70%)
+  --r0: hsl(1, 100%, 80%)
+
+  --o3: hsl(16, 100%, 57%)
+  --o2: hsl(21, 100%, 60%)
+  --o1: hsl(31, 100%, 60%)
+  --o0: hsl(35, 100%, 83%)
+
+  --y3: hsl(55, 73%, 47%)
+  --y2: hsl(55, 79%, 54%)
+  --y1: hsl(60, 78%, 65%)
+  --y0: hsl(64, 85%, 87%)
+
+  --l3: hsl(112, 100%, 20%)
+  --l2: hsl(113, 100%, 31%)
+  --l1: hsl(113, 75%, 52%)
+  --l0: hsl(108, 87%, 75%)
+
+
+  --g3: hsl(153, 100%, 25%)
+  --g2: hsl(153, 100%, 31%)
+  --g1: hsl(153, 75%, 52%)
+  --g0: hsl(148, 87%, 75%)
+
+  --t3: hsl(193, 100%, 35%)
+  --t2: hsl(188, 100%, 42%)
+  --t1: hsl(183, 100%, 46%)
+  --t0: hsl(177, 100%, 79%)
+
+  --a3: hsl(197, 100%, 32%)
+  --a2: hsl(199, 100%, 43%)
+  --a1: hsl(194, 100%, 48%)
+  --a0: hsl(192, 100%, 75%)
+
+  --b3: hsl(211, 79%, 35%)
+  --b2: hsl(212, 75%, 47%)
+  --b1: hsl(206, 88%, 57%)
+  --b0: hsl(207, 91%, 77%)
+
+  --p3: hsl(230, 49%, 40%)
+  --p2: hsl(233, 42%, 51%)
+  --p1: hsl(235, 57%, 66%)
+  --p0: hsl(236, 63%, 80%)
+
+  // these get dynamically updated on load, but are initially set to 0 for less initial load animations
+  --anim-duration-short: 0s
+  --anim-duration-med: 0s
+  --anim-duration-long: 0s
+
+  --nonio-ease-in: cubic-bezier(1, 0, .85, 1)
+  --nonio-ease-out: cubic-bezier(.25, 0, 0, 1)
+  --nonio-ease: cubic-bezier(.65, 0, .35, 1)
+
+  --nonio-blog-padding: 32px
+  --nonio-blog-width: 920px
+
+  --shadow-light: rgba(0,5,5,0.1)
+  --shadow: rgba(0,5,5,0.2)
+  --shadow-dark: rgba(0,5,5,0.3)
+
+  --bg: var(--z0)
+  --bg-hover: var(--bg)
+  --bg-active: var(--bg)
+  --bg-secondary: var(--bg)
+  --bg-secondary-hover: var(--bg-secondary)
+  --bg-secondary-active: var(--bg-secondary)
+  --bg-bold: var(--bg)
+  --bg-bold-hover: var(--bg-bold)
+  --bg-bold-active: var(--bg-bold)
+  --bg-inverse: var(--bg)
+  --bg-inverse-hover: var(--bg-inverse)
+  --bg-inverse-active: var(--bg-inverse)
+
+  --text: var(--z8)
+  --text-hover: var(--text)
+  --text-active: var(--text)
+  --text-secondary: var(--text)
+  --text-secondary-hover: var(--text-secondary)
+  --text-secondary-active: var(--text-secondary)
+  --text-tertiary: var(--text-secondary)
+  --text-bold: var(--text)
+  --text-bold-hover: var(--text-bold)
+  --text-bold-active: var(--text-bold)
+  --text-inverse: var(--text)
+  --text-inverse-hover: var(--text-inverse)
+  --text-inverse-active: var(--text-inverse)
+
+  --border: var(--z2)
+  --border-brand: var(--border)
+  --border-brand-secondary: var(--border-brand)
+
+  --bg-brand: var(--b1)
+  --bg-brand-hover: var(--bg-brand)
+  --bg-brand-active: var(--bg-brand)
+  --bg-brand-secondary: var(--bg-brand)
+  --bg-brand-secondary-hover: var(--bg-brand-secondary)
+  --bg-brand-secondary-active: var(--bg-brand-secondary)
+  --bg-brand-bold: var(--bg-brand)
+  --bg-brand-bold-hover: var(--bg-brand-bold)
+  --bg-brand-bold-active: var(--bg-brand-bold)
+  --bg-brand-inverse: var(--bg-brand)
+  --bg-brand-inverse-hover: var(--bg-brand-inverse)
+  --bg-brand-inverse-active: var(--bg-brand-inverse)
+
+  --text-brand: var(--b3)
+  --text-brand-hover: var(--text-brand)
+  --text-brand-active: var(--text-brand)
+  --text-brand-secondary: var(--text-brand)
+  --text-brand-secondary-hover: var(--text-brand-secondary)
+  --text-brand-secondary-active: var(--text-brand-secondary)
+  --text-brand-bold: var(--text-brand)
+  --text-brand-bold-hover: var(--text-brand-bold)
+  --text-brand-bold-active: var(--text-brand-bold)
+  --text-brand-inverse: var(--text-brand)
+  --text-brand-inverse-hover: var(--text-brand-inverse)
+  --text-brand-inverse-active: var(--text-brand-inverse)
+
+  --bg-success: var(--g1)
+  --bg-success-hover: var(--bg-success)
+  --bg-success-active: var(--bg-success)
+  --bg-success-secondary: var(--bg-success)
+  --bg-success-secondary-hover: var(--bg-success-secondary)
+  --bg-success-secondary-active: var(--bg-success-secondary)
+  --bg-success-bold: var(--bg-success)
+  --bg-success-bold-hover: var(--bg-success-bold)
+  --bg-success-bold-active: var(--bg-success-bold)
+  --bg-success-inverse: var(--bg-success)
+  --bg-success-inverse-hover: var(--bg-success-inverse)
+  --bg-success-inverse-active: var(--bg-success-inverse)
+
+  --text-success: var(--g3)
+  --text-success-hover: var(--text-success)
+  --text-success-active: var(--text-success)
+  --text-success-secondary: var(--text-success)
+  --text-success-secondary-hover: var(--text-success-secondary)
+  --text-success-secondary-active: var(--text-success-secondary)
+  --text-success-bold: var(--text-success)
+  --text-success-bold-hover: var(--text-success-bold)
+  --text-success-bold-active: var(--text-success-bold)
+  --text-success-inverse: var(--text-success)
+  --text-success-inverse-hover: var(--text-success-inverse)
+  --text-success-inverse-active: var(--text-success-inverse)
+
+  --bg-danger: var(--r1)
+  --bg-danger-hover: var(--bg-danger)
+  --bg-danger-active: var(--bg-danger)
+  --bg-danger-secondary: var(--bg-danger)
+  --bg-danger-secondary-hover: var(--bg-danger-secondary)
+  --bg-danger-secondary-active: var(--bg-danger-secondary)
+  --bg-danger-bold: var(--bg-danger)
+  --bg-danger-bold-hover: var(--bg-danger-bold)
+  --bg-danger-bold-active: var(--bg-danger-bold)
+  --bg-danger-inverse: var(--bg-danger)
+  --bg-danger-inverse-hover: var(--bg-danger-inverse)
+  --bg-danger-inverse-active: var(--bg-danger-inverse)
+
+  --text-danger: var(--r3)
+  --text-danger-hover: var(--text-danger)
+  --text-danger-active: var(--text-danger)
+  --text-danger-secondary: var(--text-danger)
+  --text-danger-secondary-hover: var(--text-danger-secondary)
+  --text-danger-secondary-active: var(--text-danger-secondary)
+  --text-danger-bold: var(--text-danger)
+  --text-danger-bold-hover: var(--text-danger-bold)
+  --text-danger-bold-active: var(--text-danger-bold)
+  --text-danger-inverse: var(--text-danger)
+  --text-danger-inverse-hover: var(--text-danger-inverse)
+  --text-danger-inverse-active: var(--text-danger-inverse)
+
+  --bg-warning: var(--r1)
+  --bg-warning-hover: var(--bg-warning)
+  --bg-warning-active: var(--bg-warning)
+  --bg-warning-secondary: var(--bg-warning)
+  --bg-warning-secondary-hover: var(--bg-warning-secondary)
+  --bg-warning-secondary-active: var(--bg-warning-secondary)
+  --bg-warning-bold: var(--bg-warning)
+  --bg-warning-bold-hover: var(--bg-warning-bold)
+  --bg-warning-bold-active: var(--bg-warning-bold)
+  --bg-warning-inverse: var(--bg-warning)
+  --bg-warning-inverse-hover: var(--bg-warning-inverse)
+  --bg-warning-inverse-active: var(--bg-warning-inverse)
+
+@media (prefers-color-scheme: light) 
+  :root
+    --bg: var(--z0)
+    --bg-hover: var(--z1)
+    --bg-secondary: var(--z1)
+    --bg-secondary-hover: var(--z2)
+    --bg-tertiary: var(--z2)
+    --bg-tertiary-hover: var(--z3)
+    --bg-inverse: var(--z5)
+    --bg-bold: var(--z2)
+    --bg-elevation-tint: #00000010
+    --bg-elevation-tint-hover: #00000020
+
+    --text: var(--z8)
+    --text-secondary: var(--z5)
+    --text-secondary-hover: var(--z8)
+    --text-tertiary: var(--z4)
+    --text-bold: var(--z9)
+    --text-inverse: var(--z0)
+
+    --border: var(--z2)
+    --border-brand: var(--b1)
+    --border-brand-secondary: #1357a040
+
+    --bg-brand: var(--b2)
+    --bg-brand-hover: var(--b3)
+    --bg-brand-bold: var(--b3)
+    --bg-brand-secondary: #1357a020
+    --bg-brand-secondary-hover: #1357a030
+    --text-brand: var(--b2)
+    --text-brand-hover: var(--b3)
+    --text-brand-bold: var(--b3)
+
+    --bg-success: var(--g2)
+    --bg-success-secondary: #29e08e30
+    --text-success: var(--g3)
+    --text-success-secondary: var(--g1)
+
+    --bg-danger: var(--r2)
+    --bg-danger-hover: var(--r3)
+    --bg-danger-secondary: #c4080830
+    --text-danger: var(--r2)
+    --text-danger-hover: var(--r3)
+
+    --bg-warning: var(--y2)
+    --bg-warning-hover: var(--y1)
+    --bg-warning-secondary: #ebeb6030
+    --text-warning: var(--y2)
+
+@media (prefers-color-scheme: dark) 
+  :root
+    --bg: var(--z8)
+    --bg-hover: var(--z7)
+    --bg-secondary: var(--z7)
+    --bg-secondary-hover: var(--z6)
+    --bg-tertiary: var(--z6)
+    --bg-tertiary-hover: var(--z5)
+    --bg-inverse: var(--z3)
+    --bg-bold: var(--z9)
+    --bg-elevation-tint: #FFFFFF10
+    --bg-elevation-tint-hover: #FFFFFF20
+
+    --text: var(--z2)
+    --text-secondary: var(--z4)
+    --text-secondary-hover: var(--z2)
+    --text-tertiary: var(--z5)
+    --text-bold: var(--z0)
+    --text-inverse: var(--z9)
+
+    --border: var(--z6)
+    --border-brand: var(--b1)
+    --border-brand-secondary: #1357a040
+
+    --bg-brand: var(--b1)
+    --bg-brand-hover: var(--b0)
+    --bg-brand-bold: var(--b0)
+    --bg-brand-secondary: #1357a030
+    --bg-brand-secondary-hover: #1357a040
+    --text-brand: var(--b1)
+    --text-brand-hover: var(--b0)
+    --text-brand-bold: var(--b0)
+  
+    --bg-success: var(--g1)
+    --bg-success-secondary: #29e08e30
+    --text-success: var(--g1)
+
+    --bg-danger: var(--r1)
+    --bg-danger-hover: var(--r0)
+    --bg-danger-secondary: #c4080830
+    --text-danger: var(--r1)
+    --text-danger-hover: var(--r0)
+
+    --bg-warning: var(--y2)
+    --bg-warning-hover: var(--y1)
+    --bg-warning-secondary: #ebeb6030
+    --text-warning: var(--y2)
+
+    --shadow-light: rgba(0,5,5,0.25)
+    --shadow: rgba(0,5,5,0.6)
+    --shadow-dark: rgba(0,5,5,0.6)

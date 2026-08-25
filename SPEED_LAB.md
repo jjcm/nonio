@@ -80,9 +80,9 @@ accepted, cold wins dominate.
 visible; `loading=lazy` on below-fold media cuts cold-network work without touching LCP if the
 first screen stays eager.
 
-**Change:** `soci-post-list.renderPostLi` marks the first 12 rows `eager`;
-`soci-post-li._setImageSource` sets `loading=lazy decoding=async` on non-eager rows;
-`soci-user` avatars always lazy (never LCP candidates).
+**Change:** `nonio-post-list.renderPostLi` marks the first 12 rows `eager`;
+`nonio-post-li._setImageSource` sets `loading=lazy decoding=async` on non-eager rows;
+`nonio-user` avatars always lazy (never LCP candidates).
 
 Results (vs iter01): WAN cold LCP 752 → **716**, feedPaint 733 → **701**, transfer
 **6.1 MB → 2.0 MB (−67%)**, requests 244 → 193. Warm neutral. slow4g (h2-pinned reference
@@ -109,13 +109,13 @@ after the fix below): 116 requests / 517 KB cold. Transitions neutral-to-better
 **Hypothesis:** 65 modules discovered at depth 2-3 cost one RTT per level; emitting
 `<link rel="modulepreload">` for the crawled graph flattens discovery.
 
-**Change:** import-graph crawler in `soci-frontend/index.js`, links injected in `index.pug`.
+**Change:** import-graph crawler in `nonio-frontend/index.js`, links injected in `index.pug`.
 
 Results: WAN cold neutral (FCP 556→552, LCP 716→708 — discovery already overlaps other work
 on h2). Warm slightly better (−20 ms FCP). slow4g cold: FCP −188 ms but **LCP +112 ms** and
 feedPaint +115 ms — 65 high-priority JS preloads contend with the LCP thumbnails on a
 1.6 Mbps pipe. Classic FCP-up/LCP-down preload contention, exactly what the decision rule
-forbids. ES module semantics also cap the upside: `soci-components.js` cannot execute until
+forbids. ES module semantics also cap the upside: `nonio-components.js` cannot execute until
 its slowest import arrives, so partial preloading cannot help either.
 
 **Decision: REVERT.** (Also surfaced a deploy bug worth recording: a failing `find` in
@@ -140,7 +140,7 @@ bimodal artifact, visible as 114 vs 145 request flips in i2b's own runs.)
 
 **Hypothesis:** the `/posts` fetch waits for the whole module graph to load and execute; an
 inline script in the shell can start the identical request at byte-one of the HTML and let
-`soci-post-list` consume the in-flight promise.
+`nonio-post-list` consume the in-flight promise.
 
 **Change:** inline script in `index.pug` mirrors `_buildPostsUrl` (sort/filter from
 localStorage, tag from hash, user from path — param order identical) for anonymous sessions,
@@ -160,8 +160,8 @@ LCP 696→**576**, feedPaint 688→**634**. Warm feedPaint 542→408 (slow4g) / 
 ### iter06 — prefetch post + comments on deep links — **KEEP**
 
 Same mechanism extended to the default (post) route: the shell starts `/posts/<slug>` and
-`/comments?post=<slug>` (community-aware) and `soci-component.getData` consumes matching
-anonymous prefetches, so `soci-post` and `soci-comment-list` both skip a round trip.
+`/comments?post=<slug>` (community-aware) and `nonio-component.getData` consumes matching
+anonymous prefetches, so `nonio-post` and `nonio-comment-list` both skip a round trip.
 
 Results: post deep link slow4g cold LCP 2332→**1996** (−14%), WAN 672→**552** (−18%).
 FCP unchanged. Comments still render (24/24) with no page errors.
@@ -192,7 +192,7 @@ first, and brotli's win over gzip (~10 KB across the graph) is too small to matt
 
 ### seed realism fix (not an iteration)
 
-`soci-image-cdn` produces thumbnails with imagemagick `-resize 192x144^`; the lab seed had
+`nonio-image-cdn` produces thumbnails with imagemagick `-resize 192x144^`; the lab seed had
 generated 640 px / ~40 KB thumbnails — 4-6× production weight. Regenerated at production
 geometry (256x144 / 192x144 / 192x342 cover, ~6-14 KB) and re-referenced every lane (refD).
 slow4g cold feedPaint dropped 3572 → 2471 from data realism alone; all keep/revert decisions
@@ -265,7 +265,7 @@ gzip responses from PostCache).
 1. iter01 — Caddy single TLS origin, h2+h3, path-prefix proxying (`speed-lab/vps/Caddyfile`)
 2. iter02 — lazy offscreen media (post-list `eager` window, lazy avatars)
 3. iter04 — `defer` on the markdown-wasm loader
-4. iter05 — shell-level feed prefetch (`__preFetch` → `soci-post-list`)
+4. iter05 — shell-level feed prefetch (`__preFetch` → `nonio-post-list`)
 5. iter06 — deep-link prefetch for post + comments (`__preFetch` → `getData`)
 6. iter10 — anonymous read-API browser cache (30 s, `Vary: Authorization`)
 7. Harness/lab infra: `speed-lab/vps/*`, `speed-lab/seed/*`, harness pins + TBT

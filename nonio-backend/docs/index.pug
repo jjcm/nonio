@@ -1,0 +1,34 @@
+link(rel="icon" type="image/svg" href="/static/favicon.svg")
+link(rel="stylesheet" href="/static/prism.css")
+script(src="/static/prism.js")
+link(href='/static/style.styl' rel='stylesheet')
+title Nonio Backend API
+
+include sidebar.pug
+
+script.
+  document.getElementById('llm-copy-btn').onclick = function() {
+    fetch('/LLM.md').then(function(r) { return r.text(); }).then(function(t) {
+      navigator.clipboard.writeText(t).then(function() {
+        var btn = document.getElementById('llm-copy-btn');
+        btn.textContent = 'Copied!';
+        setTimeout(function() { btn.textContent = 'LLMs'; }, 1500);
+      });
+    });
+  };
+
+#content
+  include api/models.pug
+  include api/posts.pug
+  include api/tags.pug
+  include api/postTags.pug
+  include api/comments.pug
+  include api/user.pug
+  include api/notifications.pug
+  include api/communities.pug
+  include api/channels.pug
+  include api/voice.pug
+  include api/stripe.pug
+  include api/subscriptions.pug
+  include api/admin.pug
+  include api/emojis.pug

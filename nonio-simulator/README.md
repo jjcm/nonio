@@ -1,6 +1,6 @@
 # nonio-simulator
 
-Dev-only activity simulator for the `soci` stack.
+Dev-only activity simulator for the `nonio` stack.
 
 ## What it does
 
@@ -13,13 +13,13 @@ Dev-only activity simulator for the `soci` stack.
 
 ## Prereqs (local dev)
 
-- `soci-backend` running (default `http://localhost:4201`)
-- `soci-image-cdn` running (default `http://localhost:4203`)
-- Enable dev tools + dev subscription payouts in `soci-backend` (see below)
+- `nonio-backend` running (default `http://localhost:4201`)
+- `nonio-image-cdn` running (default `http://localhost:4203`)
+- Enable dev tools + dev subscription payouts in `nonio-backend` (see below)
 
 ### Backend dev flags
 
-In the environment for `soci-backend` set:
+In the environment for `nonio-backend` set:
 
 - `DEV_TOOLS_ENABLED=true` (enables `POST /dev/user/set-subscription`)
 - `DEV_SUBSCRIPTION_PAYOUTS=true` (enables periodic generation of payout rows from `subscription_amount`)
