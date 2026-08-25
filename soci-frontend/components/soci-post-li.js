@@ -39,7 +39,79 @@ export default class SociPostLi extends SociComponent {
       ::slotted(img[src]),
       img[src] {
         display: block;
+      }
+
+      /* The wrapper carries the gap so the play badge centers on the image. */
+      #thumbnail {
+        float: left;
+        position: relative;
         margin-right: 8px;
+      }
+
+      /* Videos uploaded before poster encoding still get a play target. */
+      :host(.no-poster) #thumbnail {
+        width: 96px;
+        height: 72px;
+        border-radius: 3px;
+        background: var(--bg-secondary);
+
+        img {
+          display: none;
+        }
+      }
+
+      #play,
+      #collapse {
+        position: absolute;
+        display: none;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #00000099;
+        color: #fff;
+        align-items: center;
+        justify-content: center;
+
+        svg {
+          width: 14px;
+          height: 14px;
+        }
+      }
+
+      #play {
+        top: 50%;
+        left: 50%;
+        translate: -50% -50%;
+        pointer-events: none;
+        transition: background 0.1s var(--soci-ease);
+
+        :host([type="video"]:not([expanded])) & {
+          display: flex;
+        }
+        :host(:hover) & {
+          background: #000000cc;
+        }
+      }
+
+      #collapse {
+        top: 20px;
+        left: 20px;
+        cursor: pointer;
+        pointer-events: auto;
+        /* Above the player's own click overlay. */
+        z-index: 3;
+
+        &:hover {
+          background: #000000cc;
+        }
+        :host([type="video"][expanded]) & {
+          display: flex;
+        }
+      }
+
+      :host([type="video"]) #thumbnail,
+      :host([type="video"]) #thumbnail img {
+        cursor: pointer;
       }
 
       #preview {
@@ -54,6 +126,10 @@ export default class SociPostLi extends SociComponent {
 
       #preview img {
         opacity: 0;
+      }
+
+      #preview soci-video {
+        pointer-events: auto;
       }
 
       content {
@@ -143,7 +219,19 @@ export default class SociPostLi extends SociComponent {
 
       :host([expanded]) img {
         transition: all 0.1s var(--soci-ease);
+        max-width: 100%;
+      }
+
+      /* Leave room for the metadata column beside the expanded media. The cap
+         lives on the boxes that lay out in flow, so the poster, the full image
+         and the player all stop at the same place. */
+      :host([expanded]) #thumbnail,
+      :host([expanded]) #preview img,
+      :host([expanded]) #preview soci-video {
         max-width: calc(100% - 280px);
+      }
+
+      :host([expanded]) #thumbnail {
         margin-right: 16px;
       }
 
@@ -244,9 +332,29 @@ export default class SociPostLi extends SociComponent {
         :host([expanded]) {
           height: auto;
         }
-        :host([expanded]) img {
+        :host([expanded]) #thumbnail,
+        :host([expanded]) #preview img,
+        :host([expanded]) #preview soci-video {
           max-width: 100%;
+        }
+        #thumbnail {
           margin-right: 0;
+        }
+        :host(.no-poster) #thumbnail {
+          width: 100%;
+          height: 200px;
+        }
+        #play {
+          width: 44px;
+          height: 44px;
+
+          svg {
+            width: 18px;
+            height: 18px;
+          }
+        }
+        #collapse {
+          top: 40px;
         }
         :host([expanded]) #details,
         :host([expanded]) #title {
@@ -258,8 +366,13 @@ export default class SociPostLi extends SociComponent {
           height: 200px;
           margin-top: 4px;
         }
+        /* The row reserves space above the media on mobile; the overlay is
+           positioned from the top of the row, so both need to come down. */
         #preview img {
           transform: translateY(16px);
+        }
+        #preview soci-video {
+          transform: translateY(20px);
         }
         #time,
         #comments {
@@ -325,11 +438,14 @@ export default class SociPostLi extends SociComponent {
 
     return `
     <slot name="thumbnail">
-      <picture id="thumbnail">
-        <source class="heic">
-        <source class="webp">
-        <img @click=expand />
-      </picture>
+      <div id="thumbnail" @click=expand>
+        <picture>
+          <source class="heic">
+          <source class="webp">
+          <img />
+        </picture>
+        <div id="play">${window.SociIcon?.('playFilled') || ''}</div>
+      </div>
     </slot>
     <div id="preview">
       <picture>
@@ -337,6 +453,7 @@ export default class SociPostLi extends SociComponent {
         <source class="webp">
         <img @click=expand />
       </picture>
+      <div id="collapse" @click=expand>${window.SociIcon?.('close') || ''}</div>
       <content></content>
     </div>
     <content>
@@ -473,19 +590,32 @@ export default class SociPostLi extends SociComponent {
 
   expand(){
     this.toggleAttribute('expanded')
+    let media = this.select('#thumbnail')
     let thumbnail = this.select('#thumbnail img')
     let preview = this.select('#preview img')
     if(this.hasAttribute('expanded')){
       //TODO - this only works for desktop. Mobile this logic is a bit funky
-      thumbnail.style.height = preview.style.height = '376px'
-      thumbnail.style.width = preview.style.width = `${(thumbnail.naturalWidth / thumbnail.naturalHeight) * 376}px`
+      // Videos fall back to the post dimensions when there's no poster to measure.
+      let ratio = thumbnail.naturalWidth / thumbnail.naturalHeight || this.getAttribute('width') / this.getAttribute('height') || 1
+      let width = `${ratio * 376}px`
+      media.style.width = thumbnail.style.width = preview.style.width = width
       let description = document.createElement('soci-markdown-view')
-      this._setImageSource(this.select('#preview'), config.IMAGE_HOST)
+      if(this.getAttribute('type') == 'video'){
+        // Images crop to a fixed height; a video can't, so the media keeps its
+        // aspect for the widths where the cap applies (mobile, ultrawide).
+        media.style.aspectRatio = thumbnail.style.aspectRatio = ratio
+        media.style.height = thumbnail.style.height = 'auto'
+        this._playInline(width, ratio)
+      }
+      else {
+        media.style.height = thumbnail.style.height = preview.style.height = '376px'
+        this._setImageSource(this.select('#preview'), config.IMAGE_HOST)
+        setTimeout(()=>{
+          if(this.hasAttribute('expanded'))
+            preview.style.opacity = 1
+        }, 100)
+      }
       description.setAttribute('slot', 'description')
-      setTimeout(()=>{
-        if(this.hasAttribute('expanded'))
-          preview.style.opacity = 1
-      }, 100)
       this.getData(this._postApiPath()).then(e=>{
         if(e.content.length && this.hasAttribute('expanded')){
           description.render(e.content)
@@ -494,12 +624,22 @@ export default class SociPostLi extends SociComponent {
       })
     }
     else {
-      thumbnail.style.height = preview.style.height = ''
-      thumbnail.style.width = preview.style.width = ''
+      media.style.cssText = thumbnail.style.cssText = preview.style.cssText = ''
       this.querySelector('soci-markdown-view')?.remove()
-      preview.style.opacity = ''
+      this.select('#preview soci-video')?.remove()
     }
 
+  }
+
+  // The player sits over the poster at the geometry the expanded image uses.
+  // --media-* lets soci-video pick a rendition instead of the source file.
+  _playInline(width, ratio){
+    let player = document.createElement('soci-video')
+    player.style.cssText = `width: ${width}; aspect-ratio: ${ratio};` + (this.getAttribute('width')
+      ? `--media-width: ${this.getAttribute('width')}px; --media-height: ${this.getAttribute('height')}px;`
+      : '')
+    this.select('#preview').appendChild(player)
+    player.url = this.url
   }
 
   _scoreChanged(e){
@@ -512,7 +652,7 @@ export default class SociPostLi extends SociComponent {
     img.decoding = 'async'
     img.src = `${host}/${this.url}.webp`
     img.onerror = () => {
-      this.classList.toggle('no-image', true)
+      this.classList.toggle(this.getAttribute('type') == 'video' ? 'no-poster' : 'no-image', true)
     }
     container.querySelector('.heic').src = `${host}/${this.url}.heic`
     container.querySelector('.webp').src = `${host}/${this.url}.webp`
@@ -522,6 +662,7 @@ export default class SociPostLi extends SociComponent {
     switch(type){
       case 'image':
       case 'link':
+      case 'video':
         this._setImageSource(this.select('#thumbnail'), config.THUMBNAIL_HOST)
         break
     }

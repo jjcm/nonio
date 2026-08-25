@@ -20,6 +20,10 @@ export default class SociVideoPlayer extends SociComponent {
       */
 
       width: 100%;
+      /* Fills a host with an explicit box (feed expansion) without cropping;
+         a no-op where the host height is auto, as on the post page. */
+      height: 100%;
+      object-fit: contain;
       max-height: calc(100vh - 100px);
       margin: 0 auto;
       display: block;
@@ -254,6 +258,7 @@ export default class SociVideoPlayer extends SociComponent {
   disconnectedCallback(){
     clearInterval(this._bufferInterval)
     clearInterval(this._playInterval)
+    document.removeEventListener('keydown', this._spacePause)
   }
 
   attributeChangedCallback(name, oldValue, newValue){

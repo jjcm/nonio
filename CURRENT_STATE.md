@@ -1,3 +1,48 @@
+## 2026-08-25 — Feed video posts: poster + play badge + inline playback (branch `cursor/feed-video-thumbnails-7d3e`)
+
+Video rows in the list feed (`soci-post-li`) behaved like text posts: no media, no
+way to watch without opening the post page. They now look and expand like image
+rows.
+
+- **`soci-post-li`**
+  - `loadContent` treats `video` like `image`/`link`, so the row loads
+    `THUMBNAIL_HOST/{url}.webp` (the same 2× 192x144^ webp, `loading=lazy`
+    beyond the first 12 rows) as a poster.
+  - Poster wrapped in a `#thumbnail` div (the picture had no box to anchor to);
+    the 8px gap moved from the image to the wrapper so the play badge centers on
+    the poster. The expanded width cap moved to the boxes that lay out in flow
+    (`#thumbnail`, `#preview img`, `#preview soci-video`) — a percentage
+    max-width on the image alone resolves against the shrink-to-fit float and
+    silently halved the expanded image. Verified pixel-identical to master for
+    image rows, collapsed and expanded, desktop and mobile.
+  - Play badge (`#play`, new `playFilled` glyph) over the poster; clicking the
+    poster runs the same `expand()` as images and mounts a `soci-video` in
+    `#preview` at the expanded geometry, with `--media-width/--media-height`
+    from the post so the player picks a rendition (480p inline) instead of the
+    source file. No navigation. A collapse badge (`#collapse`, new `close`
+    glyph) closes the row, since clicks on the player belong to play/pause.
+  - Videos keep their aspect where the width cap bites (mobile, ultrawide)
+    instead of cropping like images; the player never letterboxes as a result.
+  - Video posts whose poster 404s get `.no-poster`: a plain tile with the play
+    badge instead of the `.no-image` blank row, so playback still works.
+    **This is the common case in production today** — `soci-video-cdn` never
+    writes a poster (the thumbnail half of `route/move.go` is commented out and
+    `encode.Image` is unused for videos), so only a handful of 2023 posts have
+    one. Generating posters at encode time is the follow-up that lights up real
+    frames here.
+- **`soci-post-list`**: `renderPostLi` passes `width`/`height` for video posts
+  (already in the feed payload) for the player's rendition choice and as the
+  aspect fallback when there's no poster to measure.
+- **`soci-video`**: `height: 100%` + `object-fit: contain` so the player fills a
+  host with an explicit box (no-op where the host height is auto, as on the post
+  page — verified identical); `disconnectedCallback` now removes its document
+  keydown listener, which matters once players mount and unmount in a feed.
+
+Verified against production data and a local fixture stack (correct-aspect
+poster, portrait video, poster-less video, legacy poster whose aspect disagrees
+with the file): playback starts on click, pause/resume works, collapse removes
+the player, `npm test` 12/12.
+
 ## 2026-08-24 — VPS speed lab: live deploy + measured perf loop (branch `cursor/speed-vps-loop-27f0`)
 
 Deployed the monorepo to a live 1-vCPU/1 GB Vultr box (108.61.219.46) with a
