@@ -3,7 +3,6 @@ package route
 import (
 	"fmt"
 	"net/http"
-	"regexp"
 	"soci-image-cdn/encode"
 	"soci-image-cdn/util"
 
@@ -53,17 +52,19 @@ func UploadFile(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	re, _ := regexp.Compile("([a-zA-Z]+)/")
-	var mimeType = handler.Header["Content-Type"][0]
+	mimeType := handler.Header.Get("Content-Type")
 
 	// If all is good, let's log what the hell is going on
-	fmt.Printf("%v is uploading a %v of size %v to %v\n", user, re.FindStringSubmatch(mimeType)[1], handler.Size, url)
+	fmt.Printf("%v is uploading a %v of size %v to %v\n", user, mimeType, handler.Size, url)
 
-	switch re.FindStringSubmatch(mimeType)[1] {
+	switch util.MediaCategory(mimeType) {
 	case "image":
 		err = encode.Image(file, url)
 	case "video":
 		err = encode.Video(file, url)
+	default:
+		util.SendError(w, fmt.Sprintf("Unsupported content type: %q", mimeType), 400)
+		return
 	}
 	if err != nil {
 		util.SendError(w, fmt.Sprintf("Error encoding the file: %v", err), 500)
