@@ -1,3 +1,46 @@
+## 2026-08-25 — Lazy per-route component graph, split out for review (branch `cursor/lazy-per-route-component-graph-5cc4`)
+
+The loader half of `cursor/lazy-graph-ws-notifications-663d` (PR #172), rebased
+onto master on its own so the first-paint win can be reviewed and landed
+without the websocket-notification feature riding along. Frontend only — no
+backend routes, no `soci-notification-badge` changes, no edge playbook. PR #172
+stays open for the websocket half.
+
+- **Lazy per-route component graph.** `soci-components.js` no longer imports
+  all ~65 modules (502 KB raw / 140 KB gz) before first paint; it eagerly
+  defines only the 17-module shell (routing, sidebar, icon/link/button/user/
+  select/tag-li/badge/modal + modal manager). New `components/soci-loader.js`
+  holds an element→module registry plus per-route packs (`PACKS`, keyed by
+  `soci-route` id) and modal packs; `soci-route.activate()` awaits
+  `routeReady(id)` before dispatching `routeactivate`, so page scripts never
+  race `customElements.define` (elements upgrade in place; observed
+  attributes replay at upgrade). An activation token drops a stale pack that
+  lands after you've navigated away, and `deactivate()` now also cleans up a
+  route still in its `activating` phase. Failed imports resolve anyway (the
+  route still activates) and are retried on the next `ensure()`.
+- **Where the lazy loads hang off:** modals through the modal manager's
+  existing `load` hook, sidebar channel rows on first render, and everything
+  else warming after `load` + idle so SPA navs stay instant (skipped under
+  `saveData`; sequential on purpose so 40 imports don't compete with feed
+  media). `#pages :not(:defined) { display: none }` in `soci.css` guards
+  light-DOM flashes (e.g. submit's tab contents) pre-upgrade.
+- **Measured** on the seeded local stack, slow4g lane, medians of 7: home
+  cold FCP 2656→1348 ms (−49%), LCP 2716→1800 (−34%), feedPaint 3234→2266
+  (−30%); post deep link FCP 2512→1332 (−47%), LCP 2804→2056 (−27%); 31
+  modules at feed paint instead of 68. Warm loads and SPA transitions
+  unchanged.
+- **Tests:** `soci-frontend/test/loader.test.js` (registry completeness
+  against every template/script, packs name real modules, every route id has
+  a pack, core never statically imports a lazy module, no element both eager
+  and lazy) and `speed-lab/harness/probe-lazy.mjs` (browser phase
+  assertions). `npm test` in soci-frontend: 18/18 green.
+- **quickStart.sh fix** carried along because the lazy graph can't be
+  exercised without a running stack: CDN builds now compile the whole package
+  (`go build -o X .`), not just `main.go` — the cache-control helpers added in
+  the perf pass live in sibling files, so the old command no longer built.
+- Thumbnail srcset/HEIC handling and every other speed keeper on master are
+  untouched by this branch.
+
 ## 2026-08-24 — VPS speed lab: live deploy + measured perf loop (branch `cursor/speed-vps-loop-27f0`)
 
 Deployed the monorepo to a live 1-vCPU/1 GB Vultr box (108.61.219.46) with a
