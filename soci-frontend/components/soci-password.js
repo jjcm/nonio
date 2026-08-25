@@ -1,5 +1,8 @@
 import SociComponent from './soci-component.js'
 
+const ENTROPY_REQUIREMENT = 40
+const WEAK_MESSAGE = 'Not strong enough. Add complexity until the circle fills.'
+
 export default class SociPassword extends SociComponent {
 
   static get formAssociated() {
@@ -37,16 +40,14 @@ export default class SociPassword extends SociComponent {
       outline: none;
     }
 
-    :host(:focus):after{
-      content: '';
-      width: 10px;
-      height: 10px;
-      display: block;
-      background: red;
-    }
-
     :host(:focus-within) svg {
       display: block;
+    }
+
+    /* Nothing to meter when the field is only being matched against a password
+       that already exists. */
+    :host([no-entropy]) svg {
+      display: none;
     }
 
     path { 
@@ -76,15 +77,18 @@ export default class SociPassword extends SociComponent {
   `}
 
   connectedCallback() {
-    this._internals.setValidity({customError: true}, 'Not strong enough. Add complexity until the circle fills.')
+    if(!this.hasAttribute('no-entropy'))
+      this._internals.setValidity({customError: true}, WEAK_MESSAGE)
     this.innerHTML = ''
     this.field = document.createElement('input')
     this.field.setAttribute('type','password')
     this.field.setAttribute('placeholder', this.getAttribute('placeholder') || 'Password')
     this.field.setAttribute('autocomplete', 'current-password')
     this.field.setAttribute('name', this.getAttribute('name') || 'password')
-    this.field.addEventListener('keydown', this._onKeyDown.bind(this))
-    this.field.addEventListener('keyup', this._onKeyDown.bind(this))
+    // input covers typing, paste, undo and autofill alike; keydown/keyup could
+    // not see a value the browser filled in without a keystroke.
+    this.field.addEventListener('input', this._onChange.bind(this))
+    this.field.addEventListener('change', this._onChange.bind(this))
     this.field.addEventListener('focus', this._onFocus.bind(this))
     this.field.addEventListener('blur', this._onBlur.bind(this))
     this.addEventListener('focus', this._onFocus)
@@ -126,15 +130,8 @@ export default class SociPassword extends SociComponent {
     this.setAttribute('tabindex', 0)
   }
 
-  _onChange(e) {
-    this._internals.setFormValue(this.value)
-  }
-
-  _onKeyDown() {
-    setTimeout(()=>{
-      this.checkValidity()
-      this._internals.setFormValue(this.value)
-    }, 1)
+  _onChange() {
+    this.checkValidity()
   }
 
   _updateValidity(message) {
@@ -155,7 +152,10 @@ export default class SociPassword extends SociComponent {
   }
 
   checkEntropy(){
-    const ENTROPY_REQUIREMENT = 40
+    // Strength is a property of a password being chosen. Checking it when the
+    // user is proving they know an existing one just locks them out of their
+    // own account, so login opts out.
+    if(this.hasAttribute('no-entropy')) return true
     let value = this.value
     let charsets = {
       numbers: false,
@@ -197,8 +197,11 @@ export default class SociPassword extends SociComponent {
   //checkValidity() { return this._internals.checkValidity() }
   reportValidity() {return this._internals.reportValidity() }
   checkValidity(){
+    // Callers reach for this immediately before reading the form, so it is also
+    // the last chance to publish a value the browser filled in silently.
+    this._internals.setFormValue(this.value)
     if(!this.checkEntropy()){
-      this._updateValidity('Not strong enough. Add complexity until the circle fills.')
+      this._updateValidity(WEAK_MESSAGE)
     }
     else if(!this.checkMatch()){
       this.closest('form')?.querySelector(`soci-password[name="${this.getAttribute('match')}"]`)?._updateValidity("Passwords do not match.")
