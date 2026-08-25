@@ -1,5 +1,6 @@
 import SociComponent from './soci-component.js'
 import config from '../config.js'
+import { MEDIA_BOX_CSS, MEDIA_STACK_CSS, lockRatio } from '../lib/media-frame.js'
 
 export default class SociVideoPlayer extends SociComponent {
   constructor() {
@@ -8,21 +9,44 @@ export default class SociVideoPlayer extends SociComponent {
 
   css(){ return `
     :host {
+      /* Unlike an image, a video is free to scale past its source resolution
+         here, so width is bounded by the container rather than by --media-width. */
+      --media-max-width: 100%;
+      --media-max-height: calc(100vh - 100px);
       display: block;
       width: 100%;
+      margin: 0 auto;
       position: relative;
       background: #000;
     }
-    video {
-      /*
-      max-width: min(var(--media-width), 100%);
-      max-height: min(calc(100vh - 100px), var(--media-height));
-      */
-
-      width: 100%;
-      max-height: calc(100vh - 100px);
-      margin: 0 auto;
-      display: block;
+    /* The host is the ratio box itself, rather than a full-width backdrop with a
+       box inside it. A portrait video otherwise sat in a black slab several
+       times its own width, with the controls spanning the slab. */
+    :host([ratio]) {
+      ${MEDIA_BOX_CSS}
+    }
+    #frame {
+      position: absolute;
+      inset: 0;
+      ${MEDIA_STACK_CSS}
+    }
+    :host(:fullscreen) {
+      --media-max-width: 100vw;
+      --media-max-height: 100vh;
+      /* The screen has its own ratio, so the box goes back inside the host and
+         is centred in whatever is left over. */
+      aspect-ratio: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100vw;
+      height: 100vh;
+      max-height: none;
+    }
+    :host(:fullscreen) #frame {
+      position: relative;
+      inset: auto;
+      ${MEDIA_BOX_CSS}
     }
     controls {
       display: flex;
@@ -133,11 +157,6 @@ export default class SociVideoPlayer extends SociComponent {
     .track-container[seeking] .thumb {
       transition: none;
     }
-    :host(:fullscreen) video {
-      max-width: 100vw;
-      max-height: 100vh;
-      width: 100%;
-    }
     soci-icon[glyph="exitfullscreen"],
     :host(:fullscreen) soci-icon[glyph="fullscreen"] {
       display: none;
@@ -202,7 +221,7 @@ export default class SociVideoPlayer extends SociComponent {
   `}
 
   html(){ return `
-    <div id="video-container">
+    <div id="frame">
       <video autoplay @play=_onplay @pause=_onpause></video>
     </div>
     <controls>
@@ -233,7 +252,7 @@ export default class SociVideoPlayer extends SociComponent {
   `}
 
   static get observedAttributes() {
-    return ['url', 'resolution']
+    return ['url', 'resolution', 'width', 'height']
   }
 
   connectedCallback(){
@@ -260,6 +279,10 @@ export default class SociVideoPlayer extends SociComponent {
     switch(name) {
       case 'url':
         this.url = newValue
+        break
+      case 'width':
+      case 'height':
+        lockRatio(this, this.getAttribute('width'), this.getAttribute('height'))
         break
     }
   }
@@ -398,12 +421,50 @@ export default class SociVideoPlayer extends SociComponent {
   }
 
   _adjustResForScreenSize(){
-    let viewportResolution = '480p'
+    // The ladder is keyed on the encoder's own metric, the larger of the two
+    // source dimensions, so it has to be compared against the larger of the two
+    // rendered ones. Comparing against the width alone dropped every portrait
+    // video to 480p, since a 9:16 box bounded by the viewport height is narrower
+    // than the shortest rung.
+    let rendered = Math.max(this.offsetWidth, this.offsetHeight)
+    let viewportResolution = this._sourceResolution
     for(let res in this._resolutions) {
       viewportResolution = res
-      if(this.offsetWidth < this._resolutions[res]) break
+      if(rendered < this._resolutions[res]) break
     }
     this.resolution = viewportResolution
+  }
+
+  // The file that is about to play is the authority on the shape of the box: the
+  // source decides it, and a rendition that disagrees with the source has been
+  // encoded wrong rather than reshaped.
+  _watchRatio(video, res){
+    let isSource = !this._sourceResolution || res == this._sourceResolution
+    video.addEventListener('loadedmetadata', ()=>{
+      if(!video.videoWidth || !video.videoHeight) return
+      if(isSource) lockRatio(this, video.videoWidth, video.videoHeight)
+      else if(Math.abs(video.videoWidth / video.videoHeight - this.mediaRatio) > 0.01 * this.mediaRatio)
+        this._rejectRendition(video, res)
+    }, {once: true})
+  }
+
+  // A rendition whose frames are not the shape of the source was scaled
+  // non-uniformly on the way out of the encoder, and no object-fit can undo
+  // that -- avo-coffeeshop's -480p is 1518x854 for a 720x1280 video, so the dog
+  // in it is flattened. Take the rung off the ladder and pick again.
+  _rejectRendition(video, res){
+    delete this._resolutions[res]
+    this.select(`soci-option[value="${res}"]`)?.remove()
+    if(this.selectAll('soci-option').length < 2) this.select('#resolution').toggleAttribute('disabled', true)
+    // Dropping the src rather than the element keeps the fallback on the direct
+    // assignment path, so it does not wait on a hotswap that only happens once
+    // something is already playing.
+    if(video == this._video) video.removeAttribute('src')
+    else {
+      video.rejected = true
+      video.remove()
+    }
+    this._adjustResForScreenSize()
   }
 
   _forceResolution(e){
@@ -422,15 +483,17 @@ export default class SociVideoPlayer extends SociComponent {
 
     if(this._video.src){
       let newVideo = document.createElement('video')
+      this._watchRatio(newVideo, res)
       newVideo.src = `${config.VIDEO_HOST}/${this.url}${resSuffix}.mp4`
       newVideo.style.display = "none"
       newVideo.currentTime = timestamp
       newVideo.addEventListener('play', this._onplay)
       newVideo.addEventListener('pause', this._onpause)
       newVideo.volume = this.volume
-      this.select('#video-container').appendChild(newVideo)
+      this.select('#frame').appendChild(newVideo)
 
       let hotswap = ()=>{
+        if(newVideo.rejected) return
         timestamp = this._video.currentTime
         this._video.remove()
         newVideo.currentTime = timestamp
@@ -449,6 +512,7 @@ export default class SociVideoPlayer extends SociComponent {
       }
     }
     else {
+      this._watchRatio(this._video, res)
       this._video.src = `${config.VIDEO_HOST}/${this.url}${resSuffix}.mp4`
     }
 
@@ -479,9 +543,23 @@ export default class SociVideoPlayer extends SociComponent {
       this.setAttribute('url', val)
       return
     }
+    // The poster fills the reserved box while the first video frame is still in
+    // flight, and both are laid out by the box rather than by their own
+    // intrinsic size, so it hands over without resizing the media area. Its
+    // ratio is deliberately not read: a video thumbnail is a crop of a frame
+    // rather than a scaled copy of one, so it is the wrong shape to reserve
+    // against -- avo-coffeeshop's is 615x545 for a 720x1280 video.
+    this.select('video').poster = `${config.VIDEO_HOST}/thumbnail/${val}.webp`
+
+    // Stored dimensions only reserve the box ahead of the first request. The
+    // file's own frame size, once loadedmetadata reports it, is what the box
+    // ends up locked to.
+    lockRatio(this, this.getAttribute('width'), this.getAttribute('height'))
+
     setTimeout(()=>{
-      let width = parseInt(getComputedStyle(this).getPropertyValue('--media-width').slice(0, -2))
-      let height = parseInt(getComputedStyle(this).getPropertyValue('--media-height').slice(0, -2))
+      let styles = getComputedStyle(this)
+      let width = parseInt(this.getAttribute('width')) || parseInt(styles.getPropertyValue('--media-width').slice(0, -2))
+      let height = parseInt(this.getAttribute('height')) || parseInt(styles.getPropertyValue('--media-height').slice(0, -2))
       if(width && height){
         let resolution = Math.max(width, height)
         let equivalentResolution = '480p'
@@ -517,6 +595,7 @@ export default class SociVideoPlayer extends SociComponent {
       }
       else {
         this.select('#resolution').style.display = "none"
+        this._watchRatio(this._video)
         this._video.src = `${config.VIDEO_HOST}/${val}.mp4`
       }
     },1)

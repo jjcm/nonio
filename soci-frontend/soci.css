@@ -2309,12 +2309,20 @@ soci-post-card soci-markdown-view code {
 /* Standard Modal Styles */
 soci-modal {
   .modal-form {
-    display: block;
+    /* flow-root so a floated child cannot escape the form and land underneath
+       whatever follows it in the modal. */
+    display: flow-root;
     min-width: min(420px, calc(100vw - 72px));
 
     soci-button {
       margin: 16px 0 8px;
       width: 100%;
+      /* soci-button floats itself, which suits a toolbar but not a full-width
+         form action: floated, it dropped out of flow and .modal-footer painted
+         over it, so a left-click on the visible button hit the footer link
+         instead of submitting. */
+      float: none;
+      display: block;
     }
   }
 

@@ -16,7 +16,7 @@
     .block.password(load-order="tertiary")
       h2 Change Password
       form
-        soci-password(name="oldPassword" placeholder="Old password")
+        soci-password(no-entropy name="oldPassword" placeholder="Old password")
         soci-password(name="newPassword" placeholder="New password")
         soci-password(name="confirmPassword" match="newPassword" placeholder="Confirm new password")
         .actions
