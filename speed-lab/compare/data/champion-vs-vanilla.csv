@@ -1,0 +1,13 @@
+agent,harness,baseline,champion,metric,baseline_ms,champion_ms,reduction_pct
+fable,lighthouse desktop,iter0,iter20,cold FCP,865.9,366.1,57.7
+fable,lighthouse desktop,iter0,iter20,cold LCP,1289.9,563.9,56.3
+fable,lighthouse desktop,iter0,iter20,warm FCP,867.5,183.9,78.8
+fable,lighthouse desktop,iter0,iter20,warm LCP,1294.7,265.4,79.5
+fable,slow 4g,iter0,iter20,cold FCP,3968,748,81.1
+fable,slow 4g,iter0,iter20,cold LCP,4448,788,82.3
+fable,slow 4g,iter0,iter20,warm FCP,3968,180,95.5
+fable,slow 4g,iter0,iter20,warm LCP,3996,204,94.9
+qwen,lighthouse desktop,iter0,iter31,cold FCP,787.8,423.1,46.3
+qwen,lighthouse desktop,iter0,iter31,cold LCP,1333.5,784.9,41.1
+qwen,lighthouse desktop,iter0,iter31,warm FCP,790.3,177.0,77.6
+qwen,lighthouse desktop,iter0,iter31,warm LCP,1257.8,429.8,65.8

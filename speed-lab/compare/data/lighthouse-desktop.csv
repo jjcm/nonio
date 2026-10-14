@@ -1,0 +1,40 @@
+agent,iter,verdict,cold_fcp_ms,cold_lcp_ms,warm_fcp_ms,warm_lcp_ms,n,change
+fable,0,baseline,865.9,1289.9,867.5,1294.7,5,baseline (no product change)
+fable,12,kept,374.4,613.5,184.8,324.7,5,shell preload for the single LCP thumbnail (first image-type post in the embedded payload)
+fable,13,kept,341.4,606.7,185.7,267.2,5,skip redundant boot-time /posts merge fetch (fetchAndMerge only when URL differs from loaded data)
+fable,14,kept,373.5,607.1,185.0,266.7,5,compile shell template once at boot (pug.compileFile; TTFB 40ms -> 2-3ms)
+fable,15,kept,337.6,587.0,183.9,309.8,5,dedupe identical boot GETs across both data helpers (2s shared promise cache; /tags x3 + /communities x2 -> 1+1)
+fable,16,kept (first-principles wash),365.5,585.6,183.7,265.2,5,gzip output cache keyed by path+ETag (largest-file TTFB 6.9ms -> 0.9ms)
+fable,17,rejected,409.2,594.1,223.7,304.8,5,"inline minified soci.css into the shell (removes render-blocking request, doubles document size)"
+fable,19,kept,371.2,563.1,183.8,265.8,5,prefer brotli over gzip (q11 cached statics: bundle 37.5KB -> 31.5KB; q5 dynamic docs)
+fable,20,kept,366.1,563.9,183.9,265.4,5,content-hash ETag + 304 for dynamic shell documents
+qwen,0,baseline,787.8,1333.5,790.3,1257.8,3,vanilla seed
+qwen,1,keep,624.2,1096.3,623.8,1056.4,3,split eager component barrel
+qwen,2,revert,622.9,1055.6,623.1,1074.0,3,dedupe startup double /posts
+qwen,3,revert,562.8,1208.2,562.7,1067.0,3,defer all eager classic scripts
+qwen,4,revert,549.5,1154.3,551.2,1139.9,3,defer 6 per-route page scripts
+qwen,5,revert,623.4,1088.8,603.2,1069.8,3,static LCP element markup
+qwen,6,keep,587.4,1052.8,584.4,995.5,3,lazy sidebar voice/LiveKit module
+qwen,7,revert,598.2,1091.2,585.6,1061.5,3,lazy grid-lanes polyfill
+qwen,8,revert,604.9,998.0,585.0,1036.5,3,drop #items entrance fade
+qwen,9,revert,604.2,1019.9,605.2,1000.6,3,batch idle createPosts appends
+qwen,10,revert,605.4,1057.3,605.0,1037.6,3,#items ::before veil
+qwen,11,revert,604.2,1085.5,604.7,1067.5,3,drop translateY only
+qwen,12,calibration,604.8,1054.3,604.8,998.8,3,"pristine re-baseline, no code change"
+qwen,14,keep,606.4,961.4,217.0,470.1,3,immutable Cache-Control js/css/wasm/fonts/images
+qwen,15,revert,585.6,1018.0,217.0,490.2,3,lazy 5 modal components
+qwen,17,revert,623.6,994.8,217.0,450.2,3,eager head module for tags.js
+qwen,18,revert,585.0,1053.2,217.0,529.9,3,static #tag-input in route markup
+qwen,19,revert,599.2,1179.2,237.4,523.9,3,shorten #items ramp 0.35s to 0.12s
+qwen,20,revert,604.3,1020.3,217.2,470.1,3,aspect-ratio box on first card media
+qwen,21,revert,604.3,957.8,217.0,529.5,3,fetchpriority=high first thumbnail
+qwen,22,revert,605.2,1015.9,217.0,529.7,3,loading=eager first thumbnail
+qwen,23,revert,623.4,1056.4,217.0,449.6,3,head preload tags.js
+qwen,24,revert,605.3,1038.3,217.0,529.9,3,preconnect image CDN :4203
+qwen,25,revert,604.4,1018.6,217.0,489.6,3,content-visibility below-fold cards
+qwen,26,revert,605.4,1057.5,217.0,469.7,3,idle-gate markdown.wasm instantiate
+qwen,27,revert,604.4,1055.2,217.0,469.5,3,shrink #tag-input placeholder to 11px
+qwen,28,keep,427.8,802.8,177.0,430.1,3,gzip js/css/html/svg
+qwen,29,revert,595.9,1061.9,177.0,429.7,3,brotli q11 preferred over gzip
+qwen,30,keep,427.9,783.0,177.0,429.9,3,gzip .wasm
+qwen,31,keep,423.1,784.9,177.0,429.8,3,memoize per-file gzip buffers

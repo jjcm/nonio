@@ -1,0 +1,62 @@
+{
+  "vanilla": {
+    "cold": {
+      "firstPaint": 1004,
+      "fcp": 4180,
+      "lcp": 4700,
+      "load": 4843,
+      "requests": 108,
+      "transferBytes": 706340,
+      "posts": 21
+    },
+    "warm": {
+      "firstPaint": 1012,
+      "fcp": 4180,
+      "lcp": 4208,
+      "load": 4653,
+      "requests": 108,
+      "transferBytes": 706340,
+      "posts": 21
+    }
+  },
+  "fable": {
+    "cold": {
+      "firstPaint": 428,
+      "fcp": 768,
+      "lcp": 816,
+      "load": 1182,
+      "requests": 40,
+      "transferBytes": 106744,
+      "posts": 21
+    },
+    "warm": {
+      "firstPaint": 180,
+      "fcp": 228,
+      "lcp": 228,
+      "load": 539,
+      "requests": 40,
+      "transferBytes": 300,
+      "posts": 21
+    }
+  },
+  "qwen": {
+    "cold": {
+      "firstPaint": 456,
+      "fcp": 2004,
+      "lcp": 2440,
+      "load": 2217,
+      "requests": 86,
+      "transferBytes": 161584,
+      "posts": 21
+    },
+    "warm": {
+      "firstPaint": 184,
+      "fcp": 232,
+      "lcp": 232,
+      "load": 217,
+      "requests": 86,
+      "transferBytes": 8574,
+      "posts": 21
+    }
+  }
+}
