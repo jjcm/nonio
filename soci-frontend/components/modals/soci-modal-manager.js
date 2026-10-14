@@ -1,28 +1,39 @@
+import { ensure, MODAL_PACKS } from '../soci-loader.js'
+
+// Modal components stay out of the eager graph; each entry's `load` pulls
+// its pack the first time the modal opens.
+const lazy = name => () => ensure(MODAL_PACKS[name])
+
 const modalRegistry = {
   login: {
     id: 'login-modal',
     title: 'Login',
-    tag: 'soci-login-modal'
+    tag: 'soci-login-modal',
+    load: lazy('login')
   },
   createAccount: {
     id: 'create-account-modal',
     title: 'Create account',
-    tag: 'soci-create-account-modal'
+    tag: 'soci-create-account-modal',
+    load: lazy('createAccount')
   },
   createCommunity: {
     id: 'create-community-modal',
     title: 'Create community',
-    tag: 'soci-create-community-modal'
+    tag: 'soci-create-community-modal',
+    load: lazy('createCommunity')
   },
   createChannel: {
     id: 'create-channel-modal',
     title: 'Create channel',
-    tag: 'soci-create-channel-modal'
+    tag: 'soci-create-channel-modal',
+    load: lazy('createChannel')
   },
   imageViewer: {
     id: 'image-viewer-modal',
     title: 'Image viewer',
-    tag: 'soci-image-viewer-modal'
+    tag: 'soci-image-viewer-modal',
+    load: lazy('imageViewer')
   }
 }
 

@@ -1,4 +1,5 @@
 import SociComponent from './soci-component.js'
+import { routeReady } from './soci-loader.js'
 
 export default class SociRouter extends SociComponent {
   constructor() {
@@ -61,33 +62,32 @@ export default class SociRouter extends SociComponent {
     }
     else this._attachChildren()
 
-    // TODO
-    // Hypothesis: we could dynamically load tags and match them to files, potentially speeding up first page load time. 
-    // Definitely would need to be benchmarked to see if this works. 
-    /*
-    this.innerHTML.match(/<soci-(\w+)[^>]*>/g).forEach(tag => {
-      let name = tag.match(/<soci-(\w+)[^>]*>/)[1]
-      console.log(name)
-      import(`./soci-${name}.js`).then(module => {
-        window.customElements.define(`soci-${name}`, module.default)
-      })
-
-    })
-    */
-
     // Very briefly add the activating class, followed immediately by the active
     // class. This allows us to bind animation transitions easily for page loads.
+    //
+    // `active` and routeactivate wait for the route's lazy element pack, so
+    // page scripts listening to routeactivate can call component methods
+    // without racing customElements.define. The token guards against a
+    // navigation away (or a re-activation) while the pack is in flight.
     this.setAttribute('activating', '')
-    setTimeout(()=>{
-      this.removeAttribute('activating')
-      this.setAttribute('active', '')
-      let e = new CustomEvent('routeactivate', {bubbles: false})
-      this.dispatchEvent(e)
-    },1)
+    const token = this._activationToken = Symbol()
+    routeReady(this.id).then(()=>{
+      if(this._activationToken !== token) return
+      setTimeout(()=>{
+        if(this._activationToken !== token) return
+        this.removeAttribute('activating')
+        this.setAttribute('active', '')
+        let e = new CustomEvent('routeactivate', {bubbles: false})
+        this.dispatchEvent(e)
+      },1)
+    })
   }
 
   deactivate(){
-    if(this.hasAttribute('active')){
+    this._activationToken = null
+    const wasActivating = this.hasAttribute('activating')
+    this.removeAttribute('activating')
+    if(this.hasAttribute('active') || wasActivating){
       this.removeAttribute('active')
       this._detachChildren()
 
